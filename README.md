@@ -14,7 +14,7 @@ Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham kh
 > Đây là đồ án/demo.
 > - **Nhu cầu là dữ liệu thật** của bộ dữ liệu bán hàng thực tế **Thanh Lam Mart** . Cửa hàng OC là điểm bán số 18 của Thanh Lam Mart: 164 mặt hàng tươi, 90 ngày lịch sử, từ 28/03 đến 25/06/2024.
 > - **Phần còn lại vẫn là giả định có ghi chú:** tên hàng (Thanh Lam Mart chỉ có mã số), giá, giá vốn, hạn sử dụng, nhà cung cấp, và phần vận hành (lô, đơn, sổ sách).
-> - Dự báo cho hàng tươi dùng mô hình **LightGBM huấn luyện trên môi trường huấn luyện** với các điểm Thanh Lam Mart khác. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi trong backtest**, không theo sai số dự báo. Ngoài mẫu, cách chọn này chỉ hòa engine EWMA (+0,1%). Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
+> - Dự báo cho hàng tươi dùng mô hình **LightGBM huấn luyện trên môi trường huấn luyện** với các điểm Thanh Lam Mart khác. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi trong backtest**, không theo sai số dự báo. Ngoài mẫu, dùng dự báo điểm của LightGBM với độ bất định của EWMA lãi hơn engine EWMA +0,8% (trung vị) ở 78% số điểm Thanh Lam Mart giữ lại. Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
 > - bộ dữ liệu kiểm thử quy tắc (263 SKU, 365 ngày) chỉ còn dùng cho bộ test quy tắc nghiệp vụ (`--source rule-test`).
 > - Tên nhà cung cấp và email đều là mẫu (`*.test`). Mọi email đều rơi vào hộp thư sandbox Mailpit, không gửi ra Internet.
 
