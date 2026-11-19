@@ -10,6 +10,8 @@
 >    Chi tiết ở mục 6 và README của bridge.
 > 4. Cấu hình demo của Retail-AI chuyển từ `.env` sang biến môi trường của tiến trình (user duyệt khi triển khai,
 >    19/11/2026), vì `.env` làm hỏng test Retail-AI chạy tại chỗ. Chi tiết ở mục 7.
+> 5. Câu kiosk nói khi thiếu dữ liệu hàng mới về được đổi sang ngôn ngữ người mua (user duyệt khi triển khai,
+>    19/11/2026; chỉ chuỗi trong `_localized_stock_arrival_unavailable` của `backend/api/main.py`). Chi tiết ở mục 6.
 
 ## Context
 
@@ -217,6 +219,11 @@ Test mới `tests/test_ops_overlay_repository.py`, fixture copy từ `bridge/con
 > `_localized_retail_information_observation` (`backend/api/main.py`): đổi mốc thời gian có múi giờ sang múi giờ
 > cửa hàng (mặc định Asia/Ho_Chi_Minh), câu mới "Hàng mới về gần đây tại …: … (về lúc dd/mm/yyyy HH:MM)" và "Trong 7
 > ngày qua, … chưa ghi nhận hàng mới về"; tiếng Anh, tiếng Trung tương ứng. Logic kiểm tra feed giữ nguyên.
+>
+> Điều chỉnh thứ ba (user duyệt 19/11/2026): khi feed RECEIVING thiếu hoặc cũ, kiosk nói "Mình chưa có phiếu nhận
+> hàng đã xác minh nên chưa thể xác nhận món nào vừa nhập kho." Chuỗi trong `_localized_stock_arrival_unavailable`
+> đổi thành "Hiện mình chưa có thông tin hàng mới về của cửa hàng nên chưa thể cho bạn biết món nào vừa về. Bạn có
+> thể hỏi nhân viên cửa hàng nhé." (và tiếng Anh, tiếng Trung tương ứng). Không đổi logic hay nơi gọi.
 
 Chuẩn bị bằng lệnh có sẵn của Retail-AI: `docker compose up -d postgres` và `uv run python scripts/import_winmart.py --apply`. Bảng `products` sau khi import là đích khoá ngoại cho `inventory_receipts`. Catalog của kiosk vẫn chạy chế độ snapshot.
 
