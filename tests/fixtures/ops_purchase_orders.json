@@ -1,0 +1,41 @@
+[
+ {
+  "id": 623,
+  "code": "PO240624-07623",
+  "supplier": "Kho tổng WinMart – Rau củ (demo)",
+  "status": "RECEIVED",
+  "order_date": "2024-06-24",
+  "expected_date": "2024-06-25",
+  "total_value": 24536374,
+  "proposal_id": null,
+  "has_pdf": false,
+  "overdue_days": 0,
+  "received_at": "2024-06-25T08:00:00"
+ },
+ {
+  "id": 581,
+  "code": "PO240618-07581",
+  "supplier": "Kho tổng WinMart – Rau củ (demo)",
+  "status": "RECEIVED",
+  "order_date": "2024-06-18",
+  "expected_date": "2024-06-19",
+  "total_value": 25546913,
+  "proposal_id": null,
+  "has_pdf": false,
+  "overdue_days": 0,
+  "received_at": "2024-06-19T08:00:00"
+ },
+ {
+  "id": 574,
+  "code": "PO240617-07574",
+  "supplier": "Kho tổng WinMart – Rau củ (demo)",
+  "status": "RECEIVED",
+  "order_date": "2024-06-17",
+  "expected_date": "2024-06-18",
+  "total_value": 23790268,
+  "proposal_id": null,
+  "has_pdf": false,
+  "overdue_days": 0,
+  "received_at": "2024-06-18T08:00:00"
+ }
+]
