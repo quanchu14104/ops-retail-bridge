@@ -1,7 +1,10 @@
 # Nối Ops Chest ↔ Retail-AI qua nền dữ liệu sản phẩm dùng chung (giai đoạn 1)
 
 > User duyệt ngày 19/11/2026. File này là bản chuẩn để triển khai.
-> So với bản duyệt chỉ có một điều chỉnh: đổi cổng của Retail-AI sang 8020/5190. Lý do nằm ở mục "Ghi chú triển khai" cuối file.
+> So với bản duyệt có hai điều chỉnh:
+> 1. Đổi cổng của Retail-AI sang 8020/5190. Lý do nằm ở mục "Ghi chú triển khai" cuối file.
+> 2. Phần "hàng mới về" phải sửa 1 dòng ở `backend/services/retail_information.py` của Retail-AI (user duyệt khi
+>    triển khai, 19/11/2026). Chi tiết ở mục 6 và README của bridge.
 
 ## Context
 
@@ -64,7 +67,8 @@ Không dùng chung DB vật lý: mỗi app giữ DB và migration riêng. Bridge
 
 ### Mức sửa code (mặc định tắt, nên test cũ không đổi)
 - **Ops Chest: khoảng 25 dòng ở 4 file**, chỉ đi qua một PR.
-- **Retail-AI: 1 file mới và khoảng 6 dòng ở 2 file.** Phần "hàng mới về" không sửa dòng nào.
+- **Retail-AI: 1 file mới và khoảng 6 dòng ở 2 file.** Phần "hàng mới về" cần sửa thêm 1 dòng ở
+  `backend/services/retail_information.py` (xem mục 6). Khi triển khai, factory thực tế là khoảng 10 dòng.
 - Còn lại chỉ là `.env` và cờ cổng.
 
 ## Các bước thực hiện
@@ -195,7 +199,13 @@ Sửa file cũ:
 
 Test mới `tests/test_ops_overlay_repository.py`, fixture copy từ `bridge/contract/ops_feed.example.json`. Các trường hợp: ghép đúng trường; bộ lọc `in_stock` dùng tồn đã ghép; vị trí kệ vẫn còn; thứ tự `list_promotions`; feed hỏng hoặc cũ; tắt tính năng thì hành vi không đổi.
 
-### 6. Hàng mới về → Postgres của Retail-AI (không sửa code Retail-AI)
+### 6. Hàng mới về → Postgres của Retail-AI (sửa 1 dòng code Retail-AI)
+
+> Điều chỉnh khi triển khai (user duyệt 19/11/2026): `lookup_retail_information` trả DATA_UNAVAILABLE khi
+> `CATALOG_REPOSITORY != postgres`, nên kiosk chạy snapshot không đọc được `inventory_receipts`. Điều kiện đổi thành
+> `settings.catalog_repository != "postgres" and not settings.ops_feed_path`, kèm 1 test. Hệ quả: khi bật
+> `OPS_FEED_PATH`, Postgres của Retail-AI phải luôn chạy; nếu tắt, tra campaign trả TEMPORARY_FAILURE và câu hỏi
+> khuyến mãi nhận câu báo không khả dụng thay vì danh sách hàng giảm giá.
 
 Chuẩn bị bằng lệnh có sẵn của Retail-AI: `docker compose up -d postgres` và `uv run python scripts/import_winmart.py --apply`. Bảng `products` sau khi import là đích khoá ngoại cho `inventory_receipts`. Catalog của kiosk vẫn chạy chế độ snapshot.
 

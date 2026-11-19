@@ -113,6 +113,33 @@ Retail-AI cần trong `.env`: `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/W
 `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190`; kiosk cần
 `apps/kiosk-airi/.env`: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
 
+## Điều chỉnh so với plan đã duyệt
+
+**Retail-AI phải sửa 1 dòng cho phần hàng mới về** (user duyệt ngày 19/11/2026). Plan ban đầu ghi phần này "không
+sửa dòng nào", nhưng `backend/services/retail_information.py` trả DATA_UNAVAILABLE cho mọi tra cứu chi nhánh
+(cửa hàng, khuyến mãi theo campaign, hàng mới về) khi `CATALOG_REPOSITORY` khác `postgres`. Kiosk chạy chế độ
+snapshot nên không bao giờ đọc `inventory_receipts`. Điều kiện đổi thành
+`settings.catalog_repository != "postgres" and not settings.ops_feed_path`, kèm 1 test. Khi `OPS_FEED_PATH` để
+trống, hành vi giữ nguyên như cũ.
+
+**Hệ quả: khi bật `OPS_FEED_PATH`, Postgres của Retail-AI phải luôn chạy.** Câu hỏi khuyến mãi đi qua tra campaign
+trước (`list_active_store_promotions`). Nếu Postgres tắt, tra cứu này trả TEMPORARY_FAILURE và `backend/api/main.py`
+(~dòng 3426) coi đó là câu trả lời cuối. Khi đó, "có khuyến mãi gì không?" nhận câu "Mình chưa tra cứu được catalog
+lúc này…" thay vì danh sách hàng giảm giá; "hàng mới về" cũng vậy. Đã kiểm chứng ngày 19/11/2026: dừng container
+Postgres thì cả hai câu báo không khả dụng, bật lại thì phục hồi. Khi Postgres chạy mà không có feed PROMOTIONS,
+tra campaign trả DATA_UNAVAILABLE và kiosk chuyển sang danh sách khuyến mãi theo sản phẩm (hàng cận date của Ops
+Chest đứng đầu).
+
+Tác dụng phụ đã biết: kiosk trả lời được thông tin cửa hàng demo (tên, địa chỉ, SĐT) từ `retail_stores`.
+
+## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
+
+- Câu "có món nào đang giảm giá không?" được bộ nhận diện ý định của Retail-AI chuyển sang gợi ý sản phẩm (khớp
+  chữ "giảm" với tên sản phẩm), kể cả khi tắt overlay. "có khuyến mãi gì không?" hay "hôm nay có giảm giá gì
+  không?" thì vào danh sách khuyến mãi.
+- Kiosk in giờ nhận hàng theo UTC (vd 22:06 giờ Việt Nam hiện thành 15:06). Bridge ghi `received_at` dạng
+  timestamptz đúng múi giờ; phần hiển thị là của Retail-AI.
+
 ## Lệnh
 
 | Lệnh | Việc làm |
