@@ -72,8 +72,9 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 riêng Mailpit: `docker compose -f Q:/WORKSPACE/doanbackup/docker-compose.yml up -d mailpit`.
 
 Cấu hình chạy cho cả 4 dịch vụ nằm ở `Q:/WORKSPACE/.claude/launch.json` (tên: `ops-chest-api`, `ops-chest-ui`,
-`retail-ai-api`, `retail-kiosk`). Biến môi trường của Ops Chest cho demo nằm ở
-[`demo/ops-chest.env`](demo/ops-chest.env) (ngoài repo Ops Chest, không chứa key LLM).
+`retail-ai-api`, `retail-kiosk`). Biến môi trường cho demo nằm ngoài hai repo con, không chứa secret:
+[`demo/ops-chest.env`](demo/ops-chest.env) cho Ops Chest và [`demo/retail-ai.env`](demo/retail-ai.env) cho
+Retail-AI API và kiosk.
 
 ## Thứ tự khởi động
 
@@ -109,9 +110,20 @@ uv run bridge crosswalk check --ops    # đối chiếu 164 SKU với /api/produ
 uv run bridge sync --every 120         # hoặc --once
 ```
 
-Retail-AI cần trong `.env`: `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`,
-`CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190`; kiosk cần
-`apps/kiosk-airi/.env`: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
+**Cấu hình demo của Retail-AI đặt ở biến môi trường của tiến trình, KHÔNG ghi vào `.env` của Retail-AI.** Bộ test
+của Retail-AI đọc `side/Retail-AI-/.env`. Nếu để `CATALOG_REPOSITORY=snapshot` và `OPS_FEED_PATH` trong đó, chạy
+`uv run pytest -q` tại chỗ sẽ hỏng hàng chục test (nhánh trả lời cố định chạy trước LLM). Vì vậy:
+
+- `side/Retail-AI-/.env` và `apps/kiosk-airi/.env` giữ giá trị mặc định như `.env.example` (chỉ chứa secret của
+  máy, nếu có).
+- Retail-AI API nhận `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`,
+  `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190` từ khối `env` của `retail-ai-api` trong `launch.json`
+  (biến môi trường của tiến trình được pydantic-settings ưu tiên hơn `.env`).
+- Kiosk nhận `VITE_API_BASE_URL=http://127.0.0.1:8020` từ khối `env` của `retail-kiosk`. Vite có đọc `VITE_*` từ
+  biến môi trường của tiến trình và ưu tiên chúng hơn `.env`: đã kiểm chứng `/src/api.ts` do Vite phục vụ mang giá
+  trị 8020 trong khi `apps/kiosk-airi/.env` vẫn là 8000, và kiosk gọi `http://127.0.0.1:8020/sessions`.
+- Chạy tay ngoài `launch.json`: nạp `demo/retail-ai.env` vào môi trường trước khi chạy
+  (bash: `set -a; . Q:/WORKSPACE/bridge/demo/retail-ai.env; set +a`).
 
 ## Điều chỉnh so với plan đã duyệt
 
@@ -140,7 +152,15 @@ thời gian chi nhánh (hàng về, ngày xác minh cửa hàng, hạn campaign)
 (`retail_stores.timezone`, mặc định Asia/Ho_Chi_Minh; dùng UTC+7 cố định khi máy không có tz database, vd Windows
 thiếu gói `tzdata`).
 
+**Cấu hình demo của Retail-AI chuyển khỏi `.env`** (user duyệt ngày 19/11/2026): xem mục "Thứ tự khởi động". Plan
+ban đầu ghi các biến demo vào `side/Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
+tại chỗ. Giờ `uv run pytest -q` trong `side/Retail-AI-` xanh mà không cần ép biến nào.
+
 ## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
+
+- Test kiosk (vitest) hỏng 41/66 trên Node v26 vì `localStorage` thử nghiệm của Node che mất `localStorage` của
+  jsdom ("localStorage is not available because --localstorage-file was not provided"). Không liên quan tới bridge
+  hay `.env`: chạy `NODE_OPTIONS=--no-experimental-webstorage npx vitest run` thì 66/66 xanh.
 
 - Câu "có món nào đang giảm giá không?" được bộ nhận diện ý định của Retail-AI chuyển sang gợi ý sản phẩm (khớp
   chữ "giảm" với tên sản phẩm), kể cả khi tắt overlay. "có khuyến mãi gì không?" hay "hôm nay có giảm giá gì
