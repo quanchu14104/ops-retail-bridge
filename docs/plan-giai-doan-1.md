@@ -8,6 +8,8 @@
 > 3. Câu trả lời "hàng mới về" của kiosk được sửa giờ và câu chữ trong `backend/api/main.py` của Retail-AI (user
 >    duyệt khi triển khai, 19/11/2026): giờ địa phương thay cho UTC, ngôn ngữ người mua thay cho "phiếu nhận hàng".
 >    Chi tiết ở mục 6 và README của bridge.
+> 4. Cấu hình demo của Retail-AI chuyển từ `.env` sang biến môi trường của tiến trình (user duyệt khi triển khai,
+>    19/11/2026), vì `.env` làm hỏng test Retail-AI chạy tại chỗ. Chi tiết ở mục 7.
 
 ## Context
 
@@ -250,8 +252,13 @@ Phân bổ cổng (chỉ dùng config):
 **Không chạy docker compose của Ops Chest cùng lúc**, vì sẽ có hai Postgres cùng giành cổng 5432.
 
 Cấu hình Retail-AI:
-- `.env`: `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`, `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190`.
-- `apps/kiosk-airi/.env`: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
+- ~~`.env`~~ biến môi trường của tiến trình API: `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`, `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190`.
+- ~~`apps/kiosk-airi/.env`~~ biến môi trường của tiến trình kiosk: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
+
+> Điều chỉnh khi triển khai (user duyệt 19/11/2026): bộ test của Retail-AI đọc `side/Retail-AI-/.env`, nên để các
+> biến demo trong đó làm hỏng test chạy tại chỗ. Các biến demo chuyển sang khối `env` trong
+> `Q:/WORKSPACE/.claude/launch.json` và file `bridge/demo/retail-ai.env`; hai file `.env` của Retail-AI giữ giá trị
+> mặc định như `.env.example`. Vite đọc `VITE_*` từ biến môi trường của tiến trình nên kiosk không mất tính năng.
 
 Chạy bridge liên tục bằng `uv run bridge sync --every 120`.
 
@@ -301,7 +308,8 @@ Unit test:
 
 **File `.env`**
 - `doanbackup/.env` đã có và chứa key LLM. Chỉ được thêm dòng, không in nội dung, không copy key sang project khác.
-- `side/Retail-AI-/.env` và `side/Retail-AI-/apps/kiosk-airi/.env` chưa có. Tạo từ `.env.example`.
+- `side/Retail-AI-/.env` và `side/Retail-AI-/apps/kiosk-airi/.env` chưa có. Tạo từ `.env.example`, giữ giá trị
+  mặc định; biến demo đặt ở biến môi trường của tiến trình (xem mục 7).
 - Thiếu `GROQ_API_KEY` thì hỏi user. Nếu không có key, ưu tiên kiểm thử tất định (`/products/{id}/snapshot`, `/products/search`, test repository) và ghi rõ kịch bản nào chưa chạy được.
 
 **Ops Chest (worktree)**
