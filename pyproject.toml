@@ -1,0 +1,35 @@
+[project]
+name = "ops-retail-bridge"
+version = "0.1.0"
+description = "Cầu nối một chiều Ops Chest → Retail-AI qua nền dữ liệu hàng hoá dùng chung (demo)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.2,<4",
+    "tzdata>=2024.1; sys_platform == 'win32'",
+]
+
+[project.scripts]
+bridge = "bridge.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.9"]
+
+[build-system]
+requires = ["hatchling>=1.25,<2.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bridge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv", "uv.lock", "out"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

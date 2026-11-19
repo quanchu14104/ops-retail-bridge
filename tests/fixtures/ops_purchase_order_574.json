@@ -1,0 +1,70 @@
+{
+ "id": 574,
+ "code": "PO240617-07574",
+ "status": "RECEIVED",
+ "supplier": "Nhà cung cấp Thanh Lam Mart – Rau củ (demo)",
+ "order_date": "2024-06-17",
+ "expected_date": "2024-06-18",
+ "total_value": 23790268,
+ "proposal_id": null,
+ "has_pdf": false,
+ "reject_reasons": {
+  "DAMAGED": "Móp, vỡ, rách bao bì",
+  "SHORT_DATED": "Date ngắn",
+  "WRONG_ITEM": "Sai hàng",
+  "OTHER": "Lý do khác"
+ },
+ "lines": [
+  {
+   "line_id": 13214,
+   "sku": "F0006",
+   "name": "Cà chua chocolate  300g",
+   "qty": 14,
+   "unit_cost": 23333,
+   "received_qty": 14,
+   "rejected_qty": null,
+   "reject_reason": null,
+   "short_qty": null,
+   "actual_unit_cost": null,
+   "pack_size": 1,
+   "shelf_life_days": 2,
+   "min_remaining_days": 2,
+   "over_tolerance": 1,
+   "default_expiry": "2024-06-27"
+  },
+  {
+   "line_id": 13215,
+   "sku": "F0016",
+   "name": "Cải ngọt gói  500g",
+   "qty": 11,
+   "unit_cost": 12170,
+   "received_qty": 11,
+   "rejected_qty": null,
+   "reject_reason": null,
+   "short_qty": null,
+   "actual_unit_cost": null,
+   "pack_size": 1,
+   "shelf_life_days": 1,
+   "min_remaining_days": 1,
+   "over_tolerance": 1,
+   "default_expiry": "2024-06-26"
+  },
+  {
+   "line_id": 13216,
+   "sku": "F0018",
+   "name": "Hành củ Hải Dương hộp 300g",
+   "qty": 9,
+   "unit_cost": 20930,
+   "received_qty": 9,
+   "rejected_qty": null,
+   "reject_reason": null,
+   "short_qty": null,
+   "actual_unit_cost": null,
+   "pack_size": 1,
+   "shelf_life_days": 2,
+   "min_remaining_days": 2,
+   "over_tolerance": 1,
+   "default_expiry": "2024-06-27"
+  }
+ ]
+}
