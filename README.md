@@ -132,13 +132,21 @@ Chest đứng đầu).
 
 Tác dụng phụ đã biết: kiosk trả lời được thông tin cửa hàng demo (tên, địa chỉ, SĐT) từ `retail_stores`.
 
+**Câu trả lời "hàng mới về" dùng ngôn ngữ người mua và giờ địa phương** (user duyệt ngày 19/11/2026, sửa trong
+`_localized_retail_information_observation` của `backend/api/main.py`). Kiosk phục vụ người mua, nên không dùng
+từ nội bộ "phiếu nhận hàng". Câu mới: "Hàng mới về gần đây tại {cửa hàng}: {sản phẩm} (về lúc dd/mm/yyyy HH:MM);
+…", hoặc "Trong 7 ngày qua, {cửa hàng} chưa ghi nhận hàng mới về" khi feed phủ đủ 7 ngày mà không có hàng. Mọi mốc
+thời gian chi nhánh (hàng về, ngày xác minh cửa hàng, hạn campaign) được đổi từ UTC sang múi giờ của cửa hàng
+(`retail_stores.timezone`, mặc định Asia/Ho_Chi_Minh; dùng UTC+7 cố định khi máy không có tz database, vd Windows
+thiếu gói `tzdata`).
+
 ## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
 
 - Câu "có món nào đang giảm giá không?" được bộ nhận diện ý định của Retail-AI chuyển sang gợi ý sản phẩm (khớp
   chữ "giảm" với tên sản phẩm), kể cả khi tắt overlay. "có khuyến mãi gì không?" hay "hôm nay có giảm giá gì
   không?" thì vào danh sách khuyến mãi.
-- Kiosk in giờ nhận hàng theo UTC (vd 22:06 giờ Việt Nam hiện thành 15:06). Bridge ghi `received_at` dạng
-  timestamptz đúng múi giờ; phần hiển thị là của Retail-AI.
+- Khi chưa có nguồn hàng mới về (feed RECEIVING thiếu hoặc cũ hơn 24 giờ), kiosk vẫn trả câu có sẵn "Mình chưa
+  có phiếu nhận hàng đã xác minh…" (`_localized_stock_arrival_unavailable`, ngoài phạm vi đã duyệt).
 
 ## Lệnh
 

@@ -1,10 +1,13 @@
 # Nối Ops Chest ↔ Retail-AI qua nền dữ liệu sản phẩm dùng chung (giai đoạn 1)
 
 > User duyệt ngày 19/11/2026. File này là bản chuẩn để triển khai.
-> So với bản duyệt có hai điều chỉnh:
+> So với bản duyệt có ba điều chỉnh:
 > 1. Đổi cổng của Retail-AI sang 8020/5190. Lý do nằm ở mục "Ghi chú triển khai" cuối file.
 > 2. Phần "hàng mới về" phải sửa 1 dòng ở `backend/services/retail_information.py` của Retail-AI (user duyệt khi
 >    triển khai, 19/11/2026). Chi tiết ở mục 6 và README của bridge.
+> 3. Câu trả lời "hàng mới về" của kiosk được sửa giờ và câu chữ trong `backend/api/main.py` của Retail-AI (user
+>    duyệt khi triển khai, 19/11/2026): giờ địa phương thay cho UTC, ngôn ngữ người mua thay cho "phiếu nhận hàng".
+>    Chi tiết ở mục 6 và README của bridge.
 
 ## Context
 
@@ -206,6 +209,12 @@ Test mới `tests/test_ops_overlay_repository.py`, fixture copy từ `bridge/con
 > `settings.catalog_repository != "postgres" and not settings.ops_feed_path`, kèm 1 test. Hệ quả: khi bật
 > `OPS_FEED_PATH`, Postgres của Retail-AI phải luôn chạy; nếu tắt, tra campaign trả TEMPORARY_FAILURE và câu hỏi
 > khuyến mãi nhận câu báo không khả dụng thay vì danh sách hàng giảm giá.
+>
+> Điều chỉnh thứ hai (user duyệt 19/11/2026): Retail-AI phục vụ người mua, Ops Chest phục vụ Store Manager. Câu trả
+> lời "hàng mới về" in giờ UTC (22:06 giờ Việt Nam hiện thành 15:06) và dùng từ nội bộ "phiếu nhận hàng". Sửa trong
+> `_localized_retail_information_observation` (`backend/api/main.py`): đổi mốc thời gian có múi giờ sang múi giờ
+> cửa hàng (mặc định Asia/Ho_Chi_Minh), câu mới "Hàng mới về gần đây tại …: … (về lúc dd/mm/yyyy HH:MM)" và "Trong 7
+> ngày qua, … chưa ghi nhận hàng mới về"; tiếng Anh, tiếng Trung tương ứng. Logic kiểm tra feed giữ nguyên.
 
 Chuẩn bị bằng lệnh có sẵn của Retail-AI: `docker compose up -d postgres` và `uv run python scripts/import_thanh_lam.py --apply`. Bảng `products` sau khi import là đích khoá ngoại cho `inventory_receipts`. Catalog của kiosk vẫn chạy chế độ snapshot.
 
