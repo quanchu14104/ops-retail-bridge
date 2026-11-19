@@ -152,6 +152,11 @@ thời gian chi nhánh (hàng về, ngày xác minh cửa hàng, hạn campaign)
 (`retail_stores.timezone`, mặc định Asia/Ho_Chi_Minh; dùng UTC+7 cố định khi máy không có tz database, vd Windows
 thiếu gói `tzdata`).
 
+Khi thiếu dữ liệu hàng mới về (feed RECEIVING không có, không ACTIVE hoặc cũ hơn 24 giờ), kiosk cũng nói bằng ngôn
+ngữ người mua (user duyệt ngày 19/11/2026, chỉ đổi chuỗi trong `_localized_stock_arrival_unavailable`): "Hiện mình
+chưa có thông tin hàng mới về của cửa hàng nên chưa thể cho bạn biết món nào vừa về. Bạn có thể hỏi nhân viên cửa
+hàng nhé." Câu cũ dùng từ "phiếu nhận hàng", "nhập kho".
+
 **Cấu hình demo của Retail-AI chuyển khỏi `.env`** (user duyệt ngày 19/11/2026): xem mục "Thứ tự khởi động". Plan
 ban đầu ghi các biến demo vào `side/Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
 tại chỗ. Giờ `uv run pytest -q` trong `side/Retail-AI-` xanh mà không cần ép biến nào.
@@ -165,8 +170,6 @@ tại chỗ. Giờ `uv run pytest -q` trong `side/Retail-AI-` xanh mà không c�
 - Câu "có món nào đang giảm giá không?" được bộ nhận diện ý định của Retail-AI chuyển sang gợi ý sản phẩm (khớp
   chữ "giảm" với tên sản phẩm), kể cả khi tắt overlay. "có khuyến mãi gì không?" hay "hôm nay có giảm giá gì
   không?" thì vào danh sách khuyến mãi.
-- Khi chưa có nguồn hàng mới về (feed RECEIVING thiếu hoặc cũ hơn 24 giờ), kiosk vẫn trả câu có sẵn "Mình chưa
-  có phiếu nhận hàng đã xác minh…" (`_localized_stock_arrival_unavailable`, ngoài phạm vi đã duyệt).
 
 ## Lệnh
 
