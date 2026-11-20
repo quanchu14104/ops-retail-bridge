@@ -81,8 +81,8 @@ foreach ($dir in @($Bridge, $OpsChest, $RetailAI, $Kiosk)) {
 $opsEnv = Read-EnvFile (Join-Path $OpsChest '.env')
 $retailEnv = Read-EnvFile (Join-Path $RetailAI '.env')
 $needKeys = @()
-if (-not $opsEnv['LLM_API_KEY']) { $needKeys += 'ops_chest\.env : LLM_BASE_URL, LLM_API_KEY, LLM_MODEL (tro ly chat cua Ops Chest)' }
-if (-not $retailEnv['GROQ_API_KEY']) { $needKeys += 'Retail-AI-\.env : GROQ_API_KEY (tro chuyen tu do tren kiosk)' }
+if (-not $opsEnv['LLM_API_KEY'] -or $opsEnv['LLM_API_KEY'].StartsWith('replace')) { $needKeys += 'ops_chest\.env : LLM_BASE_URL, LLM_API_KEY, LLM_MODEL (tro ly chat cua Ops Chest)' }
+if (-not $retailEnv['GROQ_API_KEY'] -or $retailEnv['GROQ_API_KEY'].StartsWith('replace')) { $needKeys += 'Retail-AI-\.env : GROQ_API_KEY (tro chuyen tu do tren kiosk)' }
 
 # ---- 5. Bridge: crosswalk va overrides ----
 Write-Step 'Bridge: kiem tra crosswalk va sinh overrides'
