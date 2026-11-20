@@ -61,7 +61,7 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 
 | Dịch vụ | Cổng |
 |---|---|
-| Ops Chest API (worktree `feat/catalog-overrides`, SQLite) | 8000 |
+| Ops Chest API (`doanbackup`, nhánh `main`, SQLite) | 8000 |
 | Ops Chest UI | 5173 |
 | Mailpit | 8025 / 1025 |
 | Postgres của Retail-AI (Docker) | 5432 |
@@ -99,7 +99,7 @@ uv run python scripts/import_winmart.py --apply
 docker compose -f Q:/WORKSPACE/doanbackup/docker-compose.yml up -d mailpit
 
 # 4. Seed Ops Chest kèm overrides (bash: set -a; . Q:/WORKSPACE/bridge/demo/ops-chest.env; set +a)
-cd Q:\WORKSPACE\worktrees\ops-chest-catalog-overrides\backend
+cd Q:\WORKSPACE\doanbackup\backend
 uv run python -m app.sim.seed --reset
 
 # 5. Chạy Ops Chest API/UI, Retail-AI API, kiosk theo bảng cổng (launch.json)

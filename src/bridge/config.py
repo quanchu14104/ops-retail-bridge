@@ -64,7 +64,7 @@ class Config:
             retail_database_url=get("RETAIL_DATABASE_URL", "postgresql://retail:retail@localhost:5432/retail"),
             winmart_catalog_path=_path(get("WINMART_CATALOG_PATH",
                                            "Q:/WORKSPACE/side/Retail-AI-/data/winmart_products.json")),
-            frn_data_path=_path(get("FRN_DATA_PATH", "Q:/WORKSPACE/worktrees/ops-chest-catalog-overrides/backend/"
+            frn_data_path=_path(get("FRN_DATA_PATH", "Q:/WORKSPACE/doanbackup/backend/"
                                                      "app/sim/data/frn/stores_daily.csv.gz")),
             frn_store_id=int(get("FRN_STORE_ID", "18")),
             store_code=get("STORE_CODE", "WMP-DEMO-01"),
