@@ -64,7 +64,8 @@ chặn ở thời điểm hiện tại. Tua nhanh Ops Chest 1 ngày thì `date_s
 |---|---|
 | `stock` | `sellable_qty` (trừ thêm lô đã quá HSD nếu feed cũ) |
 | `expiry_at` | `earliest_expiry` (bỏ lô đã quá HSD nếu feed cũ) |
-| `price_vnd`, `list_price_vnd` | `unit_price_vnd` (giá thường, vì chỉ một phần hàng được giảm) |
+| `price_vnd` | `min(unit_price_vnd, sale_price_vnd)`: giá người mua trả lúc này, cùng quy ước với hàng WinMart thường |
+| `list_price_vnd` | `unit_price_vnd` (giá thường) |
 | `sale_price_vnd` | `sale_price_vnd` |
 | `promotion` | `promotion_text` |
 | `price_quality_status` | `SALE` nếu `sale_price_vnd < unit_price_vnd`, ngược lại `NORMAL` |
