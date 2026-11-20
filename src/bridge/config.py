@@ -64,7 +64,7 @@ class Config:
             retail_database_url=get("RETAIL_DATABASE_URL", "postgresql://retail:retail@localhost:5432/retail"),
             thanh_lam_catalog_path=_path(get("THANH_LAM_CATALOG_PATH",
                                            "Q:/WORKSPACE/side/Retail-AI-/data/thanh_lam_products.json")),
-            frn_data_path=_path(get("FRN_DATA_PATH", "Q:/WORKSPACE/worktrees/ops-chest-catalog-overrides/backend/"
+            frn_data_path=_path(get("FRN_DATA_PATH", "Q:/WORKSPACE/doanbackup/backend/"
                                                      "app/sim/data/frn/stores_daily.csv.gz")),
             frn_store_id=int(get("FRN_STORE_ID", "18")),
             store_code=get("STORE_CODE", "TLM-DEMO-01"),
