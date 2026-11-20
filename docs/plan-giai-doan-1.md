@@ -16,8 +16,8 @@
 ## Context
 
 Hai sub-project do hai người làm song song, không liên quan gì nhau:
-- **Ops Chest** (`doanbackup/`, repo `quanchu14104/ops_chest`): agent quản lý kho theo lô và HSD.
-- **Retail-AI** (`side/Retail-AI-/`, repo `chinhdz102/Retail-AI-`): kiosk/chatbot chăm sóc khách hàng.
+- **Ops Chest** (`ops_chest/`, repo `quanchu14104/ops_chest`): agent quản lý kho theo lô và HSD.
+- **Retail-AI** (`Retail-AI-/`, repo `chinhdz102/Retail-AI-`): kiosk/chatbot chăm sóc khách hàng.
 
 Mục tiêu là nối hai bên bằng một nền dữ liệu hàng hoá dùng chung. Mỗi bên vẫn chỉ làm đúng việc của mình, code nối nằm ngoài cả hai, và sửa code mỗi bên ở mức tối thiểu.
 
@@ -29,7 +29,7 @@ Bốn sự thật định hình thiết kế:
 2. **Dữ liệu vận hành chỉ chảy một chiều, Ops Chest → kiosk.** Gồm tồn, HSD, giảm giá cận date và hàng mới về. Mỗi trường chỉ có một chủ.
 3. **Hai hệ thống ở hai năm khác nhau.**
    - Đồng hồ giả lập của Ops Chest là 26/06/2024. Retail-AI dùng ngày thật.
-   - Nếu chuyển HSD nguyên gốc, `sellable_stock` (`side/Retail-AI-/backend/products/catalog.py:64`) sẽ coi mọi lô là hết hạn.
+   - Nếu chuyển HSD nguyên gốc, `sellable_stock` (`Retail-AI-/backend/products/catalog.py:64`) sẽ coi mọi lô là hết hạn.
    - Bridge phải **dời trục thời gian**.
 4. **Không thể không sửa code Retail-AI.**
    - Cả hai repository đều gán cứng `expiry_at=None` (`snapshot_repository.py:45`, `postgres_repository.py:376`).
@@ -46,7 +46,7 @@ Bốn sự thật định hình thiết kế:
 
 ```
 WinMart catalog (Retail-AI/data/winmart_products.json, chỉ đọc) ─┐
-FRN store 18 (doanbackup/.../frn/stores_daily.csv.gz, chỉ đọc) ──┴─▶ bridge crosswalk ─▶ bridge/data/crosswalk.csv
+FRN store 18 (ops_chest/.../frn/stores_daily.csv.gz, chỉ đọc) ──┴─▶ bridge crosswalk ─▶ bridge/data/crosswalk.csv
                                                                         │
               bridge overrides ─▶ out/ops_catalog_overrides.json ─▶ [Ops Chest seed + seam]
                                                                         │
@@ -262,7 +262,7 @@ Cấu hình Retail-AI:
 - ~~`.env`~~ biến môi trường của tiến trình API: `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`, `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190`.
 - ~~`apps/kiosk-airi/.env`~~ biến môi trường của tiến trình kiosk: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
 
-> Điều chỉnh khi triển khai (user duyệt 19/11/2026): bộ test của Retail-AI đọc `side/Retail-AI-/.env`, nên để các
+> Điều chỉnh khi triển khai (user duyệt 19/11/2026): bộ test của Retail-AI đọc `Retail-AI-/.env`, nên để các
 > biến demo trong đó làm hỏng test chạy tại chỗ. Các biến demo chuyển sang khối `env` trong
 > `Q:/WORKSPACE/.claude/launch.json` và file `bridge/demo/retail-ai.env`; hai file `.env` của Retail-AI giữ giá trị
 > mặc định như `.env.example`. Vite đọc `VITE_*` từ biến môi trường của tiến trình nên kiosk không mất tính năng.
@@ -290,7 +290,7 @@ README của bridge ghi rõ:
 Unit test:
 - Bridge: `cd bridge && uv run pytest -q && uv run ruff check .`
 - Ops Chest: `cd <worktree>/backend && uv run pytest -q`. Toàn bộ test cũ phải xanh khi seam tắt, cộng thêm test mới.
-- Retail-AI: `cd side/Retail-AI- && uv run pytest -q && uv run ruff check .`
+- Retail-AI: `cd Retail-AI- && uv run pytest -q && uv run ruff check .`
 
 **End-to-end** (chạy đủ các dịch vụ theo bảng cổng):
 1. Seed Ops Chest kèm overrides. `GET /api/products` phải trả tên và giá WinMart, nguồn hàng là "Kho tổng WinMart – …".
@@ -314,22 +314,22 @@ Unit test:
   - Khi cần Postgres mà daemon đang tắt: nhờ user bật Docker Desktop, không tự cài gì.
 
 **File `.env`**
-- `doanbackup/.env` đã có và chứa key LLM. Chỉ được thêm dòng, không in nội dung, không copy key sang project khác.
-- `side/Retail-AI-/.env` và `side/Retail-AI-/apps/kiosk-airi/.env` chưa có. Tạo từ `.env.example`, giữ giá trị
+- `ops_chest/.env` đã có và chứa key LLM. Chỉ được thêm dòng, không in nội dung, không copy key sang project khác.
+- `Retail-AI-/.env` và `Retail-AI-/apps/kiosk-airi/.env` chưa có. Tạo từ `.env.example`, giữ giá trị
   mặc định; biến demo đặt ở biến môi trường của tiến trình (xem mục 7).
 - Thiếu `GROQ_API_KEY` thì hỏi user. Nếu không có key, ưu tiên kiểm thử tất định (`/products/{id}/snapshot`, `/products/search`, test repository) và ghi rõ kịch bản nào chưa chạy được.
 
 **Ops Chest (worktree)**
 - Repo đang ở `main` với 40 file WIP. Không đụng tới chúng.
-- Tạo worktree: `git -C Q:/WORKSPACE/doanbackup worktree add Q:/WORKSPACE/worktrees/ops-chest-catalog-overrides -b feat/catalog-overrides`.
+- Tạo worktree: `git -C Q:/WORKSPACE/ops_chest worktree add Q:/WORKSPACE/worktrees/ops-chest-catalog-overrides -b feat/catalog-overrides`.
 - Dữ liệu FRN (`backend/app/sim/data/frn/*`) và model LightGBM (`backend/app/ml/artifacts/*`) đều được git track, nên worktree đủ dữ liệu. `.gitattributes` giữ LF cho file model.
 - Worktree không có `.env`. Truyền biến môi trường qua lệnh, hoặc dùng một file env riêng nằm ngoài repo.
 
 **Retail-AI:** repo sạch, đang ở `main`. Tạo nhánh `feat/ops-feed-overlay` ngay tại chỗ.
 
-**Cổng:** `doanbackup/.claude/launch.json` đã dùng 8010/5180 cho cấu hình scratch của Ops Chest. Vì vậy Retail-AI dùng 8020 (API) và 5190 (kiosk).
+**Cổng:** `ops_chest/.claude/launch.json` đã dùng 8010/5180 cho cấu hình scratch của Ops Chest. Vì vậy Retail-AI dùng 8020 (API) và 5190 (kiosk).
 
-**Tài khoản demo** (seed tạo; đã ghi công khai trong `doanbackup/.env.example`):
+**Tài khoản demo** (seed tạo; đã ghi công khai trong `ops_chest/.env.example`):
 - Bridge dùng `nhanvien` (chỉ xem).
 - Kiểm thử dùng `quanly` để duyệt đề xuất giảm giá.
 - Tạo đề xuất bằng `POST /api/proposals/generate`, hoặc bằng chức năng tua nhanh (bản tin sáng tự tạo đề xuất). Cách này không cần LLM.
