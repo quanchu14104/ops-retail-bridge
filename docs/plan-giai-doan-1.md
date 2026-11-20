@@ -1,7 +1,7 @@
 # Nối Ops Chest ↔ Retail-AI qua nền dữ liệu sản phẩm dùng chung (giai đoạn 1)
 
 > User duyệt ngày 19/11/2026. File này là bản chuẩn để triển khai.
-> So với bản duyệt có ba điều chỉnh:
+> So với bản duyệt có bảy điều chỉnh:
 > 1. Đổi cổng của Retail-AI sang 8020/5190. Lý do nằm ở mục "Ghi chú triển khai" cuối file.
 > 2. Phần "hàng mới về" phải sửa 1 dòng ở `backend/services/retail_information.py` của Retail-AI (user duyệt khi
 >    triển khai, 19/11/2026). Chi tiết ở mục 6 và README của bridge.
@@ -12,6 +12,13 @@
 >    19/11/2026), vì `.env` làm hỏng test Retail-AI chạy tại chỗ. Chi tiết ở mục 7.
 > 5. Câu kiosk nói khi thiếu dữ liệu hàng mới về được đổi sang ngôn ngữ người mua (user duyệt khi triển khai,
 >    19/11/2026; chỉ chuỗi trong `_localized_stock_arrival_unavailable` của `backend/api/main.py`). Chi tiết ở mục 6.
+> 6. `price_vnd` của mặt hàng có feed là **giá người mua trả lúc này** (`min(unit_price_vnd, sale_price_vnd)`), không
+>    còn giữ giá thường (user duyệt ngày 20/11/2026). Lý do: catalog WinMart đã quy ước `price_vnd` là giá đang áp
+>    dụng, và mọi câu trả lời giá cùng thẻ sản phẩm của kiosk đọc trường này, nên kiosk từng báo giá gốc cho món đang
+>    giảm cận date (test vai người mua). Giá thường nằm ở `list_price_vnd`. Chi tiết ở mục 5.
+> 7. Hai sửa đổi Retail-AI sau khi test vai người mua (user duyệt ngày 20/11/2026): "hàng mới về" xếp món còn bán được
+>    lên trước và ghi "đã bán hết" cho món hết hàng (`backend/services/retail_tools.py`); câu "có món nào / mặt hàng
+>    nào đang giảm giá?" vào danh sách khuyến mãi thay vì bị hiểu là tên sản phẩm (`backend/api/main.py`).
 
 ## Context
 
@@ -190,7 +197,9 @@ File mới `backend/products/ops_overlay_repository.py`:
   - `expiry_at` ← `earliest_expiry`
   - `promotion`, `sale_price_vnd`, `list_price_vnd`, `price_quality_status` ← các trường giá trong feed
   - `data_timestamp` ← `published_at`
-- **`price_vnd` giữ giá thường**, vì chỉ một phần số hàng đang được giảm.
+- ~~**`price_vnd` giữ giá thường**, vì chỉ một phần số hàng đang được giảm.~~ Điều chỉnh 20/11/2026 (điều chỉnh 6 ở
+  đầu file): `price_vnd` = `min(unit_price_vnd, sale_price_vnd)`, cùng quy ước với hàng WinMart thường;
+  `list_price_vnd` giữ giá thường, `promotion` nói rõ bao nhiêu sản phẩm được giảm.
 - Các phương thức:
   - `search` gọi `search_products(products=…)`, với alias danh mục giống repository gốc.
   - `get_product_snapshot` trả mặt hàng đã ghép.
