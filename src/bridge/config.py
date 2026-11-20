@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# Ba repo nằm cạnh nhau trong cùng một thư mục cha (WORKSPACE): bridge/, ops_chest/, Retail-AI-/
+WORKSPACE = ROOT.parent
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -26,8 +28,9 @@ def load_env_file(path: Path) -> dict[str, str]:
 
 
 def _path(value: str) -> Path:
+    """Đường dẫn tương đối tính từ thư mục bridge/ (vd ../ops_chest/... là repo Ops Chest nằm cạnh)."""
     p = Path(value)
-    return p if p.is_absolute() else ROOT / p
+    return p if p.is_absolute() else (ROOT / p).resolve()
 
 
 @dataclass(frozen=True)
@@ -62,10 +65,8 @@ class Config:
             ops_chest_user=get("OPS_CHEST_USER", "nhanvien"),
             ops_chest_password=get("OPS_CHEST_PASSWORD", "nhanvien123"),
             retail_database_url=get("RETAIL_DATABASE_URL", "postgresql://retail:retail@localhost:5432/retail"),
-            winmart_catalog_path=_path(get("WINMART_CATALOG_PATH",
-                                           "Q:/WORKSPACE/Retail-AI-/data/winmart_products.json")),
-            frn_data_path=_path(get("FRN_DATA_PATH", "Q:/WORKSPACE/ops_chest/backend/"
-                                                     "app/sim/data/frn/stores_daily.csv.gz")),
+            winmart_catalog_path=_path(get("WINMART_CATALOG_PATH", "../Retail-AI-/data/winmart_products.json")),
+            frn_data_path=_path(get("FRN_DATA_PATH", "../ops_chest/backend/app/sim/data/frn/stores_daily.csv.gz")),
             frn_store_id=int(get("FRN_STORE_ID", "18")),
             store_code=get("STORE_CODE", "WMP-DEMO-01"),
             kiosk_id=get("KIOSK_ID", "kiosk-01"),
