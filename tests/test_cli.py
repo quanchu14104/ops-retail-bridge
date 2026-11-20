@@ -112,3 +112,19 @@ def test_sync_loop_survives_an_unexpected_error(monkeypatch, env, capsys):
     assert cli.main(["sync", "--every", "1", "--no-receipts"]) == 0
     assert calls == [False, False]  # lần lỗi đầu không làm chết vòng lặp
     assert "sync thất bại (PermissionError" in capsys.readouterr().err
+
+
+def test_sync_loop_keeps_a_fixed_cadence(monkeypatch, env):
+    clock = iter([0.0, 30.0, 120.0, 125.0, 240.0])  # lần 1 chạy mất 30 giây, lần 2 mất 5 giây
+    slept, runs = [], []
+
+    def fake_sync(cfg, receipts=True):
+        runs.append(1)
+        if len(runs) == 3:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli, "sync_once", fake_sync)
+    monkeypatch.setattr(cli.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(cli.time, "sleep", slept.append)
+    assert cli.main(["sync", "--every", "120", "--no-receipts"]) == 0
+    assert slept == [90.0, 115.0]  # 120 trừ thời gian chạy, không phải 120 cố định

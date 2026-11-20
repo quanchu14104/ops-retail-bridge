@@ -121,12 +121,14 @@ def cmd_sync(cfg: Config, args) -> int:
     print(f"Sync mỗi {args.every} giây, Ctrl+C để dừng.")
     try:
         while True:
+            started = time.monotonic()
             try:
                 sync_once(cfg, receipts=not args.no_receipts)
             except Exception as e:  # noqa: BLE001 - một lần sync lỗi không được làm dừng vòng lặp (feed cũ giữ nguyên)
                 print(f"LỖI: sync thất bại ({type(e).__name__}: {e}). Giữ nguyên feed cũ, thử lại sau "
                       f"{args.every} giây.", file=sys.stderr)
-            time.sleep(args.every)
+            # Nhịp cố định: lần sau bắt đầu `every` giây sau lần trước, không cộng dồn thời gian chạy.
+            time.sleep(max(0.0, args.every - (time.monotonic() - started)))
     except KeyboardInterrupt:
         return 0
 
@@ -134,7 +136,8 @@ def cmd_sync(cfg: Config, args) -> int:
 def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
-            stream.reconfigure(encoding="utf-8", errors="replace")
+            # line_buffering: log của `sync --every` chạy nền đọc được ngay, không bị đệm tới khi dừng.
+            stream.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     ap = argparse.ArgumentParser(prog="bridge", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
     cw = sub.add_parser("crosswalk", help="Ánh xạ FRN → Thanh Lam Mart (giả định demo)")
