@@ -1,9 +1,11 @@
 import copy
 import json
+import os
 from pathlib import Path
 
 import pytest
 
+from bridge import feed as feed_module
 from bridge.feed import (
     ITEM_FIELDS,
     LOT_FIELDS,
@@ -140,3 +142,51 @@ def test_atomic_write_keeps_old_feed_on_failure(tmp_path, ops, crosswalk_rows, t
         write_atomic({"bad": object()}, path)
     assert path.read_bytes() == before
     assert [p.name for p in Path(path.parent).iterdir()] == ["ops_feed.json"]
+
+
+def test_inactive_product_exports_no_lots_or_promotion(ops, crosswalk_rows, ts):
+    product = next(p for p in ops["products"] if p["sku"] == "F0829")
+    product["status"] = "DELISTED"
+    for lot in ops["expiring"]["lots"]:
+        if lot["sku"] == "F0829":
+            lot["markdown_pct"] = 0.3
+    item = _items(_feed(ops, crosswalk_rows, ts)[0])["F0829"]
+    assert (item["status"], item["sellable_qty"], item["earliest_expiry"], item["lots"]) == ("INACTIVE", 0, None, [])
+    assert (item["promotion_text"], item["sale_price_vnd"]) == (None, item["unit_price_vnd"])
+
+
+@pytest.mark.parametrize(("unit", "md", "want"), [
+    (16900, 0.5, 8500),   # 8.450 → lên, không phải 8.400 như round() của Python
+    (15900, 0.5, 8000),   # 7.950 → lên
+    (299900, 0.4, 179900),  # 179.940 → xuống
+    (19000, 0.3, 13300),  # đúng 13.300
+])
+def test_sale_price_rounds_half_up_to_100_dong(unit, md, want):
+    assert sale_price(unit, md) == want
+
+
+def test_atomic_write_retries_while_reader_holds_the_file(tmp_path, monkeypatch):
+    path = tmp_path / "ops_feed.json"
+    write_atomic({"n": 1}, path)
+    real_replace, calls = os.replace, []
+
+    def flaky_replace(src, dst):
+        calls.append(src)
+        if len(calls) < 3:
+            raise PermissionError(5, "Access is denied")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(feed_module.os, "replace", flaky_replace)
+    monkeypatch.setattr(feed_module.time, "sleep", lambda _s: None)
+    write_atomic({"n": 2}, path)
+    assert len(calls) == 3
+    assert json.loads(path.read_text(encoding="utf-8")) == {"n": 2}
+
+    def always_locked(src, dst):
+        raise PermissionError(5, "Access is denied")
+
+    monkeypatch.setattr(feed_module.os, "replace", always_locked)
+    with pytest.raises(PermissionError):
+        write_atomic({"n": 3}, path)
+    assert json.loads(path.read_text(encoding="utf-8")) == {"n": 2}  # feed cũ còn nguyên
+    assert [p.name for p in tmp_path.iterdir()] == ["ops_feed.json"]  # không để lại file tạm

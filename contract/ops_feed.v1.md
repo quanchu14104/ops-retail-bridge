@@ -11,7 +11,8 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 - **Danh sách trường là tuyệt đối.** Bên ghi dựng từng phần tử từ đúng các khoá dưới đây, theo đúng thứ tự, và
   kiểm tra lại trước khi ghi. Không bao giờ xuất: `unit_cost`, nguồn hàng (`supplier`), `value_at_risk`,
   `expected_*` (dự báo), `options` (phương án xử lý), thỏa thuận với nguồn hàng.
-- **Ghi atomic.** Ghi file tạm cùng thư mục rồi `os.replace`. Bên đọc không bao giờ thấy file dở dang.
+- **Ghi atomic.** Ghi file tạm cùng thư mục rồi `os.replace`. Bên đọc không bao giờ thấy file dở dang. Trên Windows,
+  `os.replace` thất bại khi bên đọc đang mở file, nên bên ghi thử lại vài lần; vẫn thất bại thì giữ feed cũ.
 - **Ops Chest không phản hồi** thì bridge không ghi đè feed cũ và trả exit code khác 0. Bên đọc vẫn áp feed cũ;
   `published_at` để lộ tuổi dữ liệu.
 - Bên đọc gặp `contract`/`version` lạ hoặc JSON hỏng thì giữ feed hợp lệ gần nhất và ghi log.
@@ -34,11 +35,11 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 |---|---|---|
 | `product_id` | chuỗi | Mã WinMart (`WIN_…`) theo crosswalk |
 | `ops_sku` | chuỗi | SKU Ops Chest (`F0412`) |
-| `status` | `IN_STOCK` \| `OUT_OF_STOCK` \| `INACTIVE` | `INACTIVE` khi mặt hàng không còn ACTIVE trong Ops Chest |
+| `status` | `IN_STOCK` \| `OUT_OF_STOCK` \| `INACTIVE` | `INACTIVE` khi mặt hàng không còn ACTIVE trong Ops Chest. Khi đó `sellable_qty=0`, `lots=[]`, `earliest_expiry=null`, `promotion_text=null`, `sale_price_vnd=unit_price_vnd` |
 | `sellable_qty` | số nguyên ≥ 0 | Tổng lô có `days_left ≥ 0`. Nếu `coverage_complete=false`: `on_hand` − lô đã quá ngày bán cuối |
 | `earliest_expiry` | `YYYY-MM-DD` \| null | HSD nhỏ nhất trong các lô bán được, đã dời ngày |
 | `unit_price_vnd` | số nguyên | Giá bán thường trong Ops Chest (= giá WinMart nạp lúc seed) |
-| `sale_price_vnd` | số nguyên | Giá thấp nhất đang áp dụng: `unit_price × (1 − markdown)`, làm tròn 100 đồng |
+| `sale_price_vnd` | số nguyên | Giá thấp nhất đang áp dụng: `unit_price × (1 − markdown)`, làm tròn 100 đồng (từ 50 đồng trở lên làm tròn lên) |
 | `promotion_text` | chuỗi \| null | Vd `"Giảm 30% cho 5 sản phẩm HSD 20/11"`; nhiều mức nối bằng `"; "`, mức sâu trước |
 | `coverage_complete` | bool | `false` khi tổng lô Ops Chest liệt kê (kể cả lô quá hạn) khác `on_hand` |
 | `lots` | mảng | Các lô bán được, sắp theo HSD |

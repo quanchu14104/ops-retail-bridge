@@ -9,8 +9,10 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from collections import defaultdict
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from bridge.timeshift import TimeShift
@@ -41,8 +43,10 @@ def effective_markdown(lot: dict, ts: TimeShift) -> float:
 
 
 def sale_price(unit_price: int, markdown: float) -> int:
-    """Giá sau giảm, làm tròn đến 100 đồng như tem giá bán lẻ."""
-    return int(round(unit_price * (1 - markdown) / 100.0)) * 100
+    """Giá sau giảm, làm tròn đến 100 đồng như tem giá bán lẻ: 50 đồng trở lên làm tròn lên.
+    Dùng Decimal vì `round()` làm tròn .5 về số chẵn (8.450 → 8.400 nhưng 7.950 → 8.000)."""
+    hundreds = Decimal(unit_price) * (1 - Decimal(str(markdown))) / 100
+    return int(hundreds.quantize(Decimal(1), rounding=ROUND_HALF_UP)) * 100
 
 
 def _pct(md: float) -> str:
@@ -67,14 +71,15 @@ def build_item(row: dict, product: dict, lots: list[dict], ts: TimeShift) -> dic
     unit_price = int(product["unit_price"])
     total_listed = sum(int(lot["qty"]) for lot in lots)
     expired_qty = sum(int(lot["qty"]) for lot in lots if int(lot["days_left"]) < 0)
-    sellable = [lot for lot in lots if int(lot["days_left"]) >= 0 and int(lot["qty"]) > 0]
+    active = product.get("status", "ACTIVE") == "ACTIVE"
+    # Mặt hàng ngừng kinh doanh: không xuất lô, HSD hay khuyến mãi, để kiosk không quảng cáo hàng không bán.
+    sellable = [lot for lot in lots if active and int(lot["days_left"]) >= 0 and int(lot["qty"]) > 0]
     coverage_complete = total_listed == on_hand
     # Lô không có trong danh sách sắp hết hạn (nếu có) được coi là còn xa hạn, nên vẫn bán được.
     sellable_qty = max(0, on_hand - expired_qty) if not coverage_complete else sum(int(x["qty"]) for x in sellable)
     out_lots = sorted(({"qty": int(lot["qty"]), "expiry": ts.date(lot["expiry_date"]).isoformat(),
                         "markdown_pct": round(effective_markdown(lot, ts), 4)} for lot in sellable),
                       key=lambda x: (x["expiry"], -x["markdown_pct"]))
-    active = product.get("status", "ACTIVE") == "ACTIVE"
     status = "INACTIVE" if not active else ("IN_STOCK" if sellable_qty > 0 else "OUT_OF_STOCK")
     discounted = [x for x in out_lots if x["markdown_pct"] > 0]
     return {
@@ -159,7 +164,20 @@ def write_atomic(feed: dict, path: Path) -> None:
             f.write(data)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
+        _replace_with_retry(tmp, path)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def _replace_with_retry(src: str, dst: Path, attempts: int = 10, delay: float = 0.05) -> None:
+    """Trên Windows, os.replace báo PermissionError khi bên đọc (Retail-AI) đang mở file đích. Lần đọc chỉ kéo dài
+    vài mili giây, nên thử lại một lúc trước khi bỏ cuộc."""
+    for i in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(delay * (i + 1))
