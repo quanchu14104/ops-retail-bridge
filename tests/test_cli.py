@@ -96,3 +96,19 @@ def test_wrong_credentials_fail_without_writing(monkeypatch, env, stub_ops, caps
     assert cli.main(["sync", "--once", "--no-receipts"]) == cli.EXIT_OPS_UNAVAILABLE
     assert not env.exists()
     assert "HTTP 401" in capsys.readouterr().err
+
+
+def test_sync_loop_survives_an_unexpected_error(monkeypatch, env, capsys):
+    calls = []
+
+    def boom(cfg, receipts=True):
+        calls.append(receipts)
+        if len(calls) == 1:
+            raise PermissionError(5, "Access is denied")
+        raise KeyboardInterrupt  # dừng vòng lặp ở lần thứ hai
+
+    monkeypatch.setattr(cli, "sync_once", boom)
+    monkeypatch.setattr(cli.time, "sleep", lambda _s: None)
+    assert cli.main(["sync", "--every", "1", "--no-receipts"]) == 0
+    assert calls == [False, False]  # lần lỗi đầu không làm chết vòng lặp
+    assert "sync thất bại (PermissionError" in capsys.readouterr().err

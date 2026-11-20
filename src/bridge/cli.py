@@ -121,7 +121,11 @@ def cmd_sync(cfg: Config, args) -> int:
     print(f"Sync mỗi {args.every} giây, Ctrl+C để dừng.")
     try:
         while True:
-            sync_once(cfg, receipts=not args.no_receipts)
+            try:
+                sync_once(cfg, receipts=not args.no_receipts)
+            except Exception as e:  # noqa: BLE001 - một lần sync lỗi không được làm dừng vòng lặp (feed cũ giữ nguyên)
+                print(f"LỖI: sync thất bại ({type(e).__name__}: {e}). Giữ nguyên feed cũ, thử lại sau "
+                      f"{args.every} giây.", file=sys.stderr)
             time.sleep(args.every)
     except KeyboardInterrupt:
         return 0
