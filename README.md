@@ -31,7 +31,7 @@ hai repo kia theo vị trí tương đối, không cần ổ `Q:`.
 WORKSPACE\
 ├─ ops_chest\     github.com/quanchu14104/ops_chest          (công khai)
 ├─ Retail-AI-\    github.com/chinhdz102/Retail-AI-           (công khai)
-└─ bridge\        github.com/quanchu14104/ops-retail-bridge  (riêng tư: nhờ chủ repo mời làm collaborator)
+└─ bridge\        github.com/quanchu14104/ops-retail-bridge  (công khai)
 ```
 
 **Cần cài trước:** Git, [uv](https://docs.astral.sh/uv/) (`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`),
