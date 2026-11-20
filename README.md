@@ -2,9 +2,9 @@
 
 Cầu nối **một chiều** giữa hai sub-project độc lập:
 
-- **Ops Chest** (`doanbackup/`): agent quản lý kho theo lô và HSD. Dữ liệu thật FreshRetailNet-50K, điểm bán 18,
+- **Ops Chest** (`ops_chest/`): agent quản lý kho theo lô và HSD. Dữ liệu thật FreshRetailNet-50K, điểm bán 18,
   164 mặt hàng tươi.
-- **Retail-AI** (`side/Retail-AI-/`): kiosk/chatbot chăm sóc khách hàng, catalog 3.099 sản phẩm Thanh Lam Mart.
+- **Retail-AI** (`Retail-AI-/`): kiosk/chatbot chăm sóc khách hàng, catalog 3.099 sản phẩm Thanh Lam Mart.
 
 Mỗi bên vẫn chỉ làm việc của mình. Bridge không import code của bên nào: nó đọc REST của Ops Chest và ghi
 (a) file `out/ops_feed.json` theo [hợp đồng v1](contract/ops_feed.v1.md), (b) các bảng feed có sẵn trong
@@ -61,7 +61,7 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 
 | Dịch vụ | Cổng |
 |---|---|
-| Ops Chest API (`doanbackup`, nhánh `main`, SQLite) | 8000 |
+| Ops Chest API (`ops_chest`, nhánh `main`, SQLite) | 8000 |
 | Ops Chest UI | 5173 |
 | Mailpit | 8025 / 1025 |
 | Postgres của Retail-AI (Docker) | 5432 |
@@ -69,7 +69,7 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 | Kiosk | 5190 |
 
 **Không chạy docker compose đầy đủ của Ops Chest cùng lúc**: Postgres của nó cũng giành cổng 5432. Chỉ bật
-riêng Mailpit: `docker compose -f Q:/WORKSPACE/doanbackup/docker-compose.yml up -d mailpit`.
+riêng Mailpit: `docker compose -f Q:/WORKSPACE/ops_chest/docker-compose.yml up -d mailpit`.
 
 Cấu hình chạy cho cả 4 dịch vụ nằm ở `Q:/WORKSPACE/.claude/launch.json` (tên: `ops-chest-api`, `ops-chest-ui`,
 `retail-ai-api`, `retail-kiosk`). Biến môi trường cho demo nằm ngoài hai repo con, không chứa secret:
@@ -91,15 +91,15 @@ uv run bridge crosswalk check
 uv run bridge overrides                # → out/ops_catalog_overrides.json
 
 # 2. Postgres + catalog của Retail-AI (bảng products là đích khoá ngoại của inventory_receipts)
-cd Q:\WORKSPACE\side\Retail-AI-
+cd Q:\WORKSPACE\Retail-AI-
 docker compose up -d postgres
 uv run python scripts/import_thanh_lam.py --apply
 
 # 3. Mailpit (chỉ service này của Ops Chest)
-docker compose -f Q:/WORKSPACE/doanbackup/docker-compose.yml up -d mailpit
+docker compose -f Q:/WORKSPACE/ops_chest/docker-compose.yml up -d mailpit
 
 # 4. Seed Ops Chest kèm overrides (bash: set -a; . Q:/WORKSPACE/bridge/demo/ops-chest.env; set +a)
-cd Q:\WORKSPACE\doanbackup\backend
+cd Q:\WORKSPACE\ops_chest\backend
 uv run python -m app.sim.seed --reset
 
 # 5. Chạy Ops Chest API/UI, Retail-AI API, kiosk theo bảng cổng (launch.json)
@@ -111,10 +111,10 @@ uv run bridge sync --every 120         # hoặc --once
 ```
 
 **Cấu hình demo của Retail-AI đặt ở biến môi trường của tiến trình, KHÔNG ghi vào `.env` của Retail-AI.** Bộ test
-của Retail-AI đọc `side/Retail-AI-/.env`. Nếu để `CATALOG_REPOSITORY=snapshot` và `OPS_FEED_PATH` trong đó, chạy
+của Retail-AI đọc `Retail-AI-/.env`. Nếu để `CATALOG_REPOSITORY=snapshot` và `OPS_FEED_PATH` trong đó, chạy
 `uv run pytest -q` tại chỗ sẽ hỏng hàng chục test (nhánh trả lời cố định chạy trước LLM). Vì vậy:
 
-- `side/Retail-AI-/.env` và `apps/kiosk-airi/.env` giữ giá trị mặc định như `.env.example` (chỉ chứa secret của
+- `Retail-AI-/.env` và `apps/kiosk-airi/.env` giữ giá trị mặc định như `.env.example` (chỉ chứa secret của
   máy, nếu có).
 - Retail-AI API nhận `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=Q:/WORKSPACE/bridge/out/ops_feed.json`,
   `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190` từ khối `env` của `retail-ai-api` trong `launch.json`
@@ -158,8 +158,8 @@ chưa có thông tin hàng mới về của cửa hàng nên chưa thể cho b�
 hàng nhé." Câu cũ dùng từ "phiếu nhận hàng", "nhập kho".
 
 **Cấu hình demo của Retail-AI chuyển khỏi `.env`** (user duyệt ngày 19/11/2026): xem mục "Thứ tự khởi động". Plan
-ban đầu ghi các biến demo vào `side/Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
-tại chỗ. Giờ `uv run pytest -q` trong `side/Retail-AI-` xanh mà không cần ép biến nào.
+ban đầu ghi các biến demo vào `Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
+tại chỗ. Giờ `uv run pytest -q` trong `Retail-AI-` xanh mà không cần ép biến nào.
 
 ## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
 
