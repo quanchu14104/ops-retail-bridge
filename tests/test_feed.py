@@ -32,7 +32,7 @@ def test_only_allowed_fields_leave_ops_chest(ops, crosswalk_rows, ts):
     assert all(k in raw for k in ("unit_cost", "supplier", "value_at_risk", "expected_waste", "options"))
     feed, warnings = _feed(ops, crosswalk_rows, ts)
     text = json.dumps(feed, ensure_ascii=False)
-    for forbidden in ("unit_cost", "supplier", "value_at_risk", "expected_", "options", "Kho tổng"):
+    for forbidden in ("unit_cost", "supplier", "value_at_risk", "expected_", "options", "Nhà cung cấp Thanh Lam Mart"):
         assert forbidden not in text
     assert len(feed["items"]) == 5  # fixture có 5 SKU; 159 SKU còn lại báo cảnh báo
     assert len(warnings) == 159
@@ -62,7 +62,7 @@ def test_header_and_date_shift(ops, crosswalk_rows, ts):
     assert feed["published_at"] == "2026-11-19T09:00:00+07:00"
     assert feed["ops_business_date"] == "2024-06-26"
     assert feed["date_shift_days"] == 876
-    assert feed["store_name"] == "WinMart+ Demo (giả định)"
+    assert feed["store_name"] == "Thanh Lam Mart"
     item = _items(feed)["F0599"]  # lô 13 cái, HSD 26/06/2024 (ngày bán cuối)
     assert item["product_id"] == "WIN_10281592"
     assert item["earliest_expiry"] == "2026-11-19"

@@ -1,6 +1,6 @@
 {
  "today": "2024-06-26",
- "store_name": "WinMart+ Demo (giả định)",
+ "store_name": "Thanh Lam Mart",
  "llm_model": "gpt-4o-mini",
  "llm_base_url": "https://api.openai.com/v1",
  "llm_model_fallback": null,

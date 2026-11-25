@@ -9,10 +9,10 @@
       "env": {
         "DATABASE_URL": "sqlite:///ops_chest.db",
         "CATALOG_OVERRIDES_PATH": "../../bridge/out/ops_catalog_overrides.json",
-        "STORE_NAME": "WinMart+ Demo (giả định)",
+        "STORE_NAME": "Thanh Lam Mart",
         "STORE_ADDRESS": "12 Phố Demo, Q. Hoàn Kiếm, Hà Nội (giả định)",
         "STORE_PHONE": "024 0000 0000",
-        "SMTP_FROM": "cuahang-demo@winmart-demo.test",
+        "SMTP_FROM": "cuahang-demo@thanhlammart-demo.test",
         "SMTP_HOST": "localhost",
         "SMTP_PORT": "1025",
         "ENABLE_SCHEDULER": "false",

@@ -89,12 +89,12 @@ Write-Step 'Bridge: kiem tra crosswalk va sinh overrides'
 Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
 Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
 
-# ---- 6. Seed DB demo cua Ops Chest (ten/gia WinMart) ----
+# ---- 6. Seed DB demo cua Ops Chest (ten/gia Thanh Lam Mart) ----
 $db = Join-Path $OpsChest 'backend\ops_chest.db'
 if ((Test-Path $db) -and -not $ResetDemo) {
     Write-Step 'DB demo Ops Chest da co, giu nguyen (them -ResetDemo de seed lai)'
 } else {
-    Write-Step 'Seed DB demo Ops Chest kem ten/gia WinMart'
+    Write-Step 'Seed DB demo Ops Chest kem ten/gia Thanh Lam Mart'
     $demo = Read-EnvFile (Join-Path $Bridge 'demo\ops-chest.env')
     foreach ($k in $demo.Keys) { Set-Item "env:$k" $demo[$k] }
     try {
@@ -106,9 +106,9 @@ if ((Test-Path $db) -and -not $ResetDemo) {
     }
 }
 
-# ---- 7. Docker: Postgres cua Retail-AI, catalog WinMart, Mailpit ----
+# ---- 7. Docker: Postgres cua Retail-AI, catalog Thanh Lam Mart, Mailpit ----
 if ($hasDocker) {
-    Write-Step 'Postgres cua Retail-AI va catalog WinMart'
+    Write-Step 'Postgres cua Retail-AI va catalog Thanh Lam Mart'
     Invoke-In $RetailAI 'docker' @('compose', 'up', '-d', 'postgres')
     $ready = $false
     for ($i = 0; $i -lt 30 -and -not $ready; $i++) {
