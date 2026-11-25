@@ -15,12 +15,12 @@ from pathlib import Path
 FORMAT = "ops-catalog-overrides"
 VERSION = 1
 SUPPLIER_EMAIL = "dathang@khotong-demo.test"
-DISCLAIMER = ("Giả định demo: tên/giá Thanh Lam Mart gán cho mặt hàng FRN qua crosswalk tự đặt; nguồn hàng là kho tổng "
-              "giả định, email chỉ rơi vào Mailpit (.test).")
+DISCLAIMER = ("Giả định demo: tên/giá Thanh Lam Mart gán cho mặt hàng FRN qua crosswalk tự đặt; nguồn hàng là nhà "
+              "cung cấp giả định, email chỉ rơi vào Mailpit (.test).")
 
 
 def supplier_names(rows: list[dict]) -> dict[str, str]:
-    """NCC{n} (theo thứ tự nhóm FRN tăng dần) → tên kho tổng theo ngành hàng chiếm đa số của nhóm."""
+    """NCC{n} (theo thứ tự nhóm FRN tăng dần) → tên nhà cung cấp theo ngành hàng chiếm đa số của nhóm."""
     groups = sorted({r["frn_group"] for r in rows})
     size = Counter(r["frn_group"] for r in rows)
     dept = {g: Counter(r["thanh_lam_category"].split(" > ")[0] for r in rows if r["frn_group"] == g)

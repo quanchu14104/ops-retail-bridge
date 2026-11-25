@@ -62,7 +62,7 @@ def cmd_overrides(cfg: Config, args) -> int:
     doc = overrides.build(rows, crosswalk.file_sha256(cfg.thanh_lam_catalog_path),
                           crosswalk.file_sha256(cfg.crosswalk_path))
     overrides.write(doc, cfg.overrides_path)
-    print(f"Đã ghi {cfg.overrides_path}: {len(doc['products'])} mặt hàng, {len(doc['suppliers'])} kho tổng")
+    print(f"Đã ghi {cfg.overrides_path}: {len(doc['products'])} mặt hàng, {len(doc['suppliers'])} nhà cung cấp")
     for code, s in doc["suppliers"].items():
         print(f"  {code}: {s['name']} <{s['email']}>")
     return 0

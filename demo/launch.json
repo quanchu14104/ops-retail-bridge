@@ -12,7 +12,7 @@
         "STORE_NAME": "Thanh Lam Mart",
         "STORE_ADDRESS": "12 Phố Demo, Q. Hoàn Kiếm, Hà Nội (giả định)",
         "STORE_PHONE": "024 0000 0000",
-        "SMTP_FROM": "cuahang-demo@Thanh Lam Mart-demo.test",
+        "SMTP_FROM": "cuahang-demo@thanhlammart-demo.test",
         "SMTP_HOST": "localhost",
         "SMTP_PORT": "1025",
         "ENABLE_SCHEDULER": "false",

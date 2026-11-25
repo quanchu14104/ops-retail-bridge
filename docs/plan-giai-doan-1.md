@@ -31,7 +31,7 @@ Mục tiêu là nối hai bên bằng một nền dữ liệu hàng hoá dùng c
 Bốn sự thật định hình thiết kế:
 1. **Hai bên không có sản phẩm nào trùng nhau.**
    - Ops Chest có 164 mặt hàng tươi FRN (điểm bán số 18). Mã số ẩn danh, tên là "Mặt hàng 412 · nhóm 3.1".
-   - Retail-AI có 3.099 sản phẩm Thanh Lam Mart.
+   - Retail-AI có 3.099 sản phẩm thực tế xin từ cửa hàng **Thanh Lam Mart** (lưu ở `data/thanh_lam_products.json`).
    - Vì vậy phải *tạo* bảng ánh xạ (crosswalk). Ánh xạ này là **giả định demo** và phải ghi rõ như vậy.
 2. **Dữ liệu vận hành chỉ chảy một chiều, Ops Chest → kiosk.** Gồm tồn, HSD, giảm giá cận date và hàng mới về. Mỗi trường chỉ có một chủ.
 3. **Hai hệ thống ở hai năm khác nhau.**
@@ -42,9 +42,9 @@ Bốn sự thật định hình thiết kế:
    - Cả hai repository đều gán cứng `expiry_at=None` (`snapshot_repository.py:45`, `postgres_repository.py:376`).
    - Ghi đè file JSON catalog sẽ làm mất mọi vị trí kệ, vì planogram so khớp theo SHA-256 của file (`planogram.py:57`).
 
-**Quyết định đã chốt với user**
-- **Tên hàng:** Ops Chest hiển thị tên Thanh Lam Mart qua một seam nhỏ, mặc định tắt.
-- **Câu chuyện demo:** cửa hàng thuộc **chuỗi Thanh Lam Mart**, nhập hàng từ **kho tổng**, email đặt hàng gửi về kho.
+**Quyết định đã chốt với user (cập nhật 25/11/2026 đồng bộ nguồn Thanh Lam Mart)**
+- **Tên hàng:** Ops Chest hiển thị tên sản phẩm Thanh Lam Mart qua một seam nhỏ, mặc định tắt.
+- **Câu chuyện demo:** cửa hàng bán lẻ độc lập **Thanh Lam Mart**, làm việc trực tiếp với các nhà cung cấp.
 - **Phạm vi giai đoạn 1:** còn hàng, HSD, hàng cận date giảm giá, hàng mới về.
 - **Giá bán:** 164 mặt hàng lấy **giá Thanh Lam Mart, áp lúc seed**.
 - **Code nối:** đặt ở **repo riêng `Q:\WORKSPACE\bridge`**.
@@ -53,7 +53,7 @@ Bốn sự thật định hình thiết kế:
 
 ```
 Thanh Lam Mart catalog (Retail-AI/data/thanh_lam_products.json, chỉ đọc) ─┐
-FRN store 18 (ops_chest/.../frn/stores_daily.csv.gz, chỉ đọc) ──┴─▶ bridge crosswalk ─▶ bridge/data/crosswalk.csv
+FRN store 18 (ops_chest/.../frn/stores_daily.csv.gz, chỉ đọc) ──────────┴─▶ bridge crosswalk ─▶ bridge/data/crosswalk.csv
                                                                         │
               bridge overrides ─▶ out/ops_catalog_overrides.json ─▶ [Ops Chest seed + seam]
                                                                         │
@@ -106,7 +106,7 @@ Cấu trúc thư mục `bridge/`:
 - `out/`: đưa vào gitignore.
 
 Mỗi phần tử trong `items` của feed v1 có các trường sau:
-- `product_id` (mã Thanh Lam Mart), `ops_sku`, `status`
+- `product_id` (mã SKU trong `thanh_lam_products.json`), `ops_sku`, `status`
 - `sellable_qty`, `earliest_expiry`
 - `unit_price_vnd`, `sale_price_vnd`, `promotion_text`
 - `coverage_complete`
@@ -136,8 +136,8 @@ Phần đầu feed gồm: `contract: "ops-feed"`, `version: 1`, `published_at`, 
 
 **`check` kiểm tra:**
 - Có đủ 164 dòng và duy nhất ở cả hai phía.
-- Mọi product_id có trong file Thanh Lam Mart và không bị quarantine.
-- In ra SHA-256 của file Thanh Lam Mart đã dùng.
+- Mọi product_id có trong file catalog Thanh Lam Mart (`thanh_lam_products.json`) và không bị quarantine.
+- In ra SHA-256 của file catalog đã dùng.
 
 ### 3. Seam Ops Chest và nạp lại dữ liệu (PR duy nhất vào Ops Chest)
 
@@ -164,7 +164,7 @@ Vì sao seam đặt ở seed:
 Cấu hình Ops Chest `.env` (chỉ thêm dòng, không đụng key LLM):
 - `CATALOG_OVERRIDES_PATH`
 - `STORE_NAME="Thanh Lam Mart"`, `STORE_ADDRESS`, `STORE_PHONE`
-- `SMTP_FROM=cuahang-demo@Thanh Lam Mart-demo.test`
+- `SMTP_FROM=cuahang-demo@thanhlammart-demo.test`
 
 Sau đó chạy `uv run python -m app.sim.seed --reset`. Email vẫn chỉ rơi vào Mailpit, dùng tên miền `.test` và có hậu tố "(demo)".
 
@@ -190,7 +190,7 @@ Test dùng fixture Ops Chest đã ghi, kiểm tra: danh sách trường được
 ### 5. Adapter của Retail-AI (PR vào Retail-AI)
 
 File mới `backend/products/ops_overlay_repository.py`:
-- Bọc `SnapshotProductRepository`. File Thanh Lam Mart giữ nguyên, nên **planogram vẫn khớp hash**.
+- Bọc `SnapshotProductRepository`. File catalog `thanh_lam_products.json` giữ nguyên, nên **planogram vẫn khớp hash**.
 - Mỗi lần gọi thì `stat` file feed và nạp lại khi mtime hoặc size đổi. Feed hỏng (sai `contract` hoặc `version`) thì giữ feed hợp lệ gần nhất và ghi log.
 - Ghép dữ liệu vào từng mặt hàng đã ánh xạ bằng `ProductSnapshot.model_copy(update=…)`:
   - `stock` ← `sellable_qty`
@@ -203,7 +203,7 @@ File mới `backend/products/ops_overlay_repository.py`:
 - Các phương thức:
   - `search` gọi `search_products(products=…)`, với alias danh mục giống repository gốc.
   - `get_product_snapshot` trả mặt hàng đã ghép.
-  - `list_promotions` đưa hàng cận date của Ops Chest **lên đầu**. Nếu không, chúng bị chìm trong 580 khuyến mãi crawl.
+  - `list_promotions` đưa hàng cận date của Ops Chest **lên đầu**. Nếu không, chúng bị chìm trong 580 khuyến mãi trong snapshot ban đầu.
   - `list_catalog_additions` chuyển nguyên cho repository gốc.
 - Feed cũ vẫn được áp. `data_timestamp` để lộ tuổi dữ liệu (kiosk đã nói "theo dữ liệu ngày …", `main.py:274`), và lô quá hạn tự thành không bán được.
 
@@ -283,7 +283,6 @@ README của bridge ghi rõ:
 - **Các giả định demo:**
   - Ánh xạ FRN→Thanh Lam Mart là tự đặt.
   - `shelf_life_days` vẫn là số giả lập 1–3 ngày, dù trái cây nhập khẩu thực tế để được lâu hơn.
-  - Chữ "NCC" trên UI Ops Chest chưa đổi thành "kho".
 - Phép dời trục thời gian.
 
 ## Ngoài phạm vi giai đoạn 1

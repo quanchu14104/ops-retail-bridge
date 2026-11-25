@@ -5,9 +5,9 @@ thịt hay hải sản. Hai hệ thống không có sản phẩm nào trùng nha
 tất định giữ nguyên cấu trúc; nó không phản ánh mặt hàng thật nào của FRN.
 
 Thuật toán `auto-v1`:
-1. Pool Thanh Lam Mart: sub_department "Thực phẩm Tươi sống, Chế biến", bỏ các dòng có "Thủy hải sản khô" hoặc "Măng"
-   trong category_hierarchy, bỏ dòng bị quarantine (sale_price_vnd > price_vnd). Ngành hàng = cấp 3 của hierarchy,
-   danh mục con = cấp 4.
+1. Pool Thanh Lam Mart (file `data/thanh_lam_products.json`): sub_department "Thực phẩm Tươi sống, Chế biến",
+   bỏ các dòng có "Thủy hải sản khô" hoặc "Măng" trong category_hierarchy, bỏ dòng bị quarantine
+   (sale_price_vnd > price_vnd). Ngành hàng = cấp 3 của hierarchy, danh mục con = cấp 4.
 2. Ghép nhóm FRN (management_group) với ngành hàng theo kích cỡ giảm dần (80 → Rau củ, 40 → Trái cây, 21 → Thịt,
    …). Nhóm thừa vào ngành hàng còn nhiều chỗ nhất.
 3. Trong mỗi nhóm, ghép cat1 với danh mục con theo kích cỡ giảm dần (con trỏ vòng, dùng chung cho các nhóm cùng

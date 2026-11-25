@@ -7,7 +7,7 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 
 - **Một chủ cho mỗi trường.** Tồn bán được, HSD theo lô, giá bán thường và giảm giá cận date của 164 mặt hàng đã
   ánh xạ thuộc Ops Chest. Danh tính sản phẩm (tên, ảnh, barcode, danh mục) và vị trí kệ vẫn thuộc catalog Thanh Lam Mart
-  và planogram của Retail-AI; feed không chứa các trường đó.
+  (file `data/thanh_lam_products.json`) và planogram của Retail-AI; feed không chứa các trường đó.
 - **Danh sách trường là tuyệt đối.** Bên ghi dựng từng phần tử từ đúng các khoá dưới đây, theo đúng thứ tự, và
   kiểm tra lại trước khi ghi. Không bao giờ xuất: `unit_cost`, nguồn hàng (`supplier`), `value_at_risk`,
   `expected_*` (dự báo), `options` (phương án xử lý), thỏa thuận với nguồn hàng.
@@ -33,7 +33,7 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 
 | Khoá | Kiểu | Cách tính |
 |---|---|---|
-| `product_id` | chuỗi | Mã Thanh Lam Mart (`TLM_…`) theo crosswalk |
+| `product_id` | chuỗi | Mã sản phẩm (`TLM_…`) từ catalog Thanh Lam Mart theo crosswalk |
 | `ops_sku` | chuỗi | SKU Ops Chest (`F0412`) |
 | `status` | `IN_STOCK` \| `OUT_OF_STOCK` \| `INACTIVE` | `INACTIVE` khi mặt hàng không còn ACTIVE trong Ops Chest. Khi đó `sellable_qty=0`, `lots=[]`, `earliest_expiry=null`, `promotion_text=null`, `sale_price_vnd=unit_price_vnd` |
 | `sellable_qty` | số nguyên ≥ 0 | Tổng lô có `days_left ≥ 0`. Nếu `coverage_complete=false`: `on_hand` − lô đã quá ngày bán cuối |

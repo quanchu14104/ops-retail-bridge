@@ -32,7 +32,7 @@ def test_only_allowed_fields_leave_ops_chest(ops, crosswalk_rows, ts):
     assert all(k in raw for k in ("unit_cost", "supplier", "value_at_risk", "expected_waste", "options"))
     feed, warnings = _feed(ops, crosswalk_rows, ts)
     text = json.dumps(feed, ensure_ascii=False)
-    for forbidden in ("unit_cost", "supplier", "value_at_risk", "expected_", "options", "Kho tổng"):
+    for forbidden in ("unit_cost", "supplier", "value_at_risk", "expected_", "options", "Nhà cung cấp Thanh Lam Mart"):
         assert forbidden not in text
     assert len(feed["items"]) == 5  # fixture có 5 SKU; 159 SKU còn lại báo cảnh báo
     assert len(warnings) == 159
