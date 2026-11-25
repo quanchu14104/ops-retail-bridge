@@ -14,9 +14,9 @@ def test_overrides_carry_winmart_names_prices_and_central_warehouses(crosswalk_r
     sups = doc["suppliers"]
     assert list(sups) == [f"NCC{n:02d}" for n in range(1, 8)]
     # NCC{n} theo nhóm FRN tăng dần (0..6), giống build_frn_catalog của Ops Chest
-    assert sups["NCC07"]["name"] == "Kho tổng WinMart – Rau củ (demo)"  # nhóm 6 (80 mặt hàng)
-    assert sups["NCC06"]["name"] == "Kho tổng WinMart – Trái cây (demo)"
-    assert sups["NCC03"]["name"] == "Kho tổng WinMart – Thịt (demo)"
+    assert sups["NCC07"]["name"] == "Nhà cung cấp Thanh Lam Mart – Rau củ (demo)"  # nhóm 6 (80 mặt hàng)
+    assert sups["NCC06"]["name"] == "Nhà cung cấp Thanh Lam Mart – Trái cây (demo)"
+    assert sups["NCC03"]["name"] == "Nhà cung cấp Thanh Lam Mart – Thịt (demo)"
     assert len({s["name"] for s in sups.values()}) == 7
     assert all(s["email"] == "dathang@khotong-demo.test" and s["name"].endswith("(demo)") for s in sups.values())
     # Lead time, lịch giao, đơn tối thiểu, thỏa thuận: không ghi đè

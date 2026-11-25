@@ -1,19 +1,19 @@
-"""Crosswalk FRN → WinMart: ánh xạ 1:1 cho 164 mặt hàng tươi của điểm bán FRN số 18.
+"""Crosswalk FRN → Thanh Lam Mart: ánh xạ 1:1 cho 164 mặt hàng tươi của điểm bán FRN số 18.
 
 GIẢ ĐỊNH DEMO. FreshRetailNet-50K (Dingdong, CC BY 4.0) chỉ có mã số ẩn danh, không cho biết mã nhóm nào là rau,
 thịt hay hải sản. Hai hệ thống không có sản phẩm nào trùng nhau, nên ánh xạ này được TẠO RA bằng một thuật toán
 tất định giữ nguyên cấu trúc; nó không phản ánh mặt hàng thật nào của FRN.
 
 Thuật toán `auto-v1`:
-1. Pool WinMart: sub_department "Thực phẩm Tươi sống, Chế biến", bỏ các dòng có "Thủy hải sản khô" hoặc "Măng"
-   trong category_hierarchy, bỏ dòng bị quarantine (sale_price_vnd > price_vnd). Ngành hàng = cấp 3 của hierarchy,
-   danh mục con = cấp 4.
+1. Pool Thanh Lam Mart (file kỹ thuật `winmart_products.json`): sub_department "Thực phẩm Tươi sống, Chế biến",
+   bỏ các dòng có "Thủy hải sản khô" hoặc "Măng" trong category_hierarchy, bỏ dòng bị quarantine
+   (sale_price_vnd > price_vnd). Ngành hàng = cấp 3 của hierarchy, danh mục con = cấp 4.
 2. Ghép nhóm FRN (management_group) với ngành hàng theo kích cỡ giảm dần (80 → Rau củ, 40 → Trái cây, 21 → Thịt,
    …). Nhóm thừa vào ngành hàng còn nhiều chỗ nhất.
 3. Trong mỗi nhóm, ghép cat1 với danh mục con theo kích cỡ giảm dần (con trỏ vòng, dùng chung cho các nhóm cùng
    ngành hàng). Danh mục con hết chỗ thì tràn sang danh mục con kế tiếp và ghi chú lại.
 4. Trong mỗi cặp, mặt hàng FRN xếp theo hạng nhu cầu (tổng demand 60 ngày đầu, giống Ops Chest) đối ứng với
-   mặt hàng WinMart xếp theo item_no. Mặt hàng thay thế (cùng cat2, nên cùng cat1) vì vậy nằm cùng danh mục con.
+   mặt hàng Thanh Lam Mart xếp theo item_no. Mặt hàng thay thế (cùng cat2, nên cùng cat1) vì vậy nằm cùng danh mục con.
 Dòng `method=manual` (sửa tay) được giữ nguyên khi chạy lại `build`.
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ METHOD_AUTO = "auto-v1"
 METHOD_MANUAL = "manual"
 COLUMNS = ["ops_sku", "frn_id", "frn_group", "frn_cat1", "frn_cat2", "product_id", "winmart_name",
            "winmart_category", "price_vnd", "method", "note"]
-HEADER_COMMENT = ("# GIẢ ĐỊNH DEMO: ánh xạ FRN→WinMart tự đặt bằng thuật toán auto-v1 (bridge crosswalk build), "
+HEADER_COMMENT = ("# GIẢ ĐỊNH DEMO: ánh xạ FRN→Thanh Lam Mart tự đặt bằng thuật toán auto-v1 (bridge crosswalk build), "
                   "không phản ánh mặt hàng thật của FRN. Dòng method=manual là sửa tay và được giữ khi build lại.")
 
 

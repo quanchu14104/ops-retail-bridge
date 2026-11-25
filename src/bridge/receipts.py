@@ -14,7 +14,7 @@ from bridge.timeshift import TimeShift
 
 SOURCE_NAME = "ops-chest-bridge"
 STORE_SOURCE_NAME = "ops-chest-bridge (demo)"
-ORG_CODE = "wincommerce"
+ORG_CODE = "thanh_lam_mart"
 WINDOW_DAYS = 7
 
 
@@ -70,7 +70,7 @@ def write_receipts(conn, receipts: list[Receipt], *, store_code: str, kiosk_id: 
             """INSERT INTO retail_organizations(organization_code, legal_name, display_name, organization_type)
                VALUES (%s, %s, %s, %s)
                ON CONFLICT (organization_code) DO UPDATE SET active = true, updated_at = now()""",
-            (ORG_CODE, "Công ty Cổ phần Dịch vụ Thương mại Tổng hợp WinCommerce", "WinCommerce", "RETAIL_CHAIN"),
+            (ORG_CODE, "Cửa hàng bán lẻ Thanh Lam Mart", "Thanh Lam Mart", "INDEPENDENT_STORE"),
         )
         cur.execute(
             """INSERT INTO retail_stores(store_code, organization_code, store_name, address, phone, timezone,

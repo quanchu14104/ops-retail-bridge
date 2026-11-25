@@ -62,7 +62,7 @@ def cmd_overrides(cfg: Config, args) -> int:
     doc = overrides.build(rows, crosswalk.file_sha256(cfg.winmart_catalog_path),
                           crosswalk.file_sha256(cfg.crosswalk_path))
     overrides.write(doc, cfg.overrides_path)
-    print(f"Đã ghi {cfg.overrides_path}: {len(doc['products'])} mặt hàng, {len(doc['suppliers'])} kho tổng")
+    print(f"Đã ghi {cfg.overrides_path}: {len(doc['products'])} mặt hàng, {len(doc['suppliers'])} nhà cung cấp")
     for code, s in doc["suppliers"].items():
         print(f"  {code}: {s['name']} <{s['email']}>")
     return 0
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     ap = argparse.ArgumentParser(prog="bridge", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    cw = sub.add_parser("crosswalk", help="Ánh xạ FRN → WinMart (giả định demo)")
+    cw = sub.add_parser("crosswalk", help="Ánh xạ FRN → Thanh Lam Mart (giả định demo)")
     cw_sub = cw.add_subparsers(dest="action", required=True)
     b = cw_sub.add_parser("build", help="Sinh data/crosswalk.csv (giữ dòng method=manual)")
     b.add_argument("--reset-manual", action="store_true", help="Bỏ cả dòng sửa tay")

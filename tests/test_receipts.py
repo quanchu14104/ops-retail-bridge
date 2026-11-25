@@ -60,7 +60,7 @@ def test_write_is_one_transaction_with_delete_then_insert_and_no_promotions_feed
     sku_to_product = {r["ops_sku"]: r["product_id"] for r in crosswalk_rows}
     recs = build_receipts([ops["pos"][0]], ops["details"], sku_to_product, ts)
     conn = FakeConn()
-    out = write_receipts(conn, recs, store_code="WMP-DEMO-01", kiosk_id="kiosk-01", store_name="WinMart+ Demo",
+    out = write_receipts(conn, recs, store_code="WMP-DEMO-01", kiosk_id="kiosk-01", store_name="Thanh Lam Mart",
                          address="12 Phố Demo", phone="024", now=ts.now)
     assert out == {"deleted": 3, "inserted": len(recs)}
     assert conn.transactions == 1
