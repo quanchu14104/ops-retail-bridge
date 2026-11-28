@@ -1,0 +1,120 @@
+\chapter{Giới thiệu}
+
+\section{Bối cảnh và Động lực Nghiên cứu}
+
+Trong vận hành siêu thị hiện đại tại Việt Nam, công việc phục vụ khách ở quầy bán hàng và việc quản lý tồn kho ở kho hậu cần liên kết chặt chẽ với nhau. Tuy nhiên, đa số hệ thống hiện nay lại xử lý hai mảng này hoàn toàn tách rời, dẫn đến hai điểm nghẽn lớn:
+\begin{itemize}
+    \item \textbf{Tại sàn bán hàng (Phía khách mua):} Một siêu thị thường có hơn 3.000 mã sản phẩm (SKU). Khách hàng mất nhiều thời gian tự so sánh giá theo gram/lít, xem thành phần, tìm ưu đãi hoặc ghép giỏ thực phẩm theo ngân sách. Nếu chỉ đặt một chatbot LLM thông thường tại quầy, mô hình rất dễ bịa giá bán, trả lời thiếu an toàn khi gặp câu hỏi y tế/thuốc và phản hồi chậm 5--14 giây do phải gọi LLM nhiều vòng liên tiếp.
+    \item \textbf{Tại kho hậu cần (Phía cửa hàng trưởng):} Mỗi ngày, quản lý phải quyết định nhập bao nhiêu và giảm giá món nào cho nhóm hàng tươi sống chỉ có hạn dùng 1--3 ngày. Khó khăn lớn nhất là dữ liệu bán bị \emph{kiểm duyệt phải} (khi kệ hết rau lúc 14h, máy thu ngân ghi nhận doanh số bằng 0 dù vẫn có khách muốn mua). Bên cạnh đó, chi phí sai lệch rất bất đối xứng: đặt thừa khiến hàng hỏng mất trắng 100\% tiền vốn, nên mô hình dự báo chỉ tối ưu sai số thống kê thường dễ đặt dư và làm lỗ lợi nhuận.
+\end{itemize}
+
+\intuitionbox{Tóm tắt trực quan: Hệ thống Tác nhân AI Kép hoạt động như thế nào?}{%
+Hệ thống của nhóm gồm ba khối rõ ràng liên kết với nhau: (1)~\textbf{Agent 1 (\texttt{Retail-AI-} -- Trợ lý \emph{Mai})} đứng tại quầy bán hàng Thanh Lam Mart để trả lời nhanh giá bán, so sánh, tìm vị trí kệ, nhận diện ảnh sản phẩm và tư vấn giỏ hàng đúng dữ liệu; (2)~\textbf{Agent 2 (\texttt{ops\_chest})} hỗ trợ Cửa hàng trưởng dự báo nhu cầu hàng tươi sống, tính lượng đặt tối ưu và đề xuất giảm giá lô cận hạn trước khi quản lý bấm duyệt (HITL); và (3)~\textbf{Cầu nối \texttt{ops-retail-bridge}} đồng bộ 164 mã hàng tươi sống để khi quản lý duyệt giảm giá hoặc báo hết hàng ở hậu cần, trợ lý Mai lập tức cập nhật cho khách hàng.}
+
+Báo cáo tập trung xuyên suốt vào bốn vấn đề nghiên cứu AI cốt lõi: (i)~thiết kế AI Agent tư vấn khách hàng có căn cứ và độ trễ thấp (\emph{Zero-Planner Hybrid Routing}), (ii)~thiết kế AI Agent dự báo nhu cầu--tối ưu lợi nhuận hàng tươi sống dưới ràng buộc Con người trong Vòng lặp (\emph{Profit-Gated Router \texttt{B-Gate}}), (iii)~cơ chế phối hợp trao đổi dữ liệu an toàn giữa hai Agent, và (iv)~phương pháp đánh giá thực nghiệm có kiểm soát về độ chính xác, độ tin cậy và an toàn~\cite{retail_ai_repo,ops_chest_repo,ops_retail_bridge_repo}.
+
+\section{Tổng quan Nghiên cứu và Khoảng trống Khoa học}
+
+Để định vị đóng góp của đồ án trong bức tranh nghiên cứu hiện hành, tổng quan tài liệu tập trung vào năm nhánh nghiên cứu chuyên sâu trực tiếp chi phối kiến trúc hệ thống.
+
+\textbf{1. Tác nhân LLM gọi công cụ và đánh giá độ tin cậy.}
+Yao và cộng sự~\cite{yao2023react} giới thiệu khung \emph{ReAct}, chứng minh việc kết hợp lập luận với truy vấn công cụ bên ngoài giúp giảm ảo giác tham số so với sinh văn bản thuần túy. Schick và cộng sự~\cite{schick2023toolformer} cùng Lewis và cộng sự~\cite{lewis2020rag} (RAG) khẳng định việc tách biệt tính toán và tra cứu sự thật sang kho tri thức xác định là điều kiện cần để bảo đảm tính đúng đắn dữ liệu. Gần đây, các bộ kiểm chuẩn chuyên biệt cho tác nhân gọi công cụ như \emph{Gorilla / Berkeley Function Calling Leaderboard (BFCL)}~\cite{patil2024gorilla} và \emph{$\tau$-bench}~\cite{yao2024taubench} (trong miền bán lẻ và hàng không) chỉ ra rằng ngay cả các LLM lớn vẫn suy giảm độ nhất quán rõ rệt qua nhiều lượt hội thoại tuân thủ chính sách. Về an toàn, Röttger và cộng sự~\cite{rottger2024xstest} (\emph{XSTest}) chứng minh bộ lọc thô sơ gây tỷ lệ từ chối nhầm cao trên truy vấn vô hại, trong khi OWASP Top 10 cho LLM~\cite{owasp_llm} xác định tiêm lệnh (\emph{prompt injection}) và lạm quyền thực thi (\emph{excessive agency}) là rủi ro trọng yếu.
+
+\textbf{2. Định tuyến nhiệm vụ giữa công cụ xác định và LLM.}
+Chi phí suy luận và độ trễ đa lượt của vòng lặp ReAct thúc đẩy hướng nghiên cứu định tuyến truy vấn thích nghi. Chen và cộng sự~\cite{chen2023frugalgpt} (\emph{FrugalGPT}) đề xuất tầng xếp tầng mô hình với điều kiện dừng sớm nhằm giảm chi phí gọi API, còn Ong và cộng sự~\cite{ong2024routellm} (\emph{RouteLLM}) học bộ định tuyến giữa mô hình nhỏ và mô hình lớn dựa trên dữ liệu sở thích. Tuy nhiên, trong bán lẻ có danh mục cấu trúc, phần lớn truy vấn (tra giá, so sánh đơn giá, khuyến mãi, tồn kho, cổng từ chối y tế/OWASP) có thể giải quyết chính xác bởi \emph{công cụ xác định và chỉ mục cấu trúc} trước khi gọi bất kỳ tầng lập kế hoạch LLM nào---đây là cơ sở cho cơ chế \emph{Zero-Planner Hybrid Routing} đề xuất trong đồ án.
+
+\textbf{3. Khôi phục nhu cầu bị kiểm duyệt khi đứt hàng (\emph{Censored Demand Recovery}).}
+Wecker~\cite{wecker1978stockouts} chỉ ra từ sớm rằng sử dụng trực tiếp doanh số quan sát khi có đứt hàng gây thiên lệch dự báo âm hệ thống và tạo vòng xoáy suy giảm đặt hàng. Vulcano, van Ryzin và Ratliff~\cite{vulcano2012primary} tiếp cận bài toán bằng mô hình lựa chọn rời rạc MNL--Poisson kết hợp thuật toán EM để ước lượng nhu cầu sơ cấp từ dữ liệu giao dịch. Ở quy mô dữ liệu bán lẻ tươi sống theo giờ, bộ dữ liệu công khai \emph{FreshRetailNet-50K}~\cite{freshretailnet50k} cung cấp cờ đứt hàng theo từng giờ tại các cửa hàng tiện lợi thực, mở đường cho khôi phục nhu cầu thực nghiệm dựa trên hồ sơ tỷ trọng bán theo giờ mà không cần giả định phân phối tham số chặt.
+
+\textbf{4. Dự báo nhu cầu hàng hạn dùng ngắn và nhu cầu gián đoạn.}
+Quản trị hàng dễ hỏng chịu chi phối của mô hình \emph{Newsvendor} và chính sách xuất bán theo lô cận hạn FEFO~\cite{nahmias2011perishable,silver2017inventory}. Kết quả cuộc thi \emph{M5 Accuracy Competition}~\cite{makridakis2022m5} khẳng định cây quyết định tăng cường độ dốc (\emph{LightGBM}~\cite{ke2017lightgbm}) đạt hiệu suất mạnh trên chuỗi thời gian bán lẻ phân cấp, đặc biệt khi dự báo phân vị (hàm mất mát pinball). Tuy vậy, Syntetos và Boylan~\cite{syntetos2005intermittent} chứng minh các chuỗi có độ biến động hoặc tính gián đoạn cao phản ứng rất nhạy với phương sai ước lượng, khiến các phương pháp thống kê đơn giản có phương sai thấp thường ổn định hơn trên phân khúc cửa hàng nhỏ.
+
+\textbf{5. Tối ưu quyết định theo lợi nhuận thay vì sai số dự báo thuần túy.}
+Ban và Rudin~\cite{ban2019bigdata} (\emph{Big Data Newsvendor}) cùng Huber và cộng sự~\cite{huber2019newsvendor} chứng minh ánh xạ trực tiếp đặc trưng sang lượng đặt tối ưu hoặc hồi quy phân vị vượt trội mô hình hai bước tách rời. Ở tầm tổng quát hơn, Elmachtoub và Grigas~\cite{elmachtoub2022spo} (\emph{Smart ``Predict, then Optimize''}) chứng minh giảm thiểu sai số thống kê (MSE/WAPE) không bảo đảm tối ưu hàm mục tiêu vận hành hạ nguồn. Trong ngữ cảnh hàng tươi sống hạn dùng 1--3 ngày, nghiên cứu này trực tiếp dẫn đến bài toán thực nghiệm của đồ án: kiểm chứng xem định tuyến giữa dự báo phân vị LightGBM và EWMA theo lợi nhuận mô phỏng ngoài mẫu (\texttt{B-Gate}) có khắc phục được hiện tượng đặt dư ở cửa hàng nhỏ hay không.
+
+\textbf{Tổng hợp So sánh và Chuỗi Liên kết Nghiên cứu.}
+Bảng~\ref{tab:lit_comparison} tổng hợp các hướng tiếp cận học thuật liên quan, và Bảng~\ref{tab:gap_traceability} thiết lập liên kết xuyên suốt \emph{Khoảng trống Nghiên cứu $\to$ Phương pháp Đề xuất $\to$ Thực nghiệm Kiểm chứng $\to$ Đóng góp}.
+
+\begin{table}[H]
+\centering
+\caption{So sánh các nhóm nghiên cứu học thuật liên quan với bài toán tác nhân AI bán lẻ}
+\label{tab:lit_comparison}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.1cm} L{2.8cm} L{4.0cm} Y}
+\toprule
+\textbf{Nhóm Công trình} & \textbf{Phương pháp} & \textbf{Ưu điểm Chính} & \textbf{Khoảng trống đối với Bài toán Đề tài} \\
+\midrule
+ReAct~\cite{yao2023react}, RAG~\cite{lewis2020rag}, $\tau$-bench~\cite{yao2024taubench}, BFCL~\cite{patil2024gorilla} & Vòng lặp suy luận LLM + gọi công cụ có cấu trúc & Giảm ảo giác tham số; chuẩn hóa đánh giá tác nhân theo chính sách & Độ trễ tăng theo số lượt gọi planner tuần tự; tỷ lệ nhất quán đa lượt và kiểm soát nguồn gốc tồn kho/giá vẫn hạn chế \\
+FrugalGPT~\cite{chen2023frugalgpt}, RouteLLM~\cite{ong2024routellm} & Xếp tầng và định tuyến giữa các LLM theo chi phí & Tối ưu cân bằng chất lượng--chi phí giữa mô hình nhỏ và lớn & Định tuyến thuần giữa các LLM; chưa khai thác định tuyến tiền-LLM sang công cụ danh mục xác định và cổng an toàn \\
+Wecker~\cite{wecker1978stockouts}, Vulcano et al.~\cite{vulcano2012primary}, FRN-50K~\cite{freshretailnet50k} & Khôi phục nhu cầu bị kiểm duyệt khi đứt hàng & Giảm thiên lệch âm khi kệ hết hàng giữa ngày & Các mô hình lựa chọn EM phức tạp về giả định; cần đánh giá tác động khôi phục giờ trực tiếp lên lợi nhuận đặt hàng FEFO \\
+LightGBM~\cite{ke2017lightgbm}, M5~\cite{makridakis2022m5}, Syntetos--Boylan~\cite{syntetos2005intermittent} & Dự báo phân vị GBDT và phân loại chuỗi biến động & Nắm bắt tốt phi tuyến, lịch tuần/lễ và lịch sử đứt hàng & Khoảng phân vị GBDT dễ phóng đại phương sai đuôi trên cửa hàng ít SKU, gây đặt dư và tăng tỷ lệ hủy hàng tươi \\
+Ban--Rudin~\cite{ban2019bigdata}, Huber et al.~\cite{huber2019newsvendor}, SPO~\cite{elmachtoub2022spo} & Dự báo định hướng quyết định tối ưu lợi nhuận & Gắn hàm mục tiêu học máy với chi phí bất đối xứng Newsvendor & Chưa tích hợp thành quy trình tương tác HITL minh bạch cho cửa hàng trưởng và chưa liên thông sang tác nhân tư vấn khách \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Liên kết xuyên suốt: Khoảng trống Nghiên cứu $\to$ Phương pháp Đề xuất $\to$ Thực nghiệm $\to$ Đóng góp}
+\label{tab:gap_traceability}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.1cm} L{3.3cm} L{3.6cm} Y}
+\toprule
+\textbf{Khoảng trống (Gap)} & \textbf{Phương pháp Đề xuất} & \textbf{Thực nghiệm Kiểm chứng} & \textbf{Đóng góp Khoa học} \\
+\midrule
+G1: Vòng lặp planner LLM gây trễ cao (5--14\,s) và dễ nhầm nguồn gốc giá/tồn & \textbf{Zero-Planner Hybrid Routing} (\texttt{Retail-AI-}): cổng an toàn $<3$\,ms + truy xuất xác định + SSE trực tiếp & So sánh trước--sau (11 truy vấn), Ablation có kiểm soát A1--A4 trên tập Test độc lập 50 câu (3 lần lặp P50/P95/P99), 100Q Bán chạy--Tồn kho & Giảm độ trễ trung vị và duy trì độ căn cứ danh mục cao mà không cần vòng planner LLM ở truy vấn chuẩn \\
+G2: Dự báo ML giảm WAPE nhưng làm lỗ lợi nhuận hàng tươi ở cửa hàng nhỏ & \textbf{Profit-Gated Router (\texttt{B-Gate})} (\texttt{ops\_chest}): ghép $\hat{q}_{50}^{\text{LGBM}} + \sigma_{\text{EWMA}}$ + chọn phân khúc theo lợi nhuận ngoài mẫu & Ablation B0--B5 trên FreshRetailNet-50K (50 cửa hàng độc lập, 2-fold CV), bootstrap 95\% CI, Wilcoxon, phân tích độ nhạy 8 kịch bản & Chứng minh ghép trung vị ML với phương sai EWMA + ngưỡng cỡ cửa hàng tạo mức tăng lợi nhuận có ý nghĩa thống kê \\
+G3: Tác nhân tư vấn khách và tác nhân tồn kho vận hành tách rời, thiếu ánh xạ SKU & \textbf{Cầu nối Crosswalk 164 SKU + API Chỉ đọc Fail-Closed} (\texttt{ops-retail-bridge} + \code{ops_bridge.py}) & Kiểm thử End-to-End mô phỏng 5 kịch bản (chặn \texttt{PENDING}, lan truyền giảm giá FEFO, ẩn hết hàng, fail-closed TTL/503) & Chứng minh cơ chế đồng bộ liên Agent bảo toàn ranh giới HITL trên môi trường mô phỏng \\
+G4: Chatbot vận hành tiềm ẩn rủi ro nhận vơ thực thi và ảo giác số liệu & Tách biệt cấu trúc 22 công cụ đọc + 9 đề xuất (0 tự thực thi), máy trạng thái HITL và lớp kiểm soát \code{guard.py} & Kiểm định 20 kịch bản failover (\code{eval_failover.json}) về gọi công cụ, căn cứ số liệu và ranh giới HITL & Khẳng định hiệu quả bảo vệ cấu trúc HITL kết hợp hậu kiểm số liệu \code{guard.py} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Phát biểu Bài toán}
+
+Xét một điểm bán lẻ hiện đại quản lý đồng thời danh mục hàng hóa đa ngành ($N \approx 3.000$ SKU) và nhóm hàng tươi sống hạn dùng 1--3 ngày ($N_{\text{fresh}} \approx 150$--$300$ SKU). Bài toán đặt ra gồm ba câu hỏi nghiên cứu gắn kết:
+\begin{enumerate}
+    \item \textbf{Tư vấn khách hàng có căn cứ và độ trễ thấp:} Làm thế nào định tuyến các truy vấn mua sắm tiếng Việt (tra cứu giá, đơn giá quy đổi, khuyến mãi, tồn kho, bán chạy, giỏ ngân sách, câu hỏi nhạy cảm y tế/đối kháng) giữa công cụ danh mục xác định và mô hình LLM sao cho tối thiểu hóa độ trễ phản hồi nhưng vẫn bảo toàn độ chính xác danh mục và minh bạch nguồn gốc dữ liệu?
+    \item \textbf{Dự báo nhu cầu và tối ưu lợi nhuận hàng tươi sống dưới ràng buộc HITL:} Làm thế nào khôi phục nhu cầu bị che khuất trên các ngày đứt hàng, kết hợp ưu điểm học phi tuyến của LightGBM phân vị với tính ổn định phương sai của EWMA để tối ưu lợi nhuận mô phỏng trên nhiều quy mô cửa hàng khác nhau, đồng thời bảo đảm mọi quyết định nhập hàng/giảm giá đều phải qua phê duyệt của cửa hàng trưởng?
+    \item \textbf{Phối hợp liên tác nhân:} Làm thế nào liên kết dữ liệu SKU và trạng thái tồn kho/giảm giá đã duyệt giữa hai tác nhân một cách an toàn (\emph{fail-closed}) mà không phá vỡ phân quyền HITL?
+\end{enumerate}
+
+\section{Mục tiêu, Phân định Đóng góp và Tính Mới}
+
+\subsection*{Mục tiêu Tổng quát và 4 Mục tiêu Cụ thể}
+Mục tiêu tổng quát của đồ án là thiết kế, xây dựng và kiểm chứng định lượng một hệ thống Tác nhân AI Kép cho chuỗi bán lẻ tại Việt Nam, gồm bốn mục tiêu cụ thể tương ứng trực tiếp với bốn nhóm kết quả tổng kết ở Chương~6:
+\begin{enumerate}
+    \item \textbf{Mục tiêu 1 (AI Agent Tư vấn Khách hàng -- \texttt{Retail-AI-}):} Xây dựng cơ chế định tuyến lai \emph{Zero-Planner Hybrid Routing} kết hợp truy xuất danh mục, cổng an toàn tiền-LLM, kho tri thức sản phẩm đã làm sạch và mô hình nhận diện ảnh sản phẩm nhẹ \texttt{MobileNetV3Large-224} (kèm giao diện giọng nói hỗ trợ).
+    \item \textbf{Mục tiêu 2 (AI Agent Dự báo \& Vận hành Hàng Tươi sống -- \texttt{ops\_chest}):} Hiện thực hóa quy trình khôi phục nhu cầu đứt hàng theo giờ, dự báo phân vị LightGBM~v3 (29 đặc trưng), bộ định tuyến theo cổng lợi nhuận \texttt{B-Gate}, động cơ Newsvendor--FEFO và quản trị đề xuất HITL 31 công cụ.
+    \item \textbf{Mục tiêu 3 (Cơ chế Phối hợp Liên Agent -- \texttt{ops-retail-bridge}):} Xây dựng bảng ánh xạ SKU dùng chung (164 SKU tươi sống) và lớp cầu nối API chỉ đọc fail-closed, kiểm chứng đầu-cuối trên môi trường mô phỏng việc lan truyền giá giảm FEFO đã duyệt và ẩn sản phẩm hết hàng.
+    \item \textbf{Mục tiêu 4 (Đánh giá Thực nghiệm Khoa học):} Thiết kế quy trình phân chia dữ liệu tách biệt tập phát triển và tập kiểm thử độc lập, thực hiện nghiên cứu loại bỏ (\emph{ablation study}) có kiểm soát, kiểm định thống kê khoảng tin cậy/độ nhạy và đánh giá toàn diện độ an toàn, độ tin cậy của hệ thống.
+\end{enumerate}
+
+\subsection*{Phân định Rõ Nguồn gốc Thành phần và Đóng góp AI của Nhóm}
+Để tránh nhầm lẫn giữa việc tích hợp thư viện bên thứ ba với đóng góp nghiên cứu của nhóm, Bảng~\ref{tab:contribution_matrix} phân định tường minh năm nhóm thành phần trong toàn bộ đồ án. Hai đóng góp AI trọng tâm do nhóm trực tiếp thiết kế và kiểm chứng là \textbf{Zero-Planner Hybrid Routing} (cho Agent khách hàng) và \textbf{Profit-Gated Router (\texttt{B-Gate})} (cho Agent vận hành cửa hàng), đi kèm cơ chế \textbf{Cầu nối Crosswalk--API Fail-Closed} liên kết hai Agent.
+
+\begin{table}[H]
+\centering
+\caption{Phân định nguồn gốc kỹ thuật và mức độ đóng góp AI của nhóm thực hiện}
+\label{tab:contribution_matrix}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.1cm} L{4.7cm} Y}
+\toprule
+\textbf{Phân loại Nguồn gốc} & \textbf{Thành phần Cụ thể} & \textbf{Vai trò trong Đồ án} \\
+\midrule
+Bên thứ ba (API / Pretrained) & Các mô hình LLM phát luồng/cấu trúc, Azure Speech SDK, Silero VAD~v6, \texttt{DPDFNet2}, \texttt{CLIP-B/32}, \texttt{DINOv2-Small}, thư viện LightGBM & Công cụ nền tảng cho sinh ngôn ngữ, xử lý giọng nói hỗ trợ, trích xuất vector giáo viên và huấn luyện GBDT \\
+Kế thừa \& Điều chỉnh & Công thức Newsvendor~\cite{silver2017inventory}, lão hóa lô FEFO~\cite{nahmias2011perishable}, chuẩn lọc văn bản \code{datatrove}~\cite{hf_datatrove}, XSTest/OWASP & Khung lý thuyết quản trị tồn kho, nguyên tắc làm sạch dữ liệu và phân loại rủi ro an toàn \\
+\textbf{Nhóm tự thiết kế thuật toán} & \textbf{Zero-Planner Hybrid Router}; \textbf{Profit-Gated Router (\texttt{B-Gate})} ghép $\hat{q}_{50}^{\text{LGBM}} + \sigma_{\text{EWMA}}$; \textbf{Sibling Pack-Size Guard}; \textbf{Cầu nối Crosswalk--API Fail-Closed} & \textbf{Đóng góp thuật toán cốt lõi}, giải quyết điểm nghẽn độ trễ/căn cứ, đặt dư hàng tươi ở cửa hàng nhỏ và liên thông hai Agent \\
+\textbf{Nhóm tự huấn luyện mô hình} & \textbf{LightGBM~v3 (P10/P50/P90)} 29 đặc trưng trên 14,9\,M mẫu FRN-50K; \textbf{\texttt{MobileNetV3Large-224} TFLite} chưng cất SVD trên 3.093 SKU & Mô hình học máy chuyên biệt miền, đánh giá trên tập cửa hàng và ảnh hoàn toàn tách biệt \\
+\textbf{Nhóm tự xây dựng dữ liệu \& kiểm chuẩn} & Kho tri thức sạch 2.205 SKU (8 tầng, 0 lỗi); bảng ánh xạ 164 SKU \code{crosswalk.csv}; tập kiểm thử độc lập 50Q/100Q; bộ mô phỏng backtest 50 cửa hàng & Bảo đảm khả năng đánh giá định lượng có kiểm soát, ablation study và tái lập kết quả \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Phạm vi Nghiên cứu và Triển khai}
+
+Đồ án thiết kế, hiện thực hóa và kiểm chứng trọn vẹn hai tác nhân AI cùng cầu nối liên thông trên dữ liệu bán lẻ chuẩn hóa và môi trường đánh giá có kiểm soát:
+\begin{itemize}
+    \item \textbf{Dữ liệu và cầu nối liên phân hệ:} \texttt{Retail-AI-} vận hành trên danh mục Thanh Lam Mart (3.099 SKU) kết hợp dữ liệu lượt bán đồng bộ 30 ngày (\code{data/synced_sales_30d.json}, 269.936 lượt). \texttt{ops\_chest} đánh giá trên chuỗi nhu cầu thực FreshRetailNet-50K cùng tham số thương mại tiêu chuẩn hóa ở Chương~3, và cầu nối 164 SKU (\code{ops_bridge.py}) được kiểm thử tích hợp đầu-cuối kết nối trực tiếp dịch vụ \texttt{ops\_chest} với API \texttt{Retail-AI-}.
+    \item \textbf{Phạm vi đánh giá trọng tâm:} Các thực nghiệm chính tập trung vào năng lực cốt lõi của hai AI Agent (Zero-Planner Routing, dự báo phân vị LightGBM~v3, cổng lợi nhuận \texttt{B-Gate}, thị giác sản phẩm và phối hợp liên Agent). Giao diện giọng nói tiếng Việt và các tiện ích hoàn thiện hệ thống (giỏ hàng, PayOS VietQR, sơ đồ kệ) được kiểm chứng song hành và trình bày chi tiết tại Phụ lục.
+\end{itemize}

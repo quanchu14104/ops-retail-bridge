@@ -1,0 +1,253 @@
+\chapter{Methodology}
+
+This chapter presents the scientific design of the Dual-Agent AI system around four core elements: AS-IS versus TO-BE process analysis, the functional AI architecture and cross-agent \code{crosswalk.csv}--API bridge, our two primary algorithmic designs (\emph{Zero-Planner Hybrid Routing} and \emph{Profit-Gated Router \texttt{B-Gate}}), and complete training and hyperparameter selection specifications. Software engineering details (UI stack, deployment containers, file paths, and supporting client-side speech engineering) are placed in Appendices~A--C.
+
+\section{Business Process Analysis}
+
+In a Vietnamese supermarket managing 3,000+ dry/ambient SKUs alongside 150--300 daily-replenished fresh SKUs, two manual loops (AS-IS) jointly degrade service quality and operating margin: (i)~shoppers manually hunt for pack-size unit value or wait for associates during peak hours; and (ii)~store managers guess fresh orders from right-censored POS logs and apply late flat 30\% evening markdowns. Figure~\ref{fig:as_is_to_be} contrasts this manual baseline with our coordinated dual-agent workflow (TO-BE), where AI handles perception, mathematical optimization, and grounded option generation while humans retain final execution control.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.7cm and 0.85cm]
+  \node[font=\bfseries\small, anchor=west, text=red!65!black] (lbl1) at (-0.2, 2.35) {AS-IS: Manual Retail Operations (High Latency, Censored POS Guessing, High Waste)};
+  \node[procbox, draw=red!55!black, fill=red!6, text width=2.85cm] (m1) at (1.5, 1.35) {Shopper searches manually or waits for store staff};
+  \node[procbox, draw=red!55!black, fill=red!6, text width=2.85cm, right=of m1] (m2) {Manual shelf expiry walk \& raw censored POS review};
+  \node[procbox, draw=red!55!black, fill=red!6, text width=2.85cm, right=of m2] (m3) {Heuristic ordering \& late flat 30\% evening markdowns};
+  \node[procbox, draw=red!55!black, fill=red!6, text width=2.85cm, right=of m3] (m4) {5.33\% spoilage \& 8.69\% traffic-driver OOS};
+  \draw[flowarr, draw=red!65!black] (m1) -- (m2);
+  \draw[flowarr, draw=red!65!black] (m2) -- (m3);
+  \draw[flowarr, draw=red!65!black] (m3) -- (m4);
+
+  \node[font=\bfseries\small, anchor=west, text=teal!70!black] (lbl2) at (-0.2, -0.35) {TO-BE: Coordinated Dual-Agent AI Platform (\texttt{Retail-AI-} $\leftrightarrow$ \texttt{ops\_chest})};
+  \node[aiagent, text width=2.85cm] (t1) at (1.5, -1.45) {\textbf{Customer Agent}\\Zero-Planner Routing + Grounded Retrieval};
+  \node[aiagent, text width=2.85cm, right=of t1] (t2) {\textbf{Demand Recovery}\\Hourly OOS profile + 29 tabular features};
+  \node[gatebox, text width=2.95cm, right=of t2] (t3) {\textbf{\texttt{B-Gate} Engine}\\LightGBM~v3 / EWMA + Newsvendor--FEFO};
+  \node[gatebox, text width=2.85cm, right=of t3] (t4) {\textbf{HITL Governance}\\Manager approval; +4.90\% simulated profit};
+  \draw[flowarr] (t1) -- node[above, font=\scriptsize] {demand} (t2);
+  \draw[flowarr] (t2) -- (t3);
+  \draw[flowarr] (t3) -- node[above, font=\scriptsize] {proposals} (t4);
+  \draw[flowarr, dashed, draw=blue!65!black] (t4.south) -- ++(0,-0.5) -| node[pos=0.25, below, font=\scriptsize] {\code{crosswalk.csv} + Read-Only Bridge: live stock \& approved FEFO markdowns} (t1.south);
+\end{tikzpicture}%
+}
+\caption{Comparison between manual store operations (AS-IS) and the coordinated Dual-Agent AI process (TO-BE).}
+\label{fig:as_is_to_be}
+\end{figure}
+
+\section{Functional AI Architecture and Inter-Agent Coordination}
+
+Replacing implementation-centric software layer tables, Figure~\ref{fig:functional_ai_arch} presents the \textbf{functional AI architecture} focusing strictly on data flow, AI models, deterministic tools, inter-agent coordination, and decision boundaries. Figure~\ref{fig:unified_workflow} details the end-to-end interaction workflow across both agents and the shared bridge state.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.55cm and 0.75cm]
+  \node[procbox, text width=4.8cm] (c_in) {\textbf{Customer Inputs}\\Text / Supporting Speech ASR / Photo};
+  \node[gatebox, text width=4.8cm, below=of c_in] (c_gate) {\textbf{Zero-Planner Router}\\Pre-LLM Safety/OWASP Gates ($<3$\,ms)\\+ Semantic Intent Routing};
+  \node[aiagent, text width=4.8cm, below=of c_gate] (c_tool) {\textbf{Deterministic Tools \& AI Models}\\Inverted Index (3,081 SKUs), Unit Price,\\2,205-SKU Knowledge, \texttt{MobileNetV3} TFLite,\\Streaming LLM / Bounded Planner};
+  \node[procbox, draw=blue!65!black, fill=blue!10, text width=4.8cm, below=of c_tool] (c_dec) {\textbf{Customer Agent Decisions}\\Grounded Cards, Approved FEFO Price,\\OOS Suppression, Provenance Tags};
+
+  \node[gatebox, draw=purple!70!black, fill=purple!8, text width=4.25cm, right=0.8cm of c_gate, yshift=-0.95cm] (br_cw) {\textbf{Inter-Agent Bridge}\\(\texttt{ops-retail-bridge})\\\code{crosswalk.csv} (164 SKUs)\\\code{BridgedProductRepository}};
+  \node[procbox, draw=purple!60!black, fill=purple!4, text width=4.25cm, below=0.55cm of br_cw] (br_rule) {\textbf{Sync Policy}\\Read-only API (TTL 300\,s)\\\texttt{APPROVED/EXECUTED} only\\Fail-closed on stale/error};
+
+  \node[procbox, text width=4.8cm, right=0.85cm of br_cw, yshift=0.95cm] (o_in) {\textbf{Manager Inputs \& Logs}\\POS + Hourly OOS Logs (FRN-50K)\\Manager Queries / Daily Review};
+  \node[aiagent, text width=4.8cm, below=of o_in] (o_ml) {\textbf{Forecasting \& Routing Models}\\OOS Recovery $\to$ 29 Features\\LightGBM~v3 (P10/P50/P90) vs.\ EWMA\\\textbf{Profit-Gated Router (\texttt{B-Gate})}};
+  \node[gatebox, text width=4.8cm, below=of o_ml] (o_opt) {\textbf{Optimization \& 31-Tool Agent}\\Newsvendor ($SL^*$) + FEFO Lot Cap\\22 Read + 9 Proposal (0 Direct-Exec)\\+ Runtime \code{guard.py}};
+  \node[procbox, draw=teal!70!black, fill=teal!10, text width=4.8cm, below=of o_opt] (o_dec) {\textbf{Manager HITL Decisions}\\\texttt{PENDING} $\to$ \texttt{APPROVED} $\to$ \texttt{EXECUTED}\\(PO Dispatch, FEFO Markdown, Stock)};
+
+  \begin{scope}[on background layer]
+    \node[fit=(c_in)(c_dec), draw=blue!50!black, dashed, rounded corners=8pt, inner sep=9pt, fill=blue!2, label={[font=\bfseries\small, text=blue!60!black]above:Agent 1: Customer Advisory (\texttt{Retail-AI-})}] {};
+    \node[fit=(o_in)(o_dec), draw=teal!55!black, dashed, rounded corners=8pt, inner sep=9pt, fill=teal!2, label={[font=\bfseries\small, text=teal!60!black]above:Agent 2: Perishable Operations (\texttt{ops\_chest})}] {};
+  \end{scope}
+
+  \draw[flowarr] (c_in) -- (c_gate);
+  \draw[flowarr] (c_gate) -- (c_tool);
+  \draw[flowarr] (c_tool) -- (c_dec);
+  \draw[flowarr] (o_in) -- (o_ml);
+  \draw[flowarr] (o_ml) -- (o_opt);
+  \draw[flowarr] (o_opt) -- (o_dec);
+  \draw[flowarr] (br_cw) -- (br_rule);
+  \draw[flowarr, thick, draw=purple!70!black] (o_dec.west) -- ++(-0.35,0) |- node[pos=0.75, above, font=\scriptsize, text=purple!70!black] {GET /api/inventory/*} (br_cw.east);
+  \draw[flowarr, thick, draw=purple!70!black] (br_cw.west) -- ++(-0.35,0) |- node[pos=0.75, above, font=\scriptsize, text=purple!70!black] {FEFO Price / OOS} (c_tool.east);
+\end{tikzpicture}%
+}
+\caption{Functional AI architecture of the Dual-Agent system highlighting data flow, AI models, deterministic tools, inter-agent bridge, and agent decision boundaries.}
+\label{fig:functional_ai_arch}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.6cm and 1.15cm]
+  \node[procbox, text width=3.35cm] (u1) {Customer Query\\(Text / Speech / Photo)};
+  \node[gatebox, text width=3.35cm, below=of u1] (u2) {Safety, Medical \& OWASP Gates ($<3$\,ms)};
+  \node[aiagent, text width=4.15cm, below=of u2] (u3) {Zero-Planner Router +\\\code{BridgedProductRepository}};
+  \node[procbox, text width=3.35cm, below=of u3] (u4) {Grounded Customer Reply\\(Approved FEFO Price, OOS Filter)};
+
+  \node[procbox, draw=purple!65!black, fill=purple!8, text width=3.1cm, right=1.15cm of u2, yshift=-0.75cm] (db) {\textbf{Shared Bridge State}\\164-SKU \code{crosswalk.csv}\\Live Stock \& Approved\\FEFO Markdowns};
+
+  \node[procbox, text width=3.45cm, right=1.15cm of db, yshift=2.25cm] (o1) {Manager Queries Daily\\Stockout / Expiry Risk};
+  \node[aiagent, text width=3.45cm, below=of o1] (o2) {\texttt{B-Gate} Forecast +\\Newsvendor / FEFO};
+  \node[gatebox, text width=3.45cm, below=of o2] (o3) {31-Tool Agent +\\\code{guard.py} $\to$ \texttt{PENDING}};
+  \node[procbox, text width=3.45cm, below=of o3] (o4) {Manager Approves (\texttt{EXECUTED})\\Updates Price \& Stock};
+
+  \draw[flowarr] (u1) -- (u2);
+  \draw[flowarr] (u2) -- (u3);
+  \draw[flowarr] (u3) -- (u4);
+
+  \draw[flowarr] (o1) -- (o2);
+  \draw[flowarr] (o2) -- (o3);
+  \draw[flowarr] (o3) -- (o4);
+
+  \draw[flowarr, dashed, thick, draw=purple!70!black] (o4.west) -| node[pos=0.25, below, font=\scriptsize, text=purple!70!black] {Publishes \texttt{APPROVED/EXECUTED} only} (db.south);
+  \draw[flowarr, dashed, thick, draw=purple!70!black] (db.west) -- ++(-0.45,0) |- (u3.east);
+\end{tikzpicture}%
+}
+\caption{End-to-end dual-agent workflow connecting \texttt{Retail-AI-} and \texttt{ops\_chest} through the shared bridge state.}
+\label{fig:unified_workflow}
+\end{figure}
+
+\subsection*{Inter-Agent Data Exchange Mechanism (\code{backend/services/ops_bridge.py})}
+To unify both agents without weakening HITL isolation, we implemented a three-part read-only fail-closed bridge:
+\begin{enumerate}
+    \item \textbf{Bi-directional Crosswalk (\code{OpsCrosswalkIndex}):} Loads \code{data/bridge/crosswalk.csv} mapping all 164 \texttt{ops\_chest} fresh SKUs (\code{F0004}--\code{F0793}) to 164 valid \texttt{Retail-AI-} \code{product_id} entries.
+    \item \textbf{HITL-Guarded Read-Only Client (\code{OpsChestBridgeClient}):} Polls \code{GET /api/inventory/summary}, \code{/api/inventory/items}, and \code{/api/inventory/expiring} under a bounded freshness window (\code{freshness_ttl_seconds = 300}). Only markdown proposals in \texttt{APPROVED} or \texttt{EXECUTED} state are accepted; \texttt{PENDING} and \texttt{REJECTED} proposals are discarded.
+    \item \textbf{Catalog Overlay Decorator (\code{BridgedProductRepository}):} Overlays fresh live stock (\code{stock_is_current=True}) and approved FEFO markdown prices onto \code{ProductSnapshot}. When \code{on_hand == 0}, in-stock searches (\code{in_stock=True}) and promotion feeds suppress the out-of-stock SKU to surface available substitutes, whereas direct SKU inquiries honestly report zero sellable units. Whenever \texttt{ops\_chest} is stale ($>300$\,s) or returns HTTP~503, the decorator fails closed to the verified static catalog snapshot (\code{stock_is_current=False}).
+\end{enumerate}
+
+\section{Contribution 1: Zero-Planner Hybrid Routing (\texttt{Retail-AI-})}
+
+Conventional multi-step LLM agent loops execute 2--4 sequential calls (planner $\to$ selector $\to$ reviewer) on every turn, inflating latency to 5--14\,s and risking price drift. Algorithm~\ref{alg:zero_planner_sse} formalizes our \textbf{Zero-Planner Hybrid Routing} pipeline across four clear tiers ordered from fastest to strictest:
+\begin{itemize}
+    \item \textbf{Tier 1 -- Sub-3\,ms Deterministic Safety \& Smalltalk Gates:} Instantly blocks medical/medication advice, OWASP prompt-injection attempts, and out-of-catalog items with zero LLM calls.
+    \item \textbf{Tier 2 -- Deterministic Catalog Tools (0 LLM calls):} Directly resolves single-SKU price lookup, 13-aisle shelf locations, verified product knowledge attributes, synchronized 30-day bestsellers (\code{data/synced_sales_30d.json}, with \code{demo_sales.sqlite3} isolated for offline tests), snapshot/bridge stock checks, and Turn-1 semantic cache hits (Jaccard $\ge 0.88$, always bypassing medical/allergen queries).
+    \item \textbf{Tier 3 -- Zero-Planner Grounded SSE Streaming \& 1-Call Baskets:} For browsing, unit-price comparisons (Eq.~\ref{eq:unit_price}), promotions, and budget meal baskets ($\sum P(p) \le B$), catalog retrieval finishes first and emits verified product cards immediately, followed by a \textbf{single} streaming LLM pass locked to those SKUs.
+    \item \textbf{Tier 4 -- Bounded Structured Planner:} Reserved strictly for complex multi-condition allergen or unresolved multi-constraint queries.
+\end{itemize}
+
+\intuitionbox{Step-by-Step Walkthrough: How a Shopper Query Flows Through Zero-Planner}{%
+When a shopper asks \emph{``Cho mình xem sữa tươi không đường''} (Show me unsweetened fresh milk): (1)~\textbf{Tier 1} clears medical/OWASP checks in $<3$\,ms; (2)~\textbf{Tier 3} queries the inverted index across 3,081 Thanh Lam Mart SKUs and streams verified product cards to the screen in \textbf{242\,ms}; (3)~a \textbf{single} streaming LLM pass summarizes the top pick, finishing end-to-end in \textbf{617\,ms} on live production---$11\times$ faster than the 6.85\,s multi-call planner baseline.}
+
+\begin{algorithm}[htbp]
+\caption{Zero-Planner Hybrid Routing with Grounded Tools (\texttt{Retail-AI-})}
+\label{alg:zero_planner_sse}
+\footnotesize
+\begin{algorithmic}[1]
+\Require User query $u$, session context $S$, bridged catalog $\mathcal{C}_{\text{bridge}}$, synchronized sales store $\mathcal{D}_{\text{sales}}$
+\Ensure Grounded Vietnamese/EN response with verified product cards $K$ and provenance metadata
+\State Normalize $u$ (catalog-anchored brand repair); evaluate sub-3\,ms deterministic gates (medical/drug refusal, OOC, OWASP injection, social smalltalk)
+\If{deterministic gate triggers}
+    \State Return immediate deterministic response (0 LLM calls); \Return
+\EndIf
+\If{non-clinical Turn-1 \textbf{and} semantic cache hits (exact $O(1)$ or Jaccard $\ge 0.88$ with matching constraint signature)}
+    \State Deep-copy session memory $S'$ and return cached reply (0 LLM tokens); \Return
+\EndIf
+\If{$u$ is a single-SKU lookup, shelf location, verified label query, 30-day bestseller, or stock ranking query}
+    \State Execute deterministic tool on $\mathcal{C}_{\text{bridge}}$ or $\mathcal{D}_{\text{sales}}$; attach explicit provenance metadata
+    \State Return deterministic grounded reply (0 LLM calls) with cards $K$; \Return
+\EndIf
+\If{$u$ requests a budget-capped meal/combo basket ($\le B$)}
+    \State Retrieve template slot candidates from $\mathcal{C}_{\text{bridge}}$ (suppressing live OOS SKUs) and select $K_{\text{basket}}$ satisfying $\sum_{p \in K_{\text{basket}}} P(p) \le B$
+    \State Emit cards $K_{\text{basket}}$ immediately; stream concise explanation via \textbf{1 LLM call}
+\ElsIf{$u$ is a standard browse, unit-price comparison, promo, or exclusion query}
+    \State Execute inverted-index search + exclusion filter + unit-price ranking (Eq.~\ref{eq:unit_price}) to obtain top-$k$ cards $K$
+    \State Emit cards $K$ prior to token streaming; stream grounded explanation over locked $K$; store Turn-1 cache entry
+\Else
+    \State Escalate complex allergy/clinical or unresolved multi-constraint queries to bounded structured planner
+\EndIf
+\State Persist updated session state $S'$ and return
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Supporting Multimodal Interfaces (Speech Front-End \& On-Demand Vision)}
+To support hands-free speech and camera queries at the counter, \texttt{Retail-AI-} integrates two auxiliary perception modules:
+\begin{itemize}
+    \item \textbf{Supporting Speech Front-End:} Combines local Silero VAD~v6, streaming Azure Speech with Thanh Lam Mart brand biasing (\code{PhraseListGrammar}), catalog-anchored brand repair, and SNR-adaptive denoising (client-side \texttt{GTCRN} WASM on serverless deployments or server-side \texttt{DPDFNet2} ONNX; details in Appendix~A.2).
+    \item \textbf{On-Demand Mobile Visual Recognition (\texttt{MobileNetV3Large-224} TFLite + Sibling Pack-Size Guard):} Structured in three intuitive stages:
+    \begin{enumerate}[leftmargin=1.5em, itemsep=1pt]
+        \item \emph{Solving 1-image-per-SKU:} We fuse complementary embeddings from \texttt{CLIP-ViT-B/32} and \texttt{DINOv2-Small}~\cite{radford2021clip,oquab2024dinov2}, project via catalog-only SVD-256 (88.85\% variance retained), and distill into a 7.04\,MB \texttt{MobileNetV3Large-224} student~\cite{howard2019mobilenetv3,retail_tflite_kaggle} (plus 1.58\,MB gallery for 3,093 SKUs) under heavy 3D perspective/glare augmentation~\cite{deng2020subcenter,khosla2020supcon}.
+        \item \emph{Local Fast-Path (23--27\,ms):} On an uploaded photo, if similarity is high ($\text{sim}_1 \ge 0.82$, margin $m \ge 0.08$) and no same-brand pack-size sibling exists (or $\text{sim}_1 \ge 0.92$), the local model returns the grounded SKU card immediately without cloud calls.
+        \item \emph{Sibling Pack-Size Guard (Hybrid VLM):} Identical-layout pack sizes (e.g., 500\,ml vs.\ 900\,ml bottles) or non-retail images (OOD) escalate to a Hybrid VLM seeded with top-4 local candidates to read net weight accurately and reject OOD inputs.
+    \end{enumerate}
+\end{itemize}
+
+\section{Contribution 2: Profit-Gated Router (\texttt{B-Gate}) and HITL Operations (\texttt{ops\_chest})}
+
+In perishable replenishment, passing a wide raw quantile spread $(q_{90}-q_{10})$ directly into Newsvendor (Eq.~\ref{eq:order_qty}) can yield overly conservative safety stocks on volatile or sparse store segments.
+
+Algorithm~\ref{alg:ops_chest_newsvendor} balances predictive accuracy and profit stability through our \textbf{Profit-Gated Router (\texttt{B-Gate})} in four steps: (1)~keep LightGBM's accurate median ($\hat{q}_{50}$) while pairing it with EWMA's smooth dispersion ($\sigma_{\text{EWMA}}$); (2)~enable ML only on store--SKU segments that prove positive out-of-sample simulated profit lift (Eq.~\ref{eq:profit_gate}); (3)~compute FEFO-capped Newsvendor orders and graduated near-expiry markdowns; and (4)~hold every draft proposal in \texttt{PENDING} state until the Store Manager explicitly approves it.
+
+\intuitionbox{One-Day Operational Walkthrough: How \texttt{ops\_chest} Coordinates with \emph{Mai}}{%
+At 07:00 in Store~18, \texttt{ops\_chest} flags fresh SKU \code{F0005} (mapped to \code{TLM_10283202}, list price 123,900\,VND) with one day of shelf life left and excess stock. \textbf{Step 1:} \texttt{ops\_chest} creates a 25\% markdown draft in \texttt{PENDING} state; shoppers at the kiosk still see 123,900\,VND (strict HITL isolation). \textbf{Step 2:} The Store Manager approves the proposal (\texttt{EXECUTED}). \textbf{Step 3:} The read-only bridge immediately pushes the approved 92,925\,VND FEFO price to Mai so shoppers see the deal; once stock hits zero (\code{on_hand=0}), Mai automatically hides it from in-stock recommendations.}
+
+\begin{algorithm}[htbp]
+\caption{Profit-Gated Perishable Newsvendor (\texttt{B-Gate}), FEFO Caps \& HITL (\texttt{ops\_chest})}
+\label{alg:ops_chest_newsvendor}
+\footnotesize
+\begin{algorithmic}[1]
+\Require Store $s$ ($N_s$ SKUs), SKU $i$ with lot ledger $\mathcal{L}_i$, price $p$, cost $c$, salvage $v$, OOS cost $s_{\text{out}}$, shelf life $L$, review period $R$, capacity $C_{\text{room}}$, out-of-sample profit gate $V(g)$
+\Ensure Verified proposal $P$ in \texttt{PENDING} state (zero direct execution)
+\State Recover historical demand $\hat{D}_{i,t}$ via empirical hourly profile (Eq.~\ref{eq:wape_recovery}) and construct 29 tabular features
+\State Compute EWMA $(\hat{\mu}_{\text{EWMA}}, \sigma_{\text{EWMA}})$ and LightGBM~v3 quantiles $(\hat{q}_{10}, \hat{q}_{50}, \hat{q}_{90})$
+\State Assign segment $g = (\text{sales\_tier}(i), \text{intermittency}(i), \mathbb{I}[N_s > 30])$
+\If{$V(g) > 0$ (Eq.~\ref{eq:profit_gate}) \textbf{and} $g$ is ML-enabled by the out-of-sample profit gate}
+    \State Set expected demand $\hat{\mu} \gets \hat{q}_{50}^{\text{LGBM}}$ and dispersion $\sigma_{\text{daily}} \gets \sigma_{\text{EWMA}}$ (\code{ewma_sigma} variant)
+\Else
+    \State Set $(\hat{\mu}, \sigma_{\text{daily}}) \gets (\hat{\mu}_{\text{EWMA}}, \sigma_{\text{EWMA}})$
+\EndIf
+\State Compute $SL^*$ and $z = \Phi^{-1}(SL^*)$ (Eq.~\ref{eq:newsvendor}) with floors 0.95 (traffic), 0.90 (ABC-A), 0.50 (other)
+\State Simulate FEFO lot depletion over review period $R$ and window $W = \min(90, L)$ to obtain $U_R$, $L_R$, and $S_W$
+\State Compute shelf-life-capped order $Q^* = \max(0, \min(Q_{\text{raw}}, Q_{\text{cap}}, C_{\text{room}}))$ (Eq.~\ref{eq:order_qty})
+\State Flag lots expiring within $\le 2$ days exceeding full-price demand for graduated FEFO markdown proposals
+\State Persist draft $P$ as \texttt{PENDING} via 9 proposal tools; inspect explanation via \code{guard.py}
+\State Transition to \texttt{EXECUTED} and expose via \code{ops_bridge} \textbf{only} after authenticated manager approval
+\end{algorithmic}
+\end{algorithm}
+
+\section{Model Training, Hyperparameter Tuning, and Threshold Selection}
+
+Table~\ref{tab:lgbm_training_setup} documents the complete LightGBM~v3 training pipeline logged in \code{data/ops_chest_frn/frn/report.json}, and Table~\ref{tab:threshold_justification} documents the empirical or theoretical rationale behind every major operating threshold.
+
+\begin{table}[H]
+\centering
+\caption{LightGBM~v3 quantile training, hyperparameter search, and runtime specifications on FreshRetailNet-50K}
+\label{tab:lgbm_training_setup}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.7cm} Y}
+\toprule
+\textbf{Training Dimension} & \textbf{Verified Specification from \code{report.json}} \\
+\midrule
+Dataset \& Sample Counts & 4,850,000 rows (848 train / 50 held-out stores); main evaluation model: \textbf{14,905,752 train / 2,004,786 validation rows}; pre-$T_0$ backtest model: \textbf{6,209,287 train / 2,051,590 validation rows} \\
+Objective \& Quantiles & Three independent quantile regressors (\code{objective="quantile"}) for $q \in \{0.10, 0.50, 0.90\}$ over 29 features ($h=1\dots 7$) \\
+Hyperparameter Grid (7 candidates on \code{valid_pinball50}) &
+(1) \code{leaves=63, min_leaf=200}: 0.24970 (234 rounds, 135\,s);
+(2) \textbf{\code{leaves=127, min_leaf=200}}: \textbf{0.24959} (111 rounds, 107\,s -- \textbf{Selected});
+(3) \code{leaves=255, min_leaf=100}: 0.24971;
+(4) \code{leaves=255, min_leaf=500, l2=10}: 0.24965;
+(5) \code{leaves=511, min_leaf=300, ff=0.7}: 0.24964;
+(6) \code{leaves=127, min_leaf=50, ff=0.6}: 0.24961;
+(7) \code{leaves=255, min_leaf=200, max_bin=511}: 0.24962 \\
+Early-Stopped Rounds \& Training Time & \textbf{Main eval fit:} \code{q50} = 502 rounds (1,245\,s), \code{q10} = 677 rounds (1,343\,s), \code{q90} = 310 rounds (960\,s). \textbf{Backtest fit:} \code{bt_q50} = 291 rounds (406\,s), \code{bt_q10} = 257 rounds (355\,s), \code{bt_q90} = 270 rounds (359\,s). \textbf{Full retrain:} \code{q50} = 552 (1,013\,s), \code{q10} = 744 (1,169\,s), \code{q90} = 341 (642\,s) \\
+Environment \& Reproducibility & Kaggle CPU runner (\code{ops_chest/ml/kaggle/train_frn.py}); fixed 50-store 2-fold CV split (Appendix~C); gain importances logged in \code{importance_q50} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Empirical and theoretical justification of key system thresholds}
+\label{tab:threshold_justification}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.3cm} Y}
+\toprule
+\textbf{Parameter / Threshold} & \textbf{Selected Value} & \textbf{Quantitative / Theoretical Justification} \\
+\midrule
+\texttt{B-Gate} store-size cut \& variance variant & \texttt{size\_cut=30}, \texttt{ewma\_sigma} & 12-candidate grid search (\{\texttt{sym}, \texttt{split}, \texttt{ewma\_sigma}\} $\times$ \{\texttt{None}, 30, 50, 75\}): global maximum profit objective \textbf{0.38984} at \texttt{ewma\_sigma} + \texttt{size\_cut=30} (vs.\ 0.30202 at None/50/75 and 0.17303 for \texttt{sym}) \\
+Newsvendor service-level floors ($SL_{\text{floor}}$) & 0.95 (traffic), 0.90 (ABC-A), 0.50 (other) & 20-store FRN ablation shows enabling $SL_{\text{floor}}$ lifts profit by \textbf{+6.00\,pp} ($-0.54\% \to +5.46\%$) and cuts OOS from 22.12\% down to \textbf{14.44\%} \\
+FRN unit scaling factor & $K = 10$ & Maps median SKU velocity from 0.85 to 8.51 units/day, cutting Poisson floor CV from 1.084 to 0.343 and limiting FEFO rounding error \\
+Speech SNR thresholds (\texttt{Retail-AI-}) & Bypass $\ge 28$\,dB; rescue $< 13$\,dB & Separates clean mics (avoiding double-filtering distortion; CPU drops 609\,ms $\to$ 30.9\,ms) from 12\,dB supermarket noise \\
+Visual Fast-Path thresholds & $\text{sim}_1 \ge 0.82$, $m \ge 0.08$ ($\ge 0.92$ sibling) & All real OOD photos scored $\text{sim}_1 \le 0.588 < 0.72$; sibling guard escalates identical-layout sizes to Hybrid VLM \\
+Bridge freshness TTL & \texttt{TTL = 300\,s} & Balances stock/markdown freshness against polling overhead; expires fail-closed to the verified static catalog snapshot \\
+\bottomrule
+\end{tabularx}
+\end{table}
