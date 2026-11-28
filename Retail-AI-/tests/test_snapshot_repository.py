@@ -1,0 +1,927 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+
+from backend.api import main as api_main
+from backend.api.main import app
+from backend.config import Settings
+from backend.products.catalog import (
+    ProductSnapshot,
+    explicit_product_audience,
+    matches_explicit_product_audience,
+    product_audience_evidence,
+)
+from backend.products.category_taxonomy import (
+    normalize_category_text,
+    resolve_catalog_category,
+)
+from backend.products.repository import get_product_repository
+from backend.products.snapshot_repository import (
+    _CATEGORY_PHRASE_ALIASES,
+    SnapshotProductRepository,
+    _category_alias_key,
+    _category_key,
+    _category_matches,
+)
+from backend.services import retail_tools
+from backend.services.retail_response_style import render_verified_snapshot
+from backend.services.retail_tools import execute_catalog_tool
+from backend.services.shopping import ShoppingService, ShoppingUnavailableError
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = ROOT / "data" / "winmart_products.json"
+RESOLUTION_CASES = ROOT / "evaluation" / "cases" / "product_resolution_v3_offline.jsonl"
+
+
+@pytest.fixture(scope="module")
+def snapshot_repo() -> SnapshotProductRepository:
+    return SnapshotProductRepository(DATA_PATH)
+
+
+def test_configured_snapshot_repository_loads_validated_full_catalog() -> None:
+    repo = get_product_repository(
+        Settings(catalog_repository="snapshot", catalog_snapshot_path=str(DATA_PATH))
+    )
+
+    assert repo.source_name == "winmart_json_snapshot"
+    assert len(repo.products) == 3081
+    assert repo.rows_quarantined == 18
+
+
+def test_snapshot_catalog_term_evidence_is_exact_and_category_scoped(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    product = snapshot_repo.products[0]
+    leaf = product.category_hierarchy.split(">")[-1].strip()
+    product_term = normalize_category_text(product.name).split()[-1]
+
+    evidence = snapshot_repo.catalog_terms_evidenced(
+        (product_term, product.product_id, "term-that-is-not-in-the-snapshot"), leaf
+    )
+
+    assert product_term in evidence
+    assert product.product_id.casefold() not in evidence
+    assert "term-that-is-not-in-the-snapshot" not in evidence
+    assert not snapshot_repo.catalog_terms_evidenced((product_term,), "unknown category")
+
+
+def test_snapshot_search_offset_returns_a_stable_non_overlapping_next_page(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    first_page = snapshot_repo.search(query="", category="drink", limit=20, offset=0)
+    second_page = snapshot_repo.search(query="", category="drink", limit=20, offset=20)
+
+    assert len(first_page) == 20
+    assert second_page
+    assert not {product.product_id for product in first_page} & {
+        product.product_id for product in second_page
+    }
+
+
+def test_cached_search_pages_cannot_be_changed_by_callers(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    first = snapshot_repo.search(category="drink", limit=5)
+    expected = list(first)
+    assert expected
+    first.reverse()
+    first.pop()
+
+    assert snapshot_repo.search(category="drink", limit=5) == expected
+
+
+def test_warm_search_cache_preserves_constraints_order_and_pagination(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    first = snapshot_repo.search(category="drink", limit=5)
+    assert len(first) == 5
+    lowest_price = first[0].price_vnd
+    queries = [
+        {"category": "drink", "limit": 5, "offset": 5},
+        {"category": "drink", "limit": 5, "sort_by": "price_descending"},
+        {"category": "drink", "limit": 5, "price_operator": "GT",
+         "price_value_vnd": lowest_price},
+        {"category": "drink", "limit": 5, "max_price_vnd": lowest_price - 1},
+        {"category": "drink", "limit": 5, "in_stock": True},
+        {"category": "drink", "limit": 5, "spicy": False},
+        {"category": "drink", "limit": 5, "brand": "not-a-catalog-brand-qxz"},
+        {"category": "not-a-catalog-category-qxz", "limit": 5},
+    ]
+    # Exercise every request twice after a broader page has already been cached.
+    for _ in range(2):
+        pages = [snapshot_repo.search(**criteria) for criteria in queries]
+        assert not {item.product_id for item in first} & {
+            item.product_id for item in pages[0]
+        }
+        assert pages[1]
+        assert pages[1][0].price_vnd > first[0].price_vnd
+        assert [item.price_vnd for item in pages[1]] == sorted(
+            (item.price_vnd for item in pages[1]), reverse=True,
+        )
+        assert pages[2] and all(item.price_vnd > lowest_price for item in pages[2])
+        assert all(page == [] for page in pages[3:])
+        assert snapshot_repo.search(category="drink", limit=5) == first
+
+
+def test_reloading_snapshot_at_same_path_does_not_reuse_cached_prices(tmp_path: Path) -> None:
+    row = json.loads(DATA_PATH.read_text(encoding="utf-8"))[0]
+    row.update(price_vnd=10_000, sale_price_vnd=10_000)
+    path = tmp_path / "catalog.json"
+    path.write_text(json.dumps([row], ensure_ascii=False), encoding="utf-8")
+    first = SnapshotProductRepository(path)
+    assert first.search(row["name"])[0].price_vnd == 10_000
+
+    row.update(price_vnd=20_000, sale_price_vnd=20_000)
+    path.write_text(json.dumps([row], ensure_ascii=False), encoding="utf-8")
+    updated = SnapshotProductRepository(path)
+    assert updated.search(row["name"])[0].price_vnd == 20_000
+    assert first.search(row["name"])[0].price_vnd == 10_000
+
+
+def test_snapshot_price_sort_applies_before_page_limit_even_with_query_terms(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    products = snapshot_repo.search(
+        query="Nước giặt",
+        category="Nước giặt",
+        limit=5,
+        sort_by="price_ascending",
+    )
+
+    assert len(products) == 5
+    assert [product.price_vnd for product in products] == sorted(
+        product.price_vnd for product in products
+    )
+    assert products[0].name.startswith("CHANTE Nước giặt")
+
+
+def test_snapshot_prices_and_stock_are_never_presented_as_current(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    product = snapshot_repo.get_product_snapshot("WIN_10194711")
+
+    assert product is not None
+    assert product.stock_is_current is False
+    assert product.sellable_stock == 0
+    assert product.spicy is None
+
+    observation = execute_catalog_tool(
+        "get_product_snapshot",
+        json.dumps({"product_id": product.product_id, "fields": ["stock", "spicy"]}),
+        repository=snapshot_repo,
+    )
+    details = observation.content["product"]
+    assert details["stock"] == product.stock
+    assert details["stock_is_current"] is False
+    assert details["availability_status"] == "NOT_CURRENTLY_VERIFIED"
+    assert observation.content["unavailable_fields"] == ["spicy"]
+
+    rendered = render_verified_snapshot(product, "vi", ("stock", "spicy"))
+    assert "tồn hiện tại chưa được xác minh" in rendered
+    assert "chưa có dữ liệu về độ cay" in rendered
+
+
+def test_exact_taxonomy_categories_never_match_unrelated_catalog_paths(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    labels = {segment for path in snapshot_repo.list_category_hierarchies() for segment in path}
+    candidates = snapshot_repo._candidates
+    for label in labels:
+        alias_key = _category_alias_key(_category_key(label))
+        if alias_key in _CATEGORY_PHRASE_ALIASES:
+            continue
+        normalized_label = normalize_category_text(label)
+        returned_ids = {
+            candidate.product.product_id
+            for candidate in candidates
+            if _category_matches(label, candidate, snapshot_repo._known_category_keys)
+        }
+        expected_ids = {
+            candidate.product.product_id
+            for candidate in candidates
+            if normalized_label in candidate.category_segment_texts
+        }
+        assert returned_ids == expected_ids, label
+
+
+@pytest.mark.parametrize(
+    ("query", "category", "forbidden_name_fragments"),
+    [
+        ("su su", "Su su", ("bao cao su",)),
+        ("bơ", "Bơ", ("thịt bò", "bò viên")),
+        ("dầu gội", "Mỹ phẩm, chăm sóc cá nhân", ("đậu bắp", "dao cạo")),
+        ("giấy vệ sinh", "Giấy vệ sinh", ("khăn giấy gói", "giấy bếp")),
+        ("bếp điện", "Bếp điện", ("ấm đun", "nồi cơm")),
+        ("nước hoa quả", "Nước hoa quả", ("nước khoáng", "nước tinh khiết")),
+    ],
+)
+def test_vietnamese_product_categories_do_not_leak_accent_or_phrase_homonyms(
+    snapshot_repo: SnapshotProductRepository,
+    query: str,
+    category: str,
+    forbidden_name_fragments: tuple[str, ...],
+) -> None:
+    products = snapshot_repo.search(query, category=category, limit=10)
+    assert products
+    names = [normalize_category_text(product.name) for product in products]
+    for fragment in forbidden_name_fragments:
+        normalized_fragment = normalize_category_text(fragment)
+        assert all(normalized_fragment not in name for name in names), (query, fragment, names)
+
+
+def test_shampoo_phrase_does_not_resolve_to_the_accent_folded_bean_category(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    match = resolve_catalog_category("dầu gội", snapshot_repo.list_category_hierarchies())
+
+    assert match is not None
+    assert normalize_category_text(match.category) != normalize_category_text("Đậu")
+    products = snapshot_repo.search("dầu gội", category=match.category, limit=10)
+    assert products
+    assert any("dầu gội" in product.name.casefold() for product in products)
+
+
+def test_single_word_taxonomy_resolution_preserves_vietnamese_tone_marks(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    hierarchies = snapshot_repo.list_category_hierarchies()
+    oil_match = resolve_catalog_category("dầu", hierarchies)
+    bean_match = resolve_catalog_category("đậu", hierarchies)
+
+    assert oil_match is None or oil_match.category.casefold() != "đậu"
+    assert bean_match is not None
+    assert bean_match.category.casefold() == "đậu"
+
+
+def test_runtime_catalog_resolves_all_heldout_product_queries_at_top_five(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    cases = [
+        json.loads(line)
+        for line in RESOLUTION_CASES.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    misses = []
+    for case in cases:
+        returned = {product.product_id for product in snapshot_repo.search(case["query"], limit=5)}
+        if not returned.intersection(case["gold_product_ids"]):
+            misses.append(case["case_id"])
+
+    assert len(cases) == 28
+    assert misses == []
+
+
+def test_small_coca_zero_query_does_not_rank_case_pack_above_single_bottle(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    results = snapshot_repo.search("Cho loại Coca không đường chai nhỏ.", limit=3)
+
+    assert results
+    assert results[0].product_id == "WIN_10194711"
+    assert results[0].uom == "Chai"
+
+
+def test_generic_coca_zero_query_prefers_single_bottle_to_case_pack(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    results = snapshot_repo.search("coca zero", limit=3)
+
+    assert results
+    assert results[0].uom == "Chai"
+
+
+@pytest.mark.parametrize(
+    ("query", "category", "expected_id"),
+    [
+        ("Huggies size L", "diaper", "WIN_10020234"),
+        ("Omo", "laundry", "WIN_10406729"),
+        ("Colgate kids", "cosmetic", "WIN_10625598"),
+    ],
+)
+def test_taxonomy_aliases_cover_common_household_and_personal_care_requests(
+    snapshot_repo: SnapshotProductRepository,
+    query: str,
+    category: str,
+    expected_id: str,
+) -> None:
+    returned = snapshot_repo.search(query, category=category, limit=5)
+    assert expected_id in {product.product_id for product in returned}
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_leaf"),
+    [
+        ("Mì gói có những loại nào?", "Mì ăn liền"),
+        ("Muốn mua đồ để lau nhà", "Nước lau sàn nhà"),
+        ("Cho mình đồ để rửa bát", "Nước rửa chén bát"),
+        ("Khăn giấy bỏ túi ở kệ nào?", "Khăn giấy gói"),
+        ("Tã bỉm cho bé sơ sinh", "Tã dán trẻ em"),
+        ("Tìm kem chống nắng cho bé đi biển.", "Kem chống nắngtrẻ em"),
+        ("Mua giấy ướt em bé gói nhỏ có không?", "Giấy ướt trẻ em"),
+        ("Sữa hộp cho trẻ uống đi học", "Sữa tươi tiệt trùng"),
+    ],
+)
+def test_everyday_product_wording_resolves_within_the_matching_catalog_leaf(
+    snapshot_repo: SnapshotProductRepository,
+    query: str,
+    expected_leaf: str,
+) -> None:
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 10}, ensure_ascii=False),
+        repository=snapshot_repo,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    assert all(
+        normalize_category_text(product.category_hierarchy.split(">")[-1].strip())
+        == normalize_category_text(expected_leaf)
+        for product in observation.products
+    )
+
+
+def test_explicit_possessive_brand_query_does_not_return_lexical_neighbors(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    brand_results = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "Lay's", "limit": 5}, ensure_ascii=False),
+        repository=snapshot_repo,
+    )
+    colloquial_neighbor = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "măng lay", "limit": 5}, ensure_ascii=False),
+        repository=snapshot_repo,
+    )
+    exact_variant = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "Lay's Stax 110g", "limit": 5}, ensure_ascii=False),
+        repository=snapshot_repo,
+    )
+
+    assert brand_results.products
+    assert all(product.brand == "LAY'S" for product in brand_results.products)
+    assert any(product.name.startswith("Măng lay") for product in colloquial_neighbor.products)
+    assert all(product.brand != "LAY'S" for product in colloquial_neighbor.products)
+    assert [product.product_id for product in exact_variant.products] == ["WIN_10015924"]
+
+
+def test_newborn_diaper_search_excludes_adult_products_and_returns_only_newborn_evidence(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    query = "Tã bỉm cho bé sơ sinh"
+    products = snapshot_repo.search(query, category="Tã bỉm", limit=20)
+
+    assert products
+    assert all(
+        "sơ sinh" in product.name.casefold() or "newborn" in product.name.casefold()
+        for product in products
+    )
+    assert not any(
+        "người lớn" in (product.category_hierarchy or "").casefold() for product in products
+    )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Bé khoảng 5 ký, nên chọn bỉm nào?",
+        "Bé 5kg cần bỉm.",
+        "Bé nặng 5 kg, tìm loại bỉm cho bé.",
+    ],
+)
+def test_baby_subject_with_weight_is_a_child_audience_constraint(query: str) -> None:
+    assert explicit_product_audience(query) == "child"
+
+
+def test_explicit_adult_age_range_is_not_recommended_for_a_child_school_request(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    query = "Sữa hộp cho trẻ mang đi học"
+    product = snapshot_repo.get_product_snapshot("WIN_10327472")
+    assert product is not None
+    assert product_audience_evidence(product) == "adult"
+    assert explicit_product_audience(query) == "child"
+    assert not matches_explicit_product_audience(query, product)
+
+    products = snapshot_repo.search(
+        query,
+        category="Sữa tươi tiệt trùng",
+        limit=20,
+    )
+    assert product.product_id not in {item.product_id for item in products}
+    assert all(product_audience_evidence(item) != "adult" for item in products)
+
+
+def test_catalog_taxonomy_labels_resolve_without_cross_branch_product_leaks(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    leaf_labels = sorted({path[-1] for path in snapshot_repo.list_category_hierarchies() if path})
+    assert len(leaf_labels) >= 300
+
+    for label in leaf_labels:
+        observation = execute_catalog_tool(
+            "search_products",
+            json.dumps({"query": f"Cho mình xem {label}", "limit": 5}, ensure_ascii=False),
+            repository=snapshot_repo,
+        )
+        expected_segment = normalize_category_text(label)
+        assert observation.status == "SUCCESS", label
+        assert observation.products, label
+        assert all(
+            expected_segment
+            in {
+                normalize_category_text(segment.strip())
+                for segment in (product.category_hierarchy or product.category).split(">")
+            }
+            for product in observation.products
+        ), (label, [product.category_hierarchy for product in observation.products])
+
+
+def test_snapshot_tools_abstain_on_unknown_spice_and_current_stock(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    spice = execute_catalog_tool(
+        "recommend_products",
+        json.dumps({"query": "snack", "category": "snack", "spicy": False}),
+        repository=snapshot_repo,
+    )
+    stock = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "Coca Zero", "in_stock": True}),
+        repository=snapshot_repo,
+    )
+
+    assert spice.status == "DATA_UNAVAILABLE"
+    assert spice.content["unavailable_fields"] == ["spicy"]
+    assert stock.status == "DATA_UNAVAILABLE"
+    assert stock.content["unavailable_fields"] == ["current_stock"]
+
+
+def test_snapshot_recommendations_and_promotions_disclose_unverified_inventory(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    recommendation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps({"query": "snack", "category": "snack", "limit": 3}),
+        repository=snapshot_repo,
+    )
+    promotions = execute_catalog_tool(
+        "list_product_promotions", json.dumps({"limit": 3}), repository=snapshot_repo
+    )
+
+    assert recommendation.status == "SUCCESS"
+    assert (
+        "current_availability_unverified"
+        in recommendation.content["items"][0]["matched_constraints"]
+    )
+    assert recommendation.content["items"][0]["stock_is_current"] is False
+    assert "reference_price_vnd" in recommendation.content["items"][0]
+    assert promotions.status == "SUCCESS"
+    assert promotions.content["items"]
+    assert all(item["stock_is_current"] is False for item in promotions.content["items"])
+
+
+def test_snapshot_catalog_cannot_be_used_for_sandbox_checkout(
+    snapshot_repo: SnapshotProductRepository,
+) -> None:
+    shopping = ShoppingService(sandbox_enabled=True, repository=snapshot_repo)
+
+    with pytest.raises(ShoppingUnavailableError):
+        shopping._repo()
+
+
+@pytest.mark.asyncio
+async def test_product_search_api_returns_snapshot_products_without_current_stock_filter(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/products/search", params={"q": "coca zero 600ml"})
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert items
+    assert items[0]["product_id"] == "WIN_10194711"
+    assert all(item["stock_is_current"] is False for item in items)
+
+
+@pytest.mark.asyncio
+async def test_product_search_api_refuses_explicit_current_stock_filter_for_snapshot(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        unavailable = await client.get(
+            "/products/search", params={"q": "coca zero 600ml", "in_stock": "true"}
+        )
+        allowed = await client.get(
+            "/products/search", params={"q": "coca zero 600ml", "in_stock": "false"}
+        )
+
+    assert unavailable.status_code == 409
+    assert allowed.status_code == 200
+    assert allowed.json()["items"][0]["product_id"] == "WIN_10194711"
+
+
+@pytest.mark.asyncio
+async def test_snapshot_api_keeps_price_freshness_shelf_and_stock_claims_grounded(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-grounding"})
+        session_id = created.json()["session_id"]
+        price = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Coca Zero chai 600ml giá bao nhiêu?"},
+        )
+        price_confirmation = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": session_id,
+                "text": "Vậy giá ở cửa hàng hôm nay đã được xác nhận chưa?",
+            },
+        )
+        shelf = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Nó ở kệ nào?"},
+        )
+        stock = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Hiện còn hàng không?"},
+        )
+        freshness = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Dữ liệu được cập nhật ngày nào?"},
+        )
+
+    price_body = price.json()
+    assert (
+        price.status_code
+        == shelf.status_code
+        == stock.status_code
+        == freshness.status_code
+        == price_confirmation.status_code
+        == 200
+    )
+    assert price_body["grounded_product_ids"] == ["WIN_10194711"]
+    assert "9.900đ" in price_body["text"]
+    assert "giá tham khảo" in price_body["text"].casefold()
+    assert "/Chai" in price_body["text"]
+    assert "15/09/2026" not in price_body["text"]
+    assert "giá tham khảo" in price_confirmation.json()["text"].casefold()
+    assert (
+        "chưa thể xác nhận đây là giá tại cửa hàng hôm nay"
+        in price_confirmation.json()["text"].casefold()
+    )
+    assert price_confirmation.json()["grounded_product_ids"] == ["WIN_10194711"]
+    assert price_body["data_source"] == "winmart_json_snapshot"
+    assert price_body["products"][0]["stock_is_current"] is False
+    # The planogram is version-bound. A mismatch must NOT invent a shelf location.
+    suggested_shelf = snapshot_repo.get_product_snapshot("WIN_10194711").shelf
+    if suggested_shelf is not None:
+        assert "sơ đồ kệ đề xuất" in shelf.json()["text"].casefold()
+        assert "chưa xác minh" in shelf.json()["text"].casefold()
+    else:
+        assert "chưa có dữ liệu đã xác minh" in shelf.json()["text"].casefold()
+        assert shelf.json()["grounded_product_ids"] == ["WIN_10194711"]
+    assert "tồn hiện tại chưa được xác minh" in stock.json()["text"].casefold()
+    assert "15/09/2026" in freshness.json()["text"]
+
+
+@pytest.mark.asyncio
+async def test_unavailable_product_alternatives_use_catalog_and_retain_category(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+
+    async def unexpected_llm_call(*_args, **_kwargs):
+        raise AssertionError("Grounded unavailable-product recovery should not call the LLM")
+
+    monkeypatch.setattr(api_main, "run_retail_agent", unexpected_llm_call)
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        for follow_up in (
+            "Nếu chưa có thì có nước nào khác không?",
+            "Có loại nào tương tự không?",
+        ):
+            created = await client.post("/sessions", json={"kiosk_id": "snapshot-alternatives"})
+            session_id = created.json()["session_id"]
+            missing = await client.post(
+                "/agent/respond",
+                json={"session_id": session_id, "text": "Có nước yến vị đào không?"},
+            )
+            alternatives = await client.post(
+                "/agent/respond",
+                json={"session_id": session_id, "text": follow_up},
+            )
+
+            assert missing.status_code == alternatives.status_code == 200
+            assert missing.json()["tools_used"] == ["search_products"]
+            assert missing.json()["grounded_product_ids"] == []
+            alternative_body = alternatives.json()
+            assert "recommend_products" in alternative_body["tools_used"]
+            alternatives_found = [
+                snapshot_repo.get_product_snapshot(product_id)
+                for product_id in alternative_body["grounded_product_ids"]
+            ]
+            # Return the actual matching choices; never pad a suggestion list.
+            assert 1 <= len(alternatives_found) <= 3, (follow_up, alternative_body)
+            assert all(product is not None for product in alternatives_found)
+            normalized_paths = [
+                normalize_category_text(product.category_hierarchy or "")
+                for product in alternatives_found
+            ]
+            assert all("do uong thuoc la" in path for path in normalized_paths), [
+                (product.product_id, product.name, product.category_hierarchy)
+                for product in alternatives_found
+                if product is not None
+            ]
+            leaves = [path.split(">")[-1].strip() for path in normalized_paths]
+            assert len(leaves) == len(set(leaves))
+            assert "giá tham khảo" in alternative_body["text"].casefold()
+            assert "tồn hiện tại chưa được xác minh" not in alternative_body["text"].casefold()
+            assert all(card["stock_is_current"] is False for card in alternative_body["products"])
+            assert alternative_body.get("cart") is None
+
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-whole-cart"})
+        combo = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": created.json()["session_id"],
+                "text": "Mình có 30k, muốn mua nước với đồ ăn vặt.",
+            },
+        )
+
+    combo_body = combo.json()
+    assert combo.status_code == 200
+    assert "recommend_products" in combo_body["tools_used"]
+    assert "tồn hiện tại chưa được xác minh" not in combo_body["text"].casefold()
+    assert combo_body.get("cart") is None
+
+
+@pytest.mark.asyncio
+async def test_snapshot_api_refuses_to_add_unverified_inventory_to_demo_cart(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backend.services import shopping as shopping_module
+
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(
+        shopping_module,
+        "get_product_repository",
+        lambda settings=None: snapshot_repo,
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-cart-guard"})
+        response = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": created.json()["session_id"],
+                "text": "Thêm một chai Coca Zero 600ml vào giỏ giúp mình.",
+            },
+        )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["state"] == "BROWSING"
+    assert body.get("cart") is None
+    assert "chưa xác minh" in body["text"].casefold()
+
+
+@pytest.mark.asyncio
+async def test_snapshot_unavailable_attribute_keeps_selected_product_for_followups(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-context"})
+        session_id = created.json()["session_id"]
+        price = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": session_id,
+                "text": "Cho mình Lay's classic 150g, giá nhiêu?",
+            },
+        )
+        spice = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Nó có cay không?"},
+        )
+        shelf = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Kệ của gói này ở đâu?"},
+        )
+
+    product_id = "WIN_10194182"
+    assert price.status_code == spice.status_code == shelf.status_code == 200
+    assert price.json()["grounded_product_ids"] == [product_id]
+    assert spice.json()["grounded_product_ids"] == [product_id]
+    assert "chưa có dữ liệu về độ cay" in spice.json()["text"].casefold()
+    assert shelf.json()["grounded_product_ids"] == [product_id]
+    # If the source dataset no longer matches the planogram, a missing shelf
+    # is the correct fail-closed answer; it must not claim an outdated location.
+    suggested_shelf = snapshot_repo.get_product_snapshot(product_id).shelf
+    if suggested_shelf is not None:
+        assert suggested_shelf in shelf.json()["text"]
+        assert "sơ đồ kệ đề xuất" in shelf.json()["text"].casefold()
+    else:
+        assert "chưa có dữ liệu đã xác minh" in shelf.json()["text"].casefold()
+        assert shelf.json()["grounded_product_ids"] == [product_id]
+
+
+@pytest.mark.asyncio
+async def test_snapshot_product_search_resolves_variants_and_refinements_without_llm(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-refinement"})
+        session_id = created.json()["session_id"]
+        found = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Tìm Omo cho máy giặt cửa trước với."},
+        )
+        price = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": session_id,
+                "text": "Loại túi 2,9kg giá bao nhiêu?",
+            },
+        )
+        dosage = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": session_id,
+                "text": "Dùng liều lượng bao nhiêu cho một mẻ giặt?",
+            },
+        )
+        promotion = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Có chương trình giảm giá nào không?"},
+        )
+        stock = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Còn hàng hiện nay không?"},
+        )
+
+    assert all(response.status_code == 200 for response in (found, price, dosage, promotion, stock))
+    assert "Nước giặt Omo" in found.json()["text"]
+    assert "Ariel" not in found.json()["text"]
+    assert price.json()["grounded_product_ids"] == ["WIN_10161177"]
+    assert "185.000đ" in price.json()["text"]
+    assert dosage.json()["grounded_product_ids"] == ["WIN_10161177"]
+    assert "chưa có dữ liệu đã xác minh về liều lượng" in dosage.json()["text"].casefold()
+    assert "185.000đ" not in dosage.json()["text"]
+    assert promotion.json()["grounded_product_ids"] == ["WIN_10161177"]
+    assert "chưa có thông tin về khuyến mãi" in promotion.json()["text"].casefold()
+    assert "Fami" not in promotion.json()["text"]
+    assert stock.json()["grounded_product_ids"] == ["WIN_10161177"]
+    assert "tồn hiện tại chưa được xác minh" in stock.json()["text"].casefold()
+
+
+@pytest.mark.asyncio
+async def test_snapshot_candidate_code_selects_the_exact_huggies_pack(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+
+    class UnexpectedGroqService:
+        async def chat(self, *args, **kwargs):
+            raise AssertionError("Exact catalog selection must not call the LLM")
+
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        api_main.get_groq_service,
+        lambda: UnexpectedGroqService(),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-huggies-code"})
+        session_id = created.json()["session_id"]
+        candidates = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Cho mình bỉm Huggies size L."},
+        )
+        selected = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Gói L38 ấy."},
+        )
+        unit_followup = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Giá này theo gói hay theo miếng?"},
+        )
+
+    assert candidates.status_code == selected.status_code == unit_followup.status_code == 200
+    assert "L38" in candidates.json()["text"] and "L68" in candidates.json()["text"]
+    assert selected.json()["grounded_product_ids"] == ["WIN_10161030"]
+    assert "263.000đ/Gói" in selected.json()["text"]
+    assert unit_followup.json()["grounded_product_ids"] == ["WIN_10161030"]
+    assert "263.000đ/Gói" in unit_followup.json()["text"]
+
+
+@pytest.mark.asyncio
+async def test_snapshot_comparison_keeps_product_context_across_size_and_promotion_followups(
+    snapshot_repo: SnapshotProductRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_main, "get_product_repository", lambda settings=None: snapshot_repo)
+    monkeypatch.setattr(retail_tools, "get_product_repository", lambda settings=None: snapshot_repo)
+
+    class UnexpectedGroqService:
+        async def chat(self, *args, **kwargs):
+            raise AssertionError("Grounded catalog follow-ups must not call the LLM")
+
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        api_main.get_groq_service,
+        lambda: UnexpectedGroqService(),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/sessions", json={"kiosk_id": "snapshot-coca-followups"})
+        session_id = created.json()["session_id"]
+        comparison = await client.post(
+            "/agent/respond",
+            json={
+                "session_id": session_id,
+                "text": "Coca Zero 330 với chai 600 khác gì nhau?",
+            },
+        )
+        bottle_price = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Chai 600ml giá bao nhiêu?"},
+        )
+        larger_variant = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Thế loại chai 1,5 lít thì sao?"},
+        )
+        promotion_validity = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Ưu đãi kia còn áp dụng không?"},
+        )
+        stock_confirmation = await client.post(
+            "/agent/respond",
+            json={"session_id": session_id, "text": "Còn 1,5 lít chắc chắn chứ?"},
+        )
+
+    assert all(
+        response.status_code == 200
+        for response in (
+            comparison,
+            bottle_price,
+            larger_variant,
+            promotion_validity,
+            stock_confirmation,
+        )
+    )
+    assert set(comparison.json()["grounded_product_ids"]) == {"WIN_10011651", "WIN_10194711"}
+    assert bottle_price.json()["grounded_product_ids"] == ["WIN_10194711"]
+    assert "9.900đ" in bottle_price.json()["text"]
+    assert larger_variant.json()["grounded_product_ids"] == ["WIN_10307381"]
+    assert "15.900đ" in larger_variant.json()["text"]
+    assert promotion_validity.json()["grounded_product_ids"] == ["WIN_10307381"]
+    assert "chưa xác minh" in promotion_validity.json()["text"].casefold()
+    assert "đang áp dụng chắc chắn" not in promotion_validity.json()["text"].casefold()
+    assert stock_confirmation.json()["grounded_product_ids"] == ["WIN_10307381"]
+    assert "tồn hiện tại chưa được xác minh" in stock_confirmation.json()["text"].casefold()
+
+
+def test_unspecified_spice_is_unknown_not_non_spicy() -> None:
+    product = ProductSnapshot(
+        product_id="UNKNOWN_SPICE",
+        name="Product",
+        category="snack",
+        price_vnd=1000,
+        stock=1,
+    )
+
+    assert product.spicy is None

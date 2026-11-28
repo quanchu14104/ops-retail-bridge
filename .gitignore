@@ -4,3 +4,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 out/
+Retail-AI-/.env
+Retail-AI-/.env.local
+Retail-AI-/.venv/
+Retail-AI-/apps/kiosk-airi/node_modules/
+Retail-AI-/apps/kiosk-airi/dist/
+Retail-AI-/apps/kiosk-airi/public/vad/

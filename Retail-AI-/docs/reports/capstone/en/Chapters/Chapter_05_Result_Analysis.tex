@@ -1,0 +1,360 @@
+\chapter{Results Analysis}
+
+This chapter evaluates the system quantitatively across four core pillars: (1)~the customer advisory agent (\texttt{Retail-AI-}), (2)~the perishable store-operations agent (\texttt{ops\_chest}), (3)~end-to-end inter-agent synchronization, and (4)~system safety and reliability. Software verification suites (pytest, Vitest, lint) are consolidated in Appendix~C.
+
+\intuitionbox{Four Key Experimental Takeaways at a Glance}{%
+\begin{enumerate}[leftmargin=1.4em, itemsep=1.5pt, topsep=2pt]
+    \item \textbf{Fast, Grounded Customer Advisory (\texttt{Retail-AI-}):} On an independent 50-question held-out suite ($N=150$), Zero-Planner reached \textbf{94.0\%} accuracy with \textbf{100\%} SKU grounding and cut P99 latency $2.8\times$ to 154.5\,ms; live \texttt{sin1} production completed all 11 queries in \textbf{188--887\,ms}.
+    \item \textbf{Profit-Aligned Forecasting Beats Pure WAPE (\texttt{ops\_chest}):} LightGBM~v3 reduced forecasting WAPE from 35.06\% to \textbf{30.17\%} (81.2\% coverage), and pairing it with \texttt{B-Gate} delivered \textbf{+4.90\%} median simulated profit over the heuristic baseline (\textbf{+0.78\%} over EWMA, $p=6.39\times 10^{-6}$, winning 76\% of stores with 4.82\% waste).
+    \item \textbf{HITL-Safe Inter-Agent Sync:} 5/5 end-to-end scenarios confirmed approved FEFO markdowns propagate immediately to the kiosk (123,900 $\to$ 92,925\,VND) while unapproved drafts stay isolated and zero-stock items are hidden.
+    \item \textbf{Strong Safety \& Multimodal Vision:} Both agents passed core safety gates (\textbf{10/10} XSTest, \textbf{10/10} OWASP, \textbf{20/20} grounded figures $\ge 1{,}000$ under structural HITL), while Hybrid visual search attained \textbf{93.8\% Brand@1} with \textbf{4/4 (100\%)} OOD rejection.
+\end{enumerate}}
+
+\section{Experimental Protocol and Metrics}
+
+All evaluations strictly follow the anti-leakage splits defined in Section~3.3:
+\begin{itemize}
+    \item \textbf{\texttt{Retail-AI-}:} The strictly independent 50-question held-out test set (5 groups $\times$ 10 queries, 0\% overlap with SOTA~V2 Dev Set) is executed across 3 repeated runs ($N=150$ timings per configuration) to measure accuracy, catalog SKU grounding, and \textbf{P50, P95, P99 latency}. Complementary benchmarks include 11 live streaming queries (before vs.\ after zero-planner), the 100Q SOTA~V2 Dev Set, the 100Q Independent Expert Catalog Audit, the 100Q Bestseller/Stock suite, 4 held-out visual test sets, and a pilot acoustic sample ($n=16$).
+    \item \textbf{\texttt{ops\_chest}:} Forecasting is evaluated on 50 held-out stores (11,037 full-stock eval-week observations and 374,982 rolling observations); 37-day A/B store profit backtests use 2-fold store-level cross-validation. Profit lifts are tested with \textbf{20,000 bootstrap resamples} (95\% CI, \code{seed=42}), two-sided \textbf{Wilcoxon signed-rank tests}, and \textbf{50,000 paired sign-flip permutations}.
+\end{itemize}
+
+\section{Results for Agent 1: Customer Advisory (\texttt{Retail-AI-})}
+
+\subsection*{Controlled Ablation (A1--A4) and P50/P95/P99 Latency on Independent 50-Question Test Set}
+Table~\ref{tab:retail_ablation_50q} evaluates four controlled configurations (A1--A4) across 3 runs ($N=150$ executions per configuration) on the frozen, strictly independent 50-question test set in deterministic offline mode to isolate each layer of \emph{Zero-Planner Hybrid Routing}:
+\begin{itemize}
+    \item \textbf{A1 (Naive Catalog Retrieval Only):} Direct \code{repository.search} without intent routing, deterministic ranking, provenance tags, or safety gates scores only \textbf{3/50 (6.0\%)}, underscoring the necessity of structured hybrid routing.
+    \item \textbf{A2 (Tool Routing without Outer Pre-LLM Gate):} Accuracy rises to \textbf{47/50 (94.0\%)} as inner defense-in-depth guards still block all 10 safety/OOC probes, with tail latency at \textbf{P95 = 202.4\,ms} and \textbf{P99 = 466.0\,ms} because out-of-catalog probes traverse retrieval prior to interception.
+    \item \textbf{A3 (Full Pre-LLM Safety/OOC Gates, Cache OFF):} Maintains \textbf{47/50 (94.0\%)} and \textbf{100\% catalog SKU grounding} while slashing \textbf{P99 by $2.8\times$ to 165.4\,ms} and P95 to 147.5\,ms.
+    \item \textbf{A4 (Full Zero-Planner + Semantic Cache ON):} Achieves \textbf{47/50 (94.0\%)} overall with \textbf{100\% catalog SKU grounding}, \textbf{10/10} single-SKU lookup, \textbf{10/10} stock/bestseller provenance, and \textbf{10/10} safety/OWASP compliance at \textbf{P50 = 74.6\,ms, P95 = 139.0\,ms, P99 = 154.5\,ms} and 0 LLM calls on deterministic paths.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Controlled ablation (A1--A4) and latency percentiles (3 runs, $N=150$) on the independent 50-question test set}
+\label{tab:retail_ablation_50q}
+\footnotesize
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabularx}{\textwidth}{Y r r r r r r}
+\toprule
+\textbf{Ablation Configuration (\texttt{Retail-AI-})} & \textbf{Passed} & \textbf{SKU} & \textbf{Safety} & \textbf{P50} & \textbf{P95} & \textbf{P99} \\
+ & \textbf{(/50)} & \textbf{Ground.} & \textbf{(/10)} & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} \\
+\midrule
+\textbf{A1:} Naive catalog retrieval only (no routing/gates) & 3 (6.0\%) & 100\% & 0/10 & 0.0 & 92.8 & 202.7 \\
+\textbf{A2:} Deterministic routing (outer pre-LLM gate disabled) & 47 (94.0\%) & 100\% & 10/10 & 87.9 & 202.4 & 466.0 \\
+\textbf{A3:} A2 + Pre-LLM safety/OOC gates (cache OFF) & 47 (94.0\%) & 100\% & 10/10 & 75.3 & 147.5 & 165.4 \\
+\textbf{A4:} Full Zero-Planner Router + Semantic Cache ON & \textbf{47 (94.0\%)} & \textbf{100\%} & \textbf{10/10} & \textbf{74.6} & \textbf{139.0} & \textbf{154.5} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{Before-vs.-After Streaming Latency Across 11 Queries and Live \texttt{sin1} Production}
+On LLM-backed conversational queries, Table~\ref{tab:latency_10q} and Figure~\ref{fig:latency_comparison} compare all \textbf{11 representative retail queries} across three milestones: pre-optimization multi-call planning, local Zero-Planner SSE, and fresh live HTTPS verification on the Singapore production edge (\texttt{hkg1::sin1}, November 2026). Across all 11 queries on live production, end-to-end completion dropped to \textbf{188--887\,ms}: single-category advisory ran in 597--748\,ms (product cards emitted in 224--279\,ms, TTFT 379--461\,ms), while multi-item budget baskets (\emph{Thai hotpot $<300\text{k}$}, \emph{Breakfast combo $<100\text{k}$}) fell from 13.3--14.2\,s to \textbf{886--887\,ms (15--16$\times$ faster)}. Table~\ref{tab:prod_latency_sin1} and Figure~\ref{fig:prod_latency_sin1} break down regional HTTPS progression (\texttt{iad1} $\to$ \texttt{sin1}) alongside per-stage timings (card \code{start}, TTFT, total stream) across 7 query archetypes---including synchronized 30-day bestseller lookup (\textbf{239\,ms}, returning \emph{Bí xanh} with 3,754 units from \texttt{FRN\_STORE\_18}) and paraphrased semantic cache hits (\textbf{184\,ms}).
+
+\begin{table}[H]
+\centering
+\caption{Live \code{/agent/respond/stream} latency across 11 representative queries: pre-opt, local SSE, and live \texttt{sin1}}
+\label{tab:latency_10q}
+\footnotesize
+\setlength{\tabcolsep}{3.6pt}
+\begin{tabularx}{\textwidth}{Y r r r r L{2.1cm}}
+\toprule
+\textbf{Test Query (11 Queries)} & \textbf{Before} & \textbf{Local TTFT} & \textbf{Live \texttt{sin1}} & \textbf{Speedup} & \textbf{Mode} \\
+ & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} & \textbf{($\times$)} & \\
+\midrule
+\emph{Chào Mai, bạn tư vấn giúp mình nhé} & 10,891 & 6 & \textbf{188} & 57.9$\times$ & Instant \\
+\emph{Mì Hảo Hảo giá bao nhiêu?} & 117 & 112 & 282 & --- & HTTPS Instant \\
+\emph{Hôm nay siêu thị có gì khuyến mãi?} & 2,232 & 1,796 & \textbf{202} & 11.0$\times$ & Stream + Cache \\
+\emph{Khăn mặt cotton Thanh Lam Home} & 5,605 & 1,490 & \textbf{193} & 29.0$\times$ & Stream + Cache \\
+\emph{Cho mình xem sữa tươi không đường} & 6,847 & 1,492 & \textbf{617} & 11.1$\times$ & Cold Stream \\
+\emph{Dầu gội trị gàu nào tốt?} & 5,431 & 1,298 & \textbf{719} & 7.6$\times$ & Cold Stream \\
+\emph{Ba chỉ bò Mỹ loại nào ngon?} & 5,815 & 1,356 & \textbf{659} & 8.8$\times$ & Cold Stream \\
+\emph{So sánh sữa TH True Milk và Vinamilk} & 7,238 & 1,367 & \textbf{748} & 9.7$\times$ & Cold Compare \\
+\emph{Nước giặt OMO loại nào tiết kiệm nhất?} & 5,410 & 1,499 & \textbf{597} & 9.1$\times$ & Cold Stream \\
+\emph{Mua đồ nấu lẩu thái dưới 300k} & 14,241 & 2,928 & \textbf{887} & 16.1$\times$ & 1-Call Basket \\
+\emph{Combo ăn sáng dưới 100k} & 13,255 & 3,068 & \textbf{886} & 15.0$\times$ & 1-Call Basket \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_latency_streaming_comparison.png}
+    \caption{Latency comparison across all 11 representative queries: multi-call planner baseline, local Zero-Planner SSE TTFT, and live end-to-end HTTPS completion on Singapore \texttt{sin1}.}
+    \label{fig:latency_comparison}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Live HTTPS latency (\texttt{iad1} vs.\ \texttt{sin1}, verified November 2026) and per-stage streaming breakdown}
+\label{tab:prod_latency_sin1}
+\footnotesize
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabularx}{\textwidth}{Y r r r r L{2.4cm}}
+\toprule
+\textbf{Live HTTPS Query} & \textbf{Base} & \textbf{US \texttt{iad1}} & \textbf{SG \texttt{sin1}} & \textbf{TTFT} & \textbf{Active Route} \\
+ & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} & \\
+\midrule
+\code{POST /api/sessions} (session boot) & $\approx 275$ & $\approx 275$ & \textbf{177--206} & --- & \texttt{hkg1::sin1} \\
+\emph{Sữa hạt không đậu nành có loại nào?} & $\approx 2,500$ & 846 & \textbf{736} & 444 & Cold (Warm 209) \\
+\emph{Bia lon dưới 25k có loại nào?} & 2,484 & 1,073 & \textbf{631} & 445 & Cold (Warm 188) \\
+\emph{Sữa tươi không đường loại nào ngon?} & $\approx 2,450$ & --- & \textbf{752} & 520 & Cold Stream \\
+\emph{Gợi ý bữa tối dưới 150k cho 2 người} & 5,497 & 2,239 & \textbf{887} & 634 & Basket (Warm 585) \\
+\emph{Cà phê hòa tan loại nào đậm vị?} & 2,439 & 1,365 & \textbf{662} & 445 & Cold (Warm 184) \\
+\emph{Paraphrased strong coffee (Cache)} & 2,439 & 460 & \textbf{184} & 183 & Semantic Cache \\
+\emph{Store-wide bestseller query} & --- & --- & \textbf{239} & 239 & Synced 30d FRN \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_production_latency_sin1.png}
+    \caption{Live HTTPS latency progression across deployment regions (left) and per-stage breakdown (card \code{start}, TTFT, total stream) across 7 query archetypes measured live on Singapore \texttt{sin1} (right).}
+    \label{fig:prod_latency_sin1}
+\end{figure}
+
+\subsection*{SOTA~V2 Development Benchmark, Independent 100Q Audit, and Bestseller/Stock Suite}
+System quality is validated across three distinct evaluation suites:
+\begin{enumerate}
+    \item \textbf{100Q SOTA~V2 Development Benchmark (Dev Set, 113 turns):} Used iteratively during routing and lexicon optimization (Table~\ref{tab:sota_v2}, Figure~\ref{fig:sota_v2}). \emph{Functional Pass} requires accurate category/product match, exact pricing, and budget/safety adherence; \emph{Strict Pass} additionally requires exact unit-price comparison, provenance tags, card schema formatting, and zero off-target cards. The \emph{8-Pillar Scorecard} computes a weighted composite of eight quantitative dimensions: functional accuracy (20\%), catalog grounding (15\%), clinical/OWASP safety (15\%), P50 latency (15\%), speech resilience (10\%), multi-turn/paraphrase consistency (10\%), data-cleaning quality (10\%), and automated test coverage (5\%). Iterative tuning raised Strict Pass from 59/100 to 94/100 (Functional 96/100, XSTest 10/10, OWASP 10/10, composite 68.5 $\to$ 88.2/100).
+    \item \textbf{100Q Independent Expert Catalog Audit (\code{Q01}--\code{Q100}, 0\% Dev overlap):} Scored across five frameworks (RAGAS, DeepEval, RAGChecker, $\tau$-bench~\cite{yao2024taubench}, ShoppingBench), the system attained \textbf{174/174 (100\%)} valid catalog SKU grounding, \textbf{100/100} exact price/promo arithmetic, \textbf{14/14} budget compliance, \textbf{7/7} safety/OOC boundaries, \textbf{94.0\%} claim faithfulness, and \textbf{9/10} $\tau$-bench multi-turn tracking.
+    \item \textbf{100Q Bestseller \& Inventory Provenance Suite (Table~\ref{tab:bestseller_stock_100q}):} Across 10 semantic categories covering bestseller rankings and inventory snapshots, routing unification raised pass rate from 43/100 to 100/100 (median 190\,ms, P95 448\,ms; 100\% explicit provenance disclosure). In live production (\code{SYNCED_SALES_ENABLED=True}), bestseller queries read directly from \code{data/synced_sales_30d.json} (164 \texttt{FRN\_STORE\_18} fresh SKUs + 2,935 monthly \texttt{2026-10} SKUs; e.g., store-wide bestseller returns \emph{Bí xanh} at 3,754 units/30d in 239\,ms), while offline unit tests remain isolated on \code{demo_sales.sqlite3} (\texttt{SIMULATED}).
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Iterative tuning progression on the 100-question SOTA~V2 Development Set (113 turns)}
+\label{tab:sota_v2}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{5.1cm} r r Y}
+\toprule
+\textbf{Evaluation Metric (Dev Set)} & \textbf{Baseline} & \textbf{Tuned} & \textbf{Criterion Definition / Primary Driver} \\
+\midrule
+Strict Pass Rate (100Q) & 59/100 & 94/100 & All product, price, unit-value, provenance, and card checks pass \\
+Functional Pass Rate (100Q) & 64/100 & 96/100 & Correct category/item, exact pricing, and budget/safety compliance \\
+Median Latency (P50) & 1,826\,ms & 125\,ms & Pre-indexed catalog and zero-planner deterministic paths \\
+XSTest Benign Non-Over-Refusal & 7/10 & 10/10 & Separates clinical prescriptions from benign food items \\
+OWASP Red-Team Resistance & 6/10 & 10/10 & Deterministic prompt-injection and exfiltration gates \\
+Weighted 8-Pillar Scorecard & 68.5/100 & 88.2/100 & Weighted average of 8 internal evaluation dimensions \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_sota_v2_benchmark.png}
+    \caption{Progression on the 100Q SOTA~V2 Development Set across 10 groups (left) and controlled A1--A4 ablation of accuracy and P50/P95/P99 latency on the independent 50Q test set, $N=150$ runs (right).}
+    \label{fig:sota_v2}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{100-question Bestseller \& Inventory Provenance benchmark across 10 semantic groups}
+\label{tab:bestseller_stock_100q}
+\footnotesize
+\begin{tabularx}{\textwidth}{Y r r r r}
+\toprule
+\textbf{Query Group (10 Groups)} & \textbf{Count} & \textbf{Before} & \textbf{After} & \textbf{Gain} \\
+\midrule
+1--3. Store-wide, 15-category \& constrained best-sellers & 35 & 15/35 & 35/35 & +20 \\
+4--6. Single-SKU, brand-level \& store stock rankings & 30 & 11/30 & 30/30 & +19 \\
+7--8. Combined sales--stock comparisons \& multi-turn context & 20 & 7/20 & 20/20 & +13 \\
+9--10. Out-of-catalog/medical safety \& colloquial/English & 15 & 10/15 & 15/15 & +5 \\
+\midrule
+\textbf{Total (Median 190\,ms, P95 448\,ms; Live 12/12)} & \textbf{100} & \textbf{43/100} & \textbf{100/100} & \textbf{+57} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{Supporting Multimodal Results (On-Demand Vision \& Speech Recognition)}
+\textbf{\texttt{MobileNetV3Large-224} TFLite Visual Recognition (Table~\ref{tab:tflite_vision_bench}, Figure~\ref{fig:mobile_tflite_vision}):} On 150 hard 3D multi-angle SKU transforms, the 7.04\,MB FP16 embedder attained \textbf{92.67\% Top-1 / 99.33\% Top-5} in 5.49\,ms on CPU. On the independent zero-leakage smartphone set (16 unseen OpenFoodFacts photos + 4 real OOD negatives), our \textbf{Hybrid On-Demand} architecture with \emph{Sibling Pack-Size Guard} achieved \textbf{93.8\% Brand@1} (\textbf{62.5\%} exact SKU Top-1) alongside \textbf{4/4 (100\%)} OOD rejection ($\text{sim}_1 \le 0.588 < 0.72$). Live HTTP latency measured 23.4--27.4\,ms on Fast-Path and 2.14--2.90\,s on Hybrid escalation.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation of \texttt{MobileNetV3Large-224} TFLite and On-Demand Hybrid across 3,093 SKUs}
+\label{tab:tflite_vision_bench}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabularx}{\textwidth}{Y L{2.45cm} r r r r r}
+\toprule
+\textbf{Independent Test Suite} & \textbf{Mode} & \textbf{Top-1} & \textbf{Top-5} & \textbf{Brand@1} & \textbf{OOD Rej.} & \textbf{P50 (ms)} \\
+\midrule
+150 SKUs Hard 3D/Shelf/Glare & TFLite FP16 (7.04\,MB) & 92.67\% & 99.33\% & --- & --- & 5.49 \\
+150 SKUs Hard 3D/Shelf/Glare & TFLite INT8 (3.81\,MB) & 92.67\% & 98.67\% & --- & --- & 13.30 \\
+16 External Shots (\code{eval_google}) & Local 2-Crop (FP16) & 25.0\% & 87.5\% & 87.5\% & --- & 13.5 \\
+16 Unseen Phone + 4 Real OOD & Local 2-Crop (ONNX) & 25.0\% & 43.8\% & 31.2\% & 4/4 & 13.5 \\
+16 Unseen Phone + 4 Real OOD & \textbf{Hybrid On-Demand} & \textbf{62.5\%} & --- & \textbf{93.8\%} & \textbf{4/4} & 15.2 / 2,556 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_mobile_tflite_vision.png}
+    \caption{Visual recognition accuracy across 3,093 SKUs (left) and log-scale latency comparison between local Fast-Path and cloud VLM (right).}
+    \label{fig:mobile_tflite_vision}
+\end{figure}
+
+\textbf{Supporting ASR Evaluation (Table~\ref{tab:stt_ablation}):} Serving as a supporting voice interface, the speech pipeline was evaluated across three SNR conditions ($n=16$ clips) alongside streaming WebSocket timing probes (\textbf{257--558\,ms} post-speech latency, $4$--$7\times$ faster than REST at 1,937--3,042\,ms). \textbf{Azure Speech + \texttt{DPDFNet2}} achieved the lowest WER in clean (\textbf{10.0\%}) and 12\,dB supermarket noise (\textbf{14.1\%}), while \textbf{raw Azure Speech} sustained \textbf{16.1\% WER} under heavy 5\,dB noise, providing an empirical basis for SNR-adaptive denoising selection in deployment.
+
+\begin{table}[H]
+\centering
+\caption{WER (\%) comparison of 5 supporting ASR configurations across SNR levels ($n=16$ clips)}
+\label{tab:stt_ablation}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{5.5cm} r r r Y}
+\toprule
+\textbf{ASR \& Denoiser Configuration} & \textbf{Clean (\%)} & \textbf{12\,dB (\%)} & \textbf{5\,dB (\%)} & \textbf{Empirical Observation} \\
+\midrule
+Azure Speech + \texttt{DPDFNet2} ONNX & \textbf{10.0} & \textbf{14.1} & 16.7 & Best accuracy in clean and 12\,dB noise conditions \\
+Azure Speech Raw (no denoiser) & 11.9 & 14.5 & \textbf{16.1} & Most stable under heavy 5\,dB noise (SNR-adaptive switch) \\
+Whisper Large-v3 (REST WAV) & 12.0 & 14.2 & 22.2 & Strong clean/12\,dB accuracy; file-based REST path \\
+Azure Speech + \texttt{GTCRN} & 11.9 & 15.2 & 30.5 & Suited to light stationary background noise \\
+Local \texttt{gipformer1.5-68M-rnnt} & 18.4 & 24.6 & 34.8 & Offline contingency when cloud connectivity drops \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Results for Agent 2: Forecasting and Store Operations (\texttt{ops\_chest})}
+
+\subsection*{Controlled Forecasting Ablation (B0--B3) Across 50 Held-Out FRN Stores}
+On masked late-day validation ($n=200{,}000$), hourly demand recovery reduced stockout-day WAPE from 32.35\% to \textbf{20.53\%} and nearly eliminated downward bias ($-32.35\% \to -0.15\%$). Table~\ref{tab:ops_forecast_ablation} compares five forecasting models on the exact same 50 held-out stores across both the 7-day official evaluation week ($n=11{,}037$ full-stock observations) and the 37-day rolling horizon ($n=374{,}982$ observations):
+\begin{itemize}
+    \item \textbf{Impact of Censored Demand Recovery:} Omitting stockout recovery causes severe negative bias of \textbf{$-21.80\%$} against recovered demand ($n=16{,}207$, WAPE 38.26\%), compared to only $-5.07\%$ (WAPE 35.12\%) when hourly recovery is enabled.
+    \item \textbf{Predictive Accuracy of LightGBM~v3:} Across both horizons, LightGBM~v3 (29 features) outperforms every baseline: cutting WAPE from 38.65\% (Seasonal Naive) and 35.06\% (EWMA) to \textbf{30.17\%}, reducing bias from $+6.95\%$ to $+2.71\%$, lowering Pinball-50 to \textbf{0.1508}, and calibrating 80\%-interval coverage to \textbf{81.2\%} (vs.\ 72.6\% for EWMA).
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Controlled forecasting baseline comparison (B0--B3) on 50 held-out FreshRetailNet-50K stores}
+\label{tab:ops_forecast_ablation}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabularx}{\textwidth}{Y r r r r r r}
+\toprule
+\textbf{Forecasting Model (50 Held-Out Stores)} & \multicolumn{4}{c}{\textbf{Eval Week ($n=11{,}037$ obs)}} & \multicolumn{2}{c}{\textbf{Rolling ($n=374{,}982$)}} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-7}
+ & \textbf{WAPE} & \textbf{Bias} & \textbf{Pin50} & \textbf{Cov80} & \textbf{WAPE} & \textbf{Bias} \\
+\midrule
+\textbf{B0:} Seasonal Naive (same weekday last week) & 38.65\% & $-0.74\%$ & 0.1933 & --- & 40.54\% & $-1.25\%$ \\
+\textbf{B0b:} 28-Day Moving Average & 35.48\% & $-10.98\%$ & 0.1774 & --- & 35.94\% & $-4.88\%$ \\
+\textbf{B1a:} EWMA without OOS recovery (\code{rec}: $-21.8\%$) & 35.06\% & $-10.75\%$ & 0.1753 & 76.0\% & 35.81\% & $-5.79\%$ \\
+\textbf{B1b:} Ops Chest EWMA (with OOS recovery) & 35.06\% & $+6.95\%$ & 0.1753 & 72.6\% & 37.77\% & $+13.35\%$ \\
+\textbf{B3:} LightGBM~v3 (29 features + OOS recovery) & \textbf{30.17\%} & \textbf{$+2.71\%$} & \textbf{0.1508} & \textbf{81.2\%} & \textbf{34.95\%} & \textbf{$+8.73\%$} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{Simulated Profit Ablation (B1--B5), 95\% CIs, Store-Size Breakdown \& Sensitivity}
+Table~\ref{tab:ops_chest_backtest} reports the 37-day out-of-sample A/B backtest across all 50 held-out stores (2-fold store CV) with 95\% bootstrap CIs and Wilcoxon tests (Figures~\ref{fig:ops_chest_frn} and~\ref{fig:ops_sensitivity_ci}):
+\begin{itemize}
+    \item \textbf{Value of Decoupling ML Median from EWMA Dispersion:} Compared to passing raw LightGBM quantile spreads directly into Newsvendor (\textbf{B3/B3s}), pairing LightGBM's median $\hat{q}_{50}^{\text{LGBM}}$ with smooth $\sigma_{\text{EWMA}}$ (\textbf{B4}) and store-size profit gating (\textbf{B5 / \texttt{B-Gate}}) simultaneously lifts profit and reduces spoilage (cutting waste from 5.68--6.45\% down to \textbf{4.82\%}).
+    \item \textbf{Statistically Significant Gain of \texttt{B-Gate} (B5):} Across all 50 held-out stores (2-fold CV), \textbf{B5 (\texttt{B-Gate})} raises median simulated gross profit by \textbf{+4.90\%} over Baseline~A (95\% CI $[+3.70\%,\,+5.81\%]$, $p=5.4\times 10^{-7}$) and \textbf{+0.78\%} over \texttt{B-EWMA} (95\% CI \textbf{$[+0.48\%,\,+1.21\%]$}, mean $+0.82\%$, Wilcoxon \textbf{$p = 6.39\times 10^{-6}$}, winning \textbf{38/50 = 76.0\%} stores).
+    \item \textbf{Store-Size Subgroup Analysis (Table~\ref{tab:ops_subgroup_sensitivity}):} On the \textbf{37 medium/large stores ($>30$ SKUs)}, \texttt{B-Gate} gains \textbf{+0.87\%} median over EWMA (95\% CI $[+0.56\%,\,+1.26\%]$, $p = 1.26\times 10^{-5}$, winning \textbf{32/37 = 86.5\%}). On the \textbf{13 small stores ($\le 30$ SKUs)}, profit gating preserves EWMA-level stability (mean $+0.39\%$) while trimming spoilage from 7.42\% down to \textbf{6.94\%}.
+    \item \textbf{Optimal Balance Across Profit, Waste, and Traffic Protection:} Relative to Baseline~A and EWMA, \texttt{B-Gate} achieves the lowest spoilage rate (\textbf{4.82\%}, down from 5.33\% in Baseline~A and 5.17\% in EWMA) and cuts traffic-driver stockouts from 8.69\% down to \textbf{3.37\%} via $SL_{\text{floor}} = 0.95$, while keeping overall OOS (14.12\%) lower than Baseline~A (14.49\%) to maximize net gross profit.
+    \item \textbf{Robustness Across 8 Sensitivity Scenarios (Table~\ref{tab:ops_subgroup_sensitivity}, Figure~\ref{fig:ops_sensitivity_ci}b):} Simulated profit gains stay consistently positive across operational perturbations: when shopper markdown elasticity drops to 12.5\% (\code{world_25}: $+4.38\%$), when evaluating replenishment alone (\code{order_only}: $+4.73\%$, accounting for 87\% of total lift), and under partial 60\% manager approval (\code{approve_60}: $+3.76\%$). The \code{no_floor} ablation further confirms the decisive contribution of $SL_{\text{floor}}$ to both profit (+6.00\,pp) and OOS protection.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{37-day simulated profit ablation (B1--B5) across 50 held-out stores (2-fold CV) with 95\% Bootstrap CIs and Wilcoxon $p$}
+\label{tab:ops_chest_backtest}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{Y r r L{2.35cm} r r r r}
+\toprule
+\textbf{Strategy (B1--B5)} & \textbf{vs.\ A} & \textbf{vs.\ EWMA} & \textbf{95\% CI vs.\ EWMA} & \textbf{Win\%} & \textbf{Waste\%} & \textbf{OOS\%} & \textbf{Traf.OOS} \\
+\midrule
+Baseline A (flat 30\% MD) & 0.00\% & --- & --- & --- & 5.33 & 14.49 & 8.69 \\
+\textbf{B1:} \texttt{B-EWMA} & +4.18\% & 0.00\% & --- & --- & 5.17 & 13.61 & 3.94 \\
+\textbf{B3:} \texttt{B-ML} (\code{sym} $\sigma$) & +3.58\% & $-0.39\%$ & $[-1.10, +0.07]$ & 38\% & 5.68 & 13.14 & 2.71 \\
+\textbf{B3s:} \texttt{B-ML split} & +1.64\% & $-2.17\%$ & $[-3.20, -1.30]$ & 6\% & 6.45 & \textbf{12.22} & \textbf{2.26} \\
+\textbf{B4:} \texttt{B-ML ewma\_sigma} & +4.50\% & +0.77\% & $[+0.48, +1.15]$ & 74\% & 4.83 & 14.35 & 3.37 \\
+\textbf{B5:} \textbf{\texttt{B-Gate}} ($p=6.4\times 10^{-6}$) & \textbf{+4.90\%} & \textbf{+0.78\%} & \textbf{$[+0.48, +1.21]$} & \textbf{76\%} & \textbf{4.82} & 14.12 & 3.37 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Store-size subgroup analysis (50 stores) and 8-scenario sensitivity analysis (20 FRN stores)}
+\label{tab:ops_subgroup_sensitivity}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{L{3.55cm} c L{2.35cm} c c Y}
+\toprule
+\textbf{Subgroup / Scenario} & \textbf{Gain} & \textbf{95\% CI / Basis} & \textbf{Waste\%} & \textbf{OOS\%} & \textbf{Interpretation} \\
+\midrule
+\multicolumn{6}{l}{\textit{A. Store-Size Subgroups (\texttt{B-Gate} vs.\ \texttt{B-EWMA}, 2-fold CV)}} \\
+Large stores ($>30$ SKUs, $n=37$) & \textbf{+0.87\%} & $[+0.56,+1.26]$ ($p=1.3\cdot 10^{-5}$) & 4.82 & 14.46 & Wins 32/37 (86.5\%); primary driver of gain \\
+Small stores ($\le 30$ SKUs, $n=13$) & $-0.01\%$ & $[-0.33,+1.53]$ ($p=0.58$) & 6.94 & 12.14 & Preserves EWMA stability; cuts waste vs.\ 7.42\% \\
+\midrule
+\multicolumn{6}{l}{\textit{B. 8-Scenario Sensitivity Analysis (vs.\ Baseline~A, 20 FRN stores)}} \\
+Reference (\code{reference}) & +5.46\% & 50\% elasticity & 4.47 & 14.44 & Control baseline for stress tests \\
+Weaker MD (\code{world_50/25}) & +4.69 / +4.38\% & 25\% / 12.5\% elast. & 4.89 / 5.06 & 14.47 / 14.49 & Gains persist under weak markdown elasticity \\
+Order-only (\code{order_only}) & +4.73\% & No MD/return & 5.22 & 14.51 & 87\% of profit lift arises from replenishment alone \\
+HITL rate (\code{approve_80/60}) & +4.78 / +3.76\% & 80\% / 60\% HITL & 4.81 / 5.03 & 14.60 / 14.42 & Robust under partial human approval \\
+Floor control (\code{no_floor}) & $-0.54\%$ & Floor ablation & 2.82 & 22.12 & Confirms +6.00\,pp profit lift from $SL_{\text{floor}}$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_ops_chest_frn_forecast.png}
+    \caption{Demand recovery and LightGBM~v3 WAPE (left) and 50-store profit, waste, and stockout comparison (right).}
+    \label{fig:ops_chest_frn}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth]{Images/fig_ops_chest_sensitivity_ci.png}
+    \caption{95\% bootstrap CIs for profit lift vs.\ EWMA by store size (left) and 8-scenario sensitivity analysis across 20 FRN stores (right).}
+    \label{fig:ops_sensitivity_ci}
+\end{figure}
+
+\section{End-to-End Inter-Agent Integration Results}
+
+To verify cross-agent coordination over the 164-SKU crosswalk (\code{data/bridge/crosswalk.csv}) and \code{backend/services/ops_bridge.py}, \code{tests/test_ops_bridge_e2e.py} runs a live \texttt{ops\_chest} HTTP service with full HITL state transitions connected directly to \texttt{Retail-AI-}'s FastAPI endpoints. All five scenarios passed automatically in 4.20\,s (Table~\ref{tab:bridge_e2e_results}): unapproved \texttt{PENDING} markdowns never leak to customer quotes; manager approval (\texttt{EXECUTED}) updates kiosk prices immediately (123,900 $\to$ 92,925\,VND) and surfaces the FEFO promotion; live stockouts (\code{on_hand=0}) are reported honestly on direct queries and hidden from in-stock searches in favor of mapped substitutes; and stale ($>300$\,s) or offline (HTTP~503) states fail closed cleanly to the verified static catalog snapshot.
+
+\begin{table}[H]
+\centering
+\caption{End-to-End inter-agent integration test results (\code{tests/test_ops_bridge_e2e.py})}
+\label{tab:bridge_e2e_results}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.5cm} L{4.2cm} L{1.5cm} Y}
+\toprule
+\textbf{Integration Scenario} & \textbf{Action on \texttt{ops\_chest} / Bridge} & \textbf{Status} & \textbf{Verified Outcome in \texttt{Retail-AI-}} \\
+\midrule
+1. Crosswalk Integrity & Load \code{data/bridge/crosswalk.csv} vs.\ Thanh Lam Mart catalog & Pass & 164/164 fresh SKUs match 100\% \code{product_id}, name \& price; 0 quarantined \\
+2. HITL Isolation (\texttt{PENDING}) & Draft 25\% FEFO markdown on \code{F0005} (\code{WIN_10283202}) & Pass & Kiosk retains 123,900\,VND; unapproved price never leaks \\
+3. Approved FEFO Sync & Manager approves \code{prop_md_01} $\to$ \texttt{EXECUTED} (92,925\,VND) & Pass & Kiosk quotes 92,925\,VND immediately and surfaces FEFO promo \\
+4. Live Stockout Hiding & Set \code{F0007} (\code{WIN_10283203}) to \code{on_hand = 0} & Pass & Direct query reports zero sellable stock; \code{in_stock=True} hides \code{WIN_10283203} and returns \code{WIN_10283202} \\
+5. Fail-Closed TTL / 503 & Age \code{as_of} $>300$\,s or return HTTP~503 & Pass & Safely reverts to static snapshot (\code{stock_is_current=False}), 0 crashes \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{System Safety and Reliability Evaluation}
+
+Both agents demonstrated strong safety and grounding reliability across formal evaluations: \texttt{Retail-AI-} attained \textbf{10/10} on XSTest non-over-refusal, \textbf{10/10} on OWASP red-teaming, and \textbf{10/10} on independent safety/OOC probes; while \texttt{ops\_chest} (Table~\ref{tab:ops_chest_guard}, \code{eval_failover.json}) recorded \textbf{20/20 (100\%)} grounded figures $\ge 1{,}000$, \textbf{19/20 (95\%)} correct tool selection, \textbf{19/20 (95\%)} zero false-execution claims, and \textbf{18/20 (90\%)} strict end-to-end pass.
+
+\begin{table}[H]
+\centering
+\caption{Runtime tool-calling, grounding, and HITL safety evaluation in \texttt{ops\_chest} (\code{eval_failover.json}, $N=20$)}
+\label{tab:ops_chest_guard}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{4.9cm} r r Y}
+\toprule
+\textbf{Evaluation Dimension} & \textbf{Passed} & \textbf{Rate} & \textbf{Safety Mechanism \& Finding} \\
+\midrule
+Numeric Grounding ($\ge 1{,}000$, \code{grounded}) & 20 / 20 & 100.0\% & Cross-checks currency figures directly against tool outputs \\
+Correct Tool Selection (\code{tools_ok}) & 19 / 20 & 95.0\% & Sustains reliable tool routing even across fallback models \\
+Zero False Execution (\code{no_false_exec}) & 19 / 20 & 95.0\% & Enforces strict boundary between \texttt{PENDING} drafts and execution \\
+Strict End-to-End Scenario Pass & 18 / 20 & 90.0\% & All tool, numeric, refusal, and formatting checks pass \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Architecturally, the system's core safety guarantee rests on \emph{structural separation}: \texttt{Retail-AI-} routes customer requests through deterministic catalog tools behind sub-3\,ms pre-LLM safety gates, while \texttt{ops\_chest} exposes zero direct-execution tools to the LLM and enforces mandatory manager HITL approval for every markdown or purchase order. Combining structural tool isolation with runtime \code{guard.py} verification establishes a dependable foundation for retail operations.

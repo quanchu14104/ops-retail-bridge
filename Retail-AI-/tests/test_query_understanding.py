@@ -1,0 +1,1455 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from backend.api.main import _localized_recommendation_candidates
+from backend.products.catalog import ProductSnapshot
+from backend.products.category_taxonomy import normalize_category_text
+from backend.products.snapshot_repository import SnapshotProductRepository
+from backend.services.query_understanding import (
+    prior_product_page_reference_kind,
+    understand_catalog_query,
+)
+from backend.services.retail_tools import ToolObservation, execute_catalog_tool
+from backend.services.vietnamese_intent import normalize_vietnamese
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _snapshot() -> SnapshotProductRepository:
+    return SnapshotProductRepository(ROOT / "data" / "winmart_products.json")
+
+
+@pytest.mark.parametrize("query", [
+    "Cùng một mức giá thì loại nào dùng thích hơn?",
+    "Giá như nhau thì cái nào đáng mua?",
+    "Ngang tầm tiền, sản phẩm nào dùng tốt hơn?",
+    "Cùng mức giá, nước giặt loại nào dùng ổn hơn?",
+])
+def test_equal_price_quality_choice_is_comparison_not_a_price_lookup(query):
+    result = understand_catalog_query(query, _snapshot().list_category_hierarchies())
+    assert result.intent == "comparison"
+    assert not result.comparison_targets
+
+
+@pytest.mark.parametrize("query", [
+    "Nước giặt giá bao nhiêu?", "Cho mình hỏi giá chai nước mắm này?",
+])
+def test_factual_price_question_remains_a_price_lookup(query):
+    assert understand_catalog_query(query).intent == "price"
+
+
+@pytest.mark.parametrize("query", [
+    "Mình cần đồ ăn sáng nhanh mà vẫn no.", "Ăn no bụng rồi hãy đi.",
+    "Có món gì ăn thật no không?", "Ăn sáng no lâu một chút.",
+    "Ăn trưa no lâu một chút.", "Ăn tối no lâu một chút.",
+])
+def test_satiety_is_not_a_reference_to_a_previous_product(query):
+    result = understand_catalog_query(query, _snapshot().list_category_hierarchies())
+    assert result.conversation_reference is None
+    assert "alternative" not in result.secondary_intents
+    assert not result.negative_constraints
+
+
+@pytest.mark.parametrize("query", [
+    "Tìm mãi không thấy khăn giấy, nó nằm khu nào vậy?",
+    "Không thấy bóng đèn ở đâu cả, chỉ giúp mình với.",
+    "Mình không tìm thấy cà phê ở đâu vậy?",
+    "Không tìm được nước rửa chén, khu nào thế?",
+])
+def test_not_finding_a_product_is_not_an_excluded_product_attribute(query):
+    result = understand_catalog_query(query, _snapshot().list_category_hierarchies())
+    assert not result.negative_constraints
+    assert not result.hard_constraints
+
+
+def test_query_understanding_separates_product_type_from_use_case() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Mình muốn tìm thịt để ăn lẩu",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "recommendation"
+    assert result.product_type == "Thịt"
+    assert result.use_case == "ăn lẩu"
+    assert "lẩu" not in result.product_reference.casefold()
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type", "expected_need"),
+    [
+        ("Da mặt khô căng, tìm kem dưỡng.", "kem dưỡng", "Da mặt khô căng"),
+        ("Tìm kem chống nắng cho da dầu.", "kem chống nắng", "da dầu"),
+        ("Tìm dầu gội cho tóc khô xơ.", "dầu gội", "tóc khô xơ"),
+        ("Tìm nước giặt cho da nhạy cảm.", "nước giặt", "da nhạy cảm"),
+    ],
+)
+def test_unverified_customer_needs_stay_separate_across_catalog_groups(
+    query: str,
+    expected_type: str,
+    expected_need: str,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert normalize_vietnamese(result.product_reference).find(
+        normalize_vietnamese(expected_type)
+    ) >= 0
+    assert result.use_case == expected_need
+    assert expected_need.casefold() not in result.product_reference.casefold()
+    observation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps(
+            {"query": expected_type, "preference_text": query, "limit": 3},
+            ensure_ascii=False,
+        ),
+        repository=repository,
+        current_user_text=query,
+    )
+    answer = _localized_recommendation_candidates(observation, "vi")
+
+    assert observation.status == "SUCCESS"
+    assert observation.content["use_case_verified"] is False
+    assert expected_need.casefold() == observation.content["use_case"].casefold()
+    assert "Mình chưa đủ thông tin để xác nhận" in answer
+    assert "Mình gợi ý" not in answer
+
+
+def test_condition_only_query_is_not_mistaken_for_a_catalog_product_type() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query("Da khô.", repository.list_category_hierarchies())
+
+    assert result.product_type is None
+    assert result.product_reference == ""
+    assert result.use_case == "Da khô"
+    assert result.clarification_needed
+
+
+def test_banh_da_product_name_is_not_misread_as_a_skin_condition() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query("Bánh đa khô.", repository.list_category_hierarchies())
+
+    assert result.use_case is None
+    assert normalize_vietnamese(result.product_reference) == "banh da kho"
+
+
+@pytest.mark.parametrize("query", ["Tìm nước ngọt", "Tìm Coca Zero", "xyz qzx"])
+def test_heuristic_parser_does_not_publish_uncalibrated_confidence(query: str) -> None:
+    result = understand_catalog_query(query)
+
+    assert "confidence" not in result.model_dump()
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_use_case"),
+    [
+        ("Tìm thịt để ăn lẩu giúp mình.", "ăn lẩu"),
+        ("Tìm dầu gội để chăm sóc da đầu nhanh bết giúp t", "chăm sóc da đầu nhanh bết"),
+        ("Tìm đồ ăn phù hợp cho trẻ", "trẻ"),
+    ],
+)
+def test_use_case_keeps_customer_need_and_drops_only_polite_request_closing(
+    query: str, expected_use_case: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(
+        query,
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.use_case == expected_use_case
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_use_case"),
+    [
+        ("Mình cần sữa tươi hộp giấy để ngoài được, có loại nào không?", "ngoài được"),
+        ("Cho mình khăn giấy để mang theo, có loại nào không?", "mang theo"),
+    ],
+)
+def test_use_case_drops_trailing_product_availability_question(query, expected_use_case):
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.use_case == expected_use_case
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Bé khoảng 5 ký, nên chọn bỉm nào mềm và dễ chịu?",
+        "Be khoang 5 ky, nen chon bim nao mem va de chiu?",
+    ],
+)
+def test_vietnamese_easy_comfortable_is_not_misread_as_a_purpose_clause(query: str) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.use_case is None
+    assert "chiu" in normalize_vietnamese(result.product_reference)
+
+
+def test_catalog_category_wording_is_not_mistaken_for_a_preparation_request() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Cho mình xem nhóm Đồ dùng nấu nướng",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Đồ dùng nấu nướng"
+    assert result.use_case is None
+
+    with_purpose = understand_catalog_query(
+        "Cho mình xem nhóm Đồ dùng nấu nướng để nấu nướng",
+        repository.list_category_hierarchies(),
+    )
+    assert with_purpose.product_type == "Đồ dùng nấu nướng"
+    assert with_purpose.use_case == "nấu nướng"
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_category"),
+    [
+        ("Mình đang cần Bút, cho mình xem vài loại.", "Bút"),
+        ("Mình đang cần Muối, cho mình xem vài loại.", "Muối"),
+        ("Mình đang cần Dầu hướng dương, cho mình xem vài loại.", "Dầu hướng dương"),
+        ("Mình đang cần Lăn khử mùi Nam, cho mình xem vài loại.", "Lăn khử mùi Nam"),
+    ],
+)
+def test_natural_request_prefix_preserves_catalog_leaf(
+    query: str, expected_category: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.product_type == expected_category
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_category"),
+    [
+        ("Tìm bàn là", "Bàn là"),
+        ("Tìm giá đỗ", "Giá đỗ"),
+        ("Tìm Dung dịch vs nam nữ", "Dung dịch vs nam nữ"),
+        ("Tìm Dụng cụ vs nhà cửa", "Dụng cụ vs nhà cửa"),
+    ],
+)
+def test_exact_catalog_labels_are_not_overridden_by_stopwords_or_intent_cues(
+    query: str, expected_category: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.product_type == expected_category
+    assert result.intent == "product_search"
+    assert result.comparison_targets == ()
+    assert result.budget_vnd is None
+
+
+def test_price_question_about_category_with_price_keyword_still_routes_as_price() -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(
+        "Giá đỗ giá bao nhiêu?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Giá đỗ"
+    assert result.intent == "price"
+    assert result.budget_vnd is None
+
+
+def test_explicit_comparison_cue_outside_category_label_is_preserved() -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(
+        "So sánh giá đỗ với nước ngọt",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "comparison"
+    assert result.comparison_targets
+
+
+def test_all_exact_catalog_leaf_labels_keep_category_identity_and_lookup_intent() -> None:
+    repository = _snapshot()
+    hierarchies = repository.list_category_hierarchies()
+    labels = sorted({path[-1] for path in hierarchies if path})
+    taxonomy_labels = {
+        normalize_category_text(segment)
+        for path in hierarchies
+        for segment in path
+    }
+
+    assert labels
+    for label in labels:
+        result = understand_catalog_query(f"Tìm {label}", hierarchies)
+        assert result.product_type, (label, result.model_dump())
+        assert normalize_category_text(result.product_type) in taxonomy_labels, (
+            label,
+            result.model_dump(),
+        )
+        assert result.intent in {"product_search", "recommendation"}, (
+            label,
+            result.model_dump(),
+        )
+        assert result.comparison_targets == (), (label, result.model_dump())
+
+
+def test_package_size_is_not_misread_as_purchase_quantity() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Mình muốn tìm Miến khô Vifon gói 300g",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.quantity is None
+
+
+def test_zero_quantity_like_negation_is_ignored_instead_of_rejecting_the_query() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Tìm nước ngọt không chai, dưới 20 nghìn.",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.quantity is None
+    assert result.budget_vnd == 20_000
+
+
+def test_accented_hong_in_product_names_is_not_normalized_as_negation() -> None:
+    repository = _snapshot()
+    query = "Mình muốn tìm Giấy vệ sinh Elene hồng 3 lớp 10 cuộn"
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert "hồng" in query
+    assert "khong" not in normalize_vietnamese("hồng")
+    assert result.negative_constraints == ()
+    assert "WIN_10020669" in {product.product_id for product in observation.products}
+
+
+def test_accentless_colloquial_hong_still_means_khong() -> None:
+    assert normalize_vietnamese("Sản phẩm này hong cay") == "san pham nay khong cay"
+
+
+def test_product_name_words_that_overlap_category_do_not_filter_out_exact_item() -> None:
+    repository = _snapshot()
+    query = "Mình muốn tìm Hộp thực phẩm tròn Hokkaido 1000ml"
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert "WIN_10250121" in {product.product_id for product in observation.products}
+    assert observation.content["query_understanding"]["product_type"] is None
+
+
+def test_search_uses_the_original_utterance_when_the_tool_query_is_compacted() -> None:
+    repository = _snapshot()
+    user_text = "Nhà mình sắp hết Hộp thực phẩm tròn Hokkaido 1000ml, tìm giúp mình."
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "Hộp thực phẩm", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text=user_text,
+    )
+
+    assert "WIN_10250121" in {product.product_id for product in observation.products}
+    assert observation.content["query_understanding"]["product_type"] is None
+
+
+@pytest.mark.parametrize(
+    "prompt_template",
+    [
+        "Có {name} không? Tìm đúng tên này giúp mình.",
+        "Bạn tìm giúp {name} trong danh mục hiện tại với.",
+    ],
+)
+def test_natural_wrappers_keep_exact_catalog_title_and_ignore_question_particle(
+    prompt_template: str,
+) -> None:
+    repository = _snapshot()
+    title_counts: dict[str, int] = {}
+    for product in repository.products:
+        key = product.name.casefold()
+        title_counts[key] = title_counts.get(key, 0) + 1
+    product = next(
+        item
+        for item in repository.products
+        if title_counts[item.name.casefold()] == 1 and len(item.name.split()) >= 4
+    )
+    query = prompt_template.format(name=product.name)
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text=query,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert product.product_id in {item.product_id for item in observation.products}
+    assert observation.content["query_understanding"]["unverified_constraints"] == []
+
+
+def test_yes_no_particle_followed_by_comma_search_is_not_a_negative_filter() -> None:
+    repository = _snapshot()
+    query = "Cửa hàng có bán Bia nội địa không, tìm giúp mình với."
+    understanding = understand_catalog_query(query, repository.list_category_hierarchies())
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text=query,
+    )
+
+    assert understanding.product_type == "Bia nội địa"
+    assert understanding.negative_constraints == ()
+    assert observation.status == "SUCCESS"
+    assert observation.products
+
+
+def test_single_word_catalog_type_survives_store_availability_wrapper() -> None:
+    repository = _snapshot()
+    query = "Cửa hàng có bán Bút không, tìm giúp mình với."
+    understanding = understand_catalog_query(query, repository.list_category_hierarchies())
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text=query,
+    )
+
+    assert understanding.product_type == "Bút"
+    assert understanding.negative_constraints == ()
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    assert all("Bút" in product.category_hierarchy for product in observation.products)
+
+
+def test_single_character_brand_typo_does_not_turn_title_word_into_wrong_category() -> None:
+    repository = _snapshot()
+    query = "tìm giúp Hộp thực phẩm tròn Hokkido 1000ml"
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert "WIN_10250121" in {product.product_id for product in observation.products}
+
+
+def test_catalog_category_request_using_dung_cu_is_not_parsed_as_negation() -> None:
+    repository = _snapshot()
+    query = "Cho mình xem nhóm Dụng cụ cọ rửa bếp"
+    understanding = understand_catalog_query(query, repository.list_category_hierarchies())
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert understanding.negative_constraints == ()
+    assert observation.status == "SUCCESS"
+    assert observation.products
+
+
+def test_elliptical_follow_up_inherits_only_the_previous_product_scope() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "loại nào rẻ nhất",
+        repository.list_category_hierarchies(),
+        previous_query="Mình muốn tìm dầu gội",
+    )
+
+    assert result.ranking_criterion == "price_ascending"
+    previous = understand_catalog_query(
+        "Mình muốn tìm dầu gội",
+        repository.list_category_hierarchies(),
+    )
+    assert result.product_type == previous.product_type
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type", "expected_ranking"),
+    [
+        ("Mì gói có những loại nào?", "Mì ăn liền", "relevance"),
+        ("Tã bỉm cho bé sơ sinh", "Tã dán trẻ em", "relevance"),
+        ("Tìm kem chống nắng cho bé đi biển.", "Kem chống nắngtrẻ em", "relevance"),
+        ("Mua giấy ướt em bé gói nhỏ có không?", "Giấy ướt trẻ em", "relevance"),
+        ("Xà phòng tắm loại nào rẻ?", "Xà bông tắm", "price_ascending"),
+    ],
+)
+def test_query_understanding_uses_catalog_synonyms_and_colloquial_price_language(
+    query: str,
+    expected_type: str,
+    expected_ranking: str,
+) -> None:
+    repository = _snapshot()
+    understanding = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert understanding.product_type == expected_type
+    assert understanding.ranking_criterion == expected_ranking
+
+
+def test_follow_up_chain_keeps_scope_across_an_intermediate_ranking_turn() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Có loại nào khác không?",
+        repository.list_category_hierarchies(),
+        previous_queries=("Mình muốn tìm dầu gội", "loại nào rẻ nhất"),
+    )
+
+    assert result.intent == "alternative"
+    assert (
+        result.product_type
+        == understand_catalog_query(
+            "Mình muốn tìm dầu gội",
+            repository.list_category_hierarchies(),
+        ).product_type
+    )
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_ranking"),
+    [
+        ("Món mô ngon nhứt?", "customer_rating"),
+        ("Snack nào bán chạy nhứt?", "sales_popularity"),
+    ],
+)
+def test_regional_vietnamese_superlatives_are_parsed_without_product_name_matching(
+    query: str,
+    expected_ranking: str,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.ranking_criterion == expected_ranking
+
+
+def test_category_lowest_price_query_returns_ascending_catalog_prices() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "thịt rẻ nhất", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    prices = [product.price_vnd for product in observation.products]
+    assert len(prices) == 5
+    assert prices == sorted(prices)
+    assert observation.products[0].price_vnd == min(
+        product.price_vnd for product in repository.search("", category="Thịt", limit=20)
+    )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Bé khoảng 5 ký, nên chọn bỉm nào mềm và dễ chịu?",
+        "Mua giúp mình 2 kg thịt bò.",
+        "Mình cần nước giặt tầm 3 lít.",
+    ],
+)
+def test_physical_measurements_are_not_parsed_as_money_budgets(query: str) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.budget_vnd is None
+
+
+def test_informal_category_price_question_ranks_literal_catalog_evidence_first() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "Bim bim giá bao nhiêu", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text="Bim bim giá bao nhiêu",
+    )
+
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    assert observation.products[0].name == "Bim bim Poppedcorn quẩy soắn 280g"
+    assert all(product.category == "Bánh Snack" for product in observation.products)
+
+
+@pytest.mark.parametrize("tool_name", ["search_products", "recommend_products"])
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Bé khoảng 5 ký, nên chọn bỉm nào mềm và dễ chịu?",
+        "Mua bỉm cho bé giúp mình.",
+        "Mua bỉm quần cho bé giúp mình.",
+    ],
+)
+def test_diaper_family_queries_do_not_leak_snacks_or_adult_products(
+    tool_name: str,
+    query: str,
+) -> None:
+    repository = _snapshot()
+    arguments = {"query": query, "limit": 5}
+    if tool_name == "recommend_products":
+        arguments["preference_text"] = query
+    observation = execute_catalog_tool(
+        tool_name,
+        json.dumps(arguments, ensure_ascii=False),
+        repository=repository,
+        current_user_text=query,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    leaves = {
+        (product.category_hierarchy or "").split(">")[-1].strip()
+        for product in observation.products
+    }
+    assert leaves <= {"Tã dán trẻ em", "Tã quần trẻ em"}
+    assert all("Bim bim" not in product.name for product in observation.products)
+
+
+@pytest.mark.parametrize("tool_name", ["search_products", "recommend_products"])
+def test_partial_cleaner_phrase_does_not_override_the_explicit_floor_leaf(
+    tool_name: str,
+) -> None:
+    repository = _snapshot()
+    query = "Mình muốn tìm nước lau sàn"
+    observation = execute_catalog_tool(
+        tool_name,
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+        current_user_text=query,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    assert all(
+        (product.category_hierarchy or "").split(">")[-1].strip() == "Nước lau sàn nhà"
+        for product in observation.products
+    )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Giá thấp nhất nước rửa chén",
+        "Nước rửa chén giá thấp nhất",
+        "Nước rửa chén nào có giá thấp nhất?",
+    ],
+)
+def test_category_price_superlative_does_not_match_unrelated_catalog_title(
+    query: str,
+) -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert len(observation.products) == 5
+    assert all(
+        normalize_vietnamese(product.category) == normalize_vietnamese("Nước Rửa Chén")
+        for product in observation.products
+    )
+    assert [product.price_vnd for product in observation.products] == sorted(
+        product.price_vnd for product in observation.products
+    )
+
+
+def test_unavailable_best_seller_data_never_returns_an_unranked_product_as_best_seller() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "dầu gội bán chạy nhất", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert observation.status == "DATA_UNAVAILABLE"
+    assert observation.content["unavailable_fields"] == ["sales_count"]
+    assert observation.products == ()
+
+
+def test_unverified_negative_product_attribute_does_not_return_false_matches() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "nước uống không caffeine", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert observation.status == "DATA_UNAVAILABLE"
+    assert [
+        normalize_vietnamese(value) for value in observation.content["unverified_constraints"]
+    ] == ["caffeine"]
+    assert observation.products == ()
+
+
+def test_zero_sugar_request_returns_only_products_with_title_evidence() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "search_products",
+        json.dumps({"query": "nước uống không đường", "limit": 5}, ensure_ascii=False),
+        repository=repository,
+    )
+
+    assert observation.status == "SUCCESS"
+    assert observation.products
+    assert all(
+        "zero" in normalize_vietnamese(product.name)
+        or "khong duong" in normalize_vietnamese(product.name)
+        for product in observation.products
+    )
+
+
+def test_catalog_title_negation_is_not_misread_as_a_customer_filter() -> None:
+    repository = _snapshot()
+    for query in (
+        "Mình muốn tìm Bột cà ri không cay Ottogi gói 100g",
+        (
+            "Mình muốn tìm Máy tăm nước không dây Lock&Lock ENR156BLU "
+            "Cordless Oral Irrigator, 200ml - Màu xanh da trời"
+        ),
+        "Mình muốn tìm Khăn ướt không mùi Huggies 64 Miếng",
+    ):
+        observation = execute_catalog_tool(
+            "search_products",
+            json.dumps({"query": query, "limit": 5}, ensure_ascii=False),
+            repository=repository,
+        )
+
+        expected_name = query.removeprefix("Mình muốn tìm ")
+        assert observation.status == "SUCCESS"
+        assert any(
+            normalize_vietnamese(product.name) == normalize_vietnamese(expected_name)
+            for product in observation.products
+        )
+
+
+def test_use_case_recommendation_is_returned_as_unverified_category_options() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps(
+            {
+                "query": "thịt",
+                "preference_text": "Mình muốn tìm thịt để ăn lẩu",
+                "limit": 5,
+            },
+            ensure_ascii=False,
+        ),
+        repository=repository,
+    )
+
+    assert observation.products
+    assert observation.content["use_case"] == "ăn lẩu"
+    assert observation.content["use_case_verified"] is False
+    assert observation.content["recommendation_evidence"] == "CATALOG_CATEGORY_ONLY"
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type"),
+    [
+        ("Dầu gội dành cho nữ bên mình chai nào giá thấp nhất?", "Dầu gội nữ"),
+        ("Dầu gội dành cho nam rẻ nhất hiện bao nhiêu?", "Dầu gội nam"),
+        ("Có kem đánh răng cho bé loại nhỏ không?", "Kem đánh răng trẻ em"),
+        ("Có gói bim bim lát khoai tây giòn không?", "Snack kh.tây chiên"),
+        ("Mì tôm nằm ở dãy nào?", "Mì ăn liền"),
+        ("Có tuýp chống nắng nào gọn để mang đi chơi không?", "Kem chống nắng"),
+        ("Loại giấy ăn mini để trong túi xách có không?", "Khăn giấy gói"),
+        ("Nước suối để ở tủ mát hay khu đồ uống?", "Nước khoáng"),
+        ("Cửa hàng đang có cải ngọt hay cải thìa?", "Rau cải"),
+        ("Có cá đồng tươi nào để kho không?", "Cá nước ngọt tươi"),
+        ("Có cà đỏ chín để làm sốt không?", "Cà chua"),
+    ],
+)
+def test_catalog_synonyms_resolve_to_the_specific_catalog_type(
+    query: str, expected_type: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert normalize_vietnamese(result.product_type) == normalize_vietnamese(expected_type)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type"),
+    [
+        ("Cà chua ở khu rau ăn quả phải không?", "Cà chua"),
+        ("Gạo tẻ ở khu thực phẩm khô hay đâu?", "Gạo tẻ"),
+        ("Rau cải nằm khu rau củ phía nào?", "Rau cải"),
+        ("Sữa tươi tiệt trùng nằm trong tủ mát hay kệ thường?", "Sữa tươi tiệt trùng"),
+    ],
+)
+def test_location_context_does_not_replace_the_requested_product_type(
+    query: str, expected_type: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.intent == "location"
+    assert normalize_vietnamese(result.product_type) == normalize_vietnamese(expected_type)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_negative"),
+    [
+        ("Tìm nước rửa chén, đừng lấy loại hương chanh.", "hương chanh"),
+        ("Mình tìm mì ăn liền nhưng bỏ qua loại vị hải sản.", "vị hải sản"),
+        ("Tìm nước ngọt có ga nhưng loại trừ vị cola.", "vị cola"),
+        ("Mình cần nước giặt, không muốn loại hương nồng.", "hương nồng"),
+    ],
+)
+def test_vietnamese_negative_request_forms_extract_the_excluded_attribute(
+    query: str, expected_negative: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert normalize_vietnamese(expected_negative) in {
+        normalize_vietnamese(value) for value in result.negative_constraints
+    }
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_budget"),
+    [
+        ("Mình có khoảng 120k để mua dầu gội.", 120_000),
+        ("Ngân sách 150 nghìn, chọn nước giặt.", 150_000),
+        ("Mình có 30 nghìn, mua mì ăn liền.", 30_000),
+        ("Nước rửa chén dưới 70 nghìn.", 70_000),
+    ],
+)
+def test_budget_is_understood_from_common_spoken_forms(query: str, expected_budget: int) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.budget_vnd == expected_budget
+
+
+def test_comparison_and_location_acts_take_priority_over_mentions_of_a_place() -> None:
+    repository = _snapshot()
+    hierarchies = repository.list_category_hierarchies()
+
+    comparison = understand_catalog_query(
+        "Nước tinh khiết đóng chai với nước khoáng có gì khác theo nhãn?", hierarchies
+    )
+    location = understand_catalog_query("Chỉ giúp mình vị trí quầy kem đánh răng.", hierarchies)
+
+    assert comparison.intent == "comparison"
+    assert comparison.comparison_scope
+    assert location.intent == "location"
+    assert normalize_vietnamese(location.product_type) == normalize_vietnamese("Kem đánh răng")
+
+
+def test_comparison_preserves_multiple_catalog_entities_instead_of_one_category() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "So sánh nước khoáng và nước ngọt, loại nào rẻ hơn?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "comparison"
+    assert result.comparison_targets == ("nước khoáng", "nước ngọt")
+    assert result.product_types == ("Nước khoáng", "Nước ngọt có ga")
+    assert "price" in result.secondary_intents
+
+
+def test_postposed_comparison_keeps_both_entities_and_multi_intent_turns() -> None:
+    repository = _snapshot()
+    hierarchies = repository.list_category_hierarchies()
+    comparison = understand_catalog_query("Thịt bò với thịt heo khác nhau gì?", hierarchies)
+    multi_intent = understand_catalog_query(
+        "Tìm nước rửa chén, cho mình xem giá và ở kệ nào?", hierarchies
+    )
+
+    assert comparison.comparison_targets == ("Thịt bò", "thịt heo")
+    assert comparison.product_types == ("Thịt",)
+    assert multi_intent.intent == "location"
+    assert {"price", "product_search"} <= set(multi_intent.secondary_intents)
+
+
+def test_dialogue_reference_keeps_scope_after_alternative_and_ranking_turns() -> None:
+    repository = _snapshot()
+    history = [
+        "Mình đang cần BVS Chu kỳ, cho mình xem vài loại.",
+        "Trong mấy loại đó, loại nào rẻ nhất?",
+        "Còn lựa chọn nào khác cùng nhóm không?",
+    ]
+    result = understand_catalog_query(
+        "Giá của loại đầu tiên là bao nhiêu?",
+        repository.list_category_hierarchies(),
+        previous_query=history[-1],
+        previous_queries=history,
+    )
+
+    assert result.intent == "price"
+    assert result.conversation_reference == "loại đầu tiên"
+    assert normalize_vietnamese(result.product_type) == normalize_vietnamese("BVS Chu kỳ")
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Quay lại món ban đầu, giá bao nhiêu?",
+        "Trở lại loại ban đầu nhé",
+        "Sản phẩm ban đầu",
+        "Back to the original item, please",
+    ],
+)
+def test_explicit_original_product_reference_is_detected(query: str) -> None:
+    assert prior_product_page_reference_kind(query) == "original"
+
+
+def test_original_product_reference_does_not_capture_unrelated_text() -> None:
+    assert prior_product_page_reference_kind("Món đầu tiên có vị gì?") is None
+
+
+def test_original_product_price_followup_keeps_conversation_reference() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Quay lại món ban đầu, giá bao nhiêu?",
+        repository.list_category_hierarchies(),
+        previous_query="Gợi ý dầu gội",
+        previous_queries=("Gợi ý dầu gội",),
+    )
+
+    assert result.intent == "price"
+    assert result.conversation_reference == "Quay lại món ban đầu"
+    assert result.product_type is not None
+
+
+def test_normalized_location_spans_preserve_gendered_product_category() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Cho hỏi dầu gội nam ở dãy kệ nào vậy?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "location"
+    assert result.product_type == "Dầu gội nam"
+    assert "nam" in result.product_reference.casefold()
+
+
+def test_long_direct_category_phrase_beats_embedded_short_alias() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Có cá nước ngọt sơ chế sạch sẵn không?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Cá nước ngọt"
+    assert result.product_type != "Nước ngọt có ga"
+
+
+def test_yes_no_question_followed_by_discourse_marker_is_not_a_negative_filter() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Có mì ly và mì gói không, trước tiên cho mình xem mì gói.",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Mì ăn liền"
+    assert result.negative_constraints == ()
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type"),
+    [
+        (
+            "Nước giặt với bột giặt khác nhau gì? Trước mắt cho mình xem nước giặt.",
+            "Nước giặt",
+        ),
+        (
+            "Gạo tẻ với gạo nếp khác nhau thế nào? Mình đang cần gạo tẻ.",
+            "Gạo tẻ",
+        ),
+        (
+            "Sữa thanh trùng với tiệt trùng khác gì? Giới thiệu nhóm tiệt trùng trước.",
+            "Sữa tươi tiệt trùng",
+        ),
+    ],
+)
+def test_explicit_final_selection_scopes_comparison_to_the_chosen_taxonomy_leaf(
+    query: str, expected_type: str
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.intent == "comparison"
+    assert result.product_type == expected_type
+    assert result.comparison_scope == query.rstrip(".")
+
+
+def test_zero_sugar_phrase_is_resolved_against_catalog_before_rejection() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Có lon nước ngọt loại không đường không?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Nước ngọt có ga"
+    assert "duong" in {normalize_vietnamese(value) for value in result.negative_constraints}
+
+
+def test_product_correction_does_not_become_a_zero_currency_budget() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Mình muốn nước khoáng, không phải nước có ga.",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Nước khoáng"
+    assert result.budget_vnd is None
+    assert result.negative_constraints
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type", "expected_exclusion"),
+    [
+        (
+            "Cho mình khăn giấy bỏ túi, không phải khăn ướt nhé.",
+            "Khăn giấy gói",
+            "khăn ướt",
+        ),
+        (
+            "Mình muốn nước khoáng, không phải nước ngọt có ga nha.",
+            "Nước khoáng",
+            "nước ngọt có ga",
+        ),
+        (
+            "Mình muốn mì ăn liền, không phải mì ly nhé.",
+            "Mì ăn liền",
+            "mì ly",
+        ),
+        (
+            "Minh muon nuoc khoang, khong phai nuoc ngot co ga nhe.",
+            "Nước khoáng",
+            "nuoc ngot co ga",
+        ),
+    ],
+)
+def test_taxonomy_negative_correction_preserves_surface_and_trims_politeness(
+    query: str, expected_type: str, expected_exclusion: str
+) -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert normalize_vietnamese(result.product_type) == normalize_vietnamese(expected_type)
+    assert "khong phai" not in normalize_vietnamese(result.product_reference)
+    normalized_constraints = {
+        normalize_vietnamese(value) for value in result.negative_constraints
+    }
+    assert normalize_vietnamese(expected_exclusion) in normalized_constraints
+    assert all(
+        not normalize_vietnamese(value).endswith((" nhe", " nha", " nhi"))
+        for value in result.negative_constraints
+    )
+
+
+def test_negative_category_without_a_positive_request_does_not_select_the_excluded_type() -> None:
+    repository = _snapshot()
+
+    result = understand_catalog_query(
+        "Không phải nước ngọt có ga nhé.", repository.list_category_hierarchies()
+    )
+
+    assert result.product_type is None
+    assert result.clarification_needed
+
+
+def test_epistemic_safety_instruction_is_not_a_product_attribute_filter() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        (
+            "Tư vấn nước giặt cho quần áo trẻ em, nhưng đừng khẳng định loại nào an toàn "
+            "nếu nhãn không ghi."
+        ),
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Nước giặt"
+    assert result.negative_constraints == ()
+
+
+def test_vocative_after_a_yes_no_question_is_not_an_exclusion() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Có bịch giấy cuộn nào to, dùng được lâu không shop?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Giấy vệ sinh"
+    assert result.negative_constraints == ()
+
+
+def test_rau_cai_price_question_keeps_the_category_word_cai() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Rau cải nào rẻ nhất theo giá một ký?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Rau cải"
+    assert result.ranking_criterion == "price_ascending"
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type"),
+    [
+        ("Có dầu gội đầu cho nam mùi đừng nồng quá nha.", "Dầu gội nam"),
+        ("Có snack khoai tây vị phô mai không?", "Snack kh.tây chiên"),
+    ],
+)
+def test_product_attribute_words_do_not_replace_the_product_family(
+    query: str,
+    expected_type: str,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.product_type == expected_type
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_intent", "expected_ranking"),
+    [
+        (
+            "Nhà mình hay nấu cơm mỗi ngày, gợi ý gạo tẻ theo quy cách và giá đang ghi nhé.",
+            "recommendation",
+            "relevance",
+        ),
+        (
+            "Tã dán cho bé loại nào có giá dễ chịu nhất?",
+            "price",
+            "price_ascending",
+        ),
+        (
+            "Dầu gội nam rẻ nhất hiện bao nhiêu?",
+            "price",
+            "price_ascending",
+        ),
+    ],
+)
+def test_recommendation_price_and_ranking_cues_are_separated(
+    query: str,
+    expected_intent: str,
+    expected_ranking: str,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.intent == expected_intent
+    assert result.ranking_criterion == expected_ranking
+
+
+def test_everyday_rice_wording_maps_to_catalog_taxonomy() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Cho mình loại gạo nấu cơm thường, không phải nếp nhé.",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Gạo tẻ"
+
+
+def test_indirect_customer_need_is_kept_separate_from_product_category() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Da đầu mình nhanh bết, có dầu gội nào trong cửa hàng không?",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "recommendation"
+    assert result.product_reference == "dầu gội"
+    assert result.use_case == "Da đầu mình nhanh bết"
+    assert result.soft_preferences == ("Da đầu mình nhanh bết",)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_need"),
+    [
+        ("Da mặt mình hay khô căng sau khi rửa", "Da mặt mình hay khô căng sau khi rửa"),
+        (
+            "Da đầu mình thường nhanh bết vào cuối ngày",
+            "Da đầu mình thường nhanh bết vào cuối ngày",
+        ),
+        ("Tóc mình hay khô xơ sau khi gội đầu", "Tóc mình hay khô xơ sau khi gội đầu"),
+    ],
+)
+def test_personal_care_conditions_with_natural_context_are_not_product_names(
+    query: str,
+    expected_need: str,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.intent == "recommendation"
+    assert result.product_type is None
+    assert result.product_reference == ""
+    assert result.use_case == expected_need
+    assert result.clarification_needed
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Mì ăn liền vị bò với vị gà đang có những nhãn nào?",
+        "Sữa tươi có nhãn hàng nào?",
+        "Cho hỏi thương hiệu nào có trong nhóm dầu gội?",
+    ],
+)
+def test_natural_brand_and_label_questions_are_not_routed_as_product_choice(query):
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.intent == "brand"
+
+
+def test_accentless_receiving_phrase_is_not_misread_as_a_brand_question():
+    result = understand_catalog_query("Tôi nhận hàng nào trước?")
+
+    assert result.intent != "brand"
+
+
+def test_unverified_need_is_not_rendered_as_a_suitability_recommendation() -> None:
+    repository = _snapshot()
+    query = "Da đầu mình nhanh bết, có dầu gội nào trong cửa hàng không?"
+    observation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps(
+            {"query": "dầu gội", "preference_text": query, "limit": 5},
+            ensure_ascii=False,
+        ),
+        repository=repository,
+    )
+    answer = _localized_recommendation_candidates(observation, "vi")
+
+    assert observation.content["use_case_verified"] is False
+    assert "Mình chưa đủ thông tin để xác nhận" in answer
+    assert "phù hợp với nhu cầu này" in answer
+    assert "Da đầu mình nhanh bết" not in answer
+    assert "Mình gợi ý" not in answer
+
+
+@pytest.mark.parametrize("product_count", [1, 2])
+def test_title_only_preference_reply_is_customer_facing_without_selection_log(
+    product_count: int,
+) -> None:
+    products = tuple(
+        ProductSnapshot(
+            product_id=f"TITLE-{index}",
+            name=name,
+            category="Đồ ăn",
+            price_vnd=20_000 + index * 5_000,
+            stock=5,
+            stock_is_current=False,
+            uom="Gói",
+        )
+        for index, name in enumerate(("Bánh không đường 1", "Bánh không đường 2"))
+    )[:product_count]
+    observation = ToolObservation(
+        content={"preference_evidence": "PRODUCT_TITLE_ONLY"},
+        products=products,
+        tool_name="recommend_products",
+    )
+
+    answer = _localized_recommendation_candidates(observation, "vi")
+
+    assert answer.startswith("Dạ, mình tìm thấy")
+    assert "Bạn muốn xem" in answer
+    assert "Mình chọn theo" not in answer
+    assert "Giá tại cửa hàng có thể khác catalog" not in answer
+    assert "Tồn hiện tại chưa được xác minh" not in answer
+
+
+@pytest.mark.parametrize("language", ["vi", "en", "zh"])
+@pytest.mark.parametrize("content", [
+    {},
+    {"browse_mode": "CATEGORY_OVERVIEW", "category_label": "Đồ uống"},
+    {"use_case": "nhu cầu riêng", "use_case_verified": False},
+    {"family_details_unverified": True},
+    {"preparation_alternatives_unverified": True},
+])
+def test_recommendations_keep_reference_prices_without_routine_stock_and_source_logs(
+    language, content,
+) -> None:
+    row = ProductSnapshot(
+        product_id="REFERENCE-OPTION", name="Mặt hàng để tham khảo", category="Nhóm hàng",
+        price_vnd=25_000, stock=4, stock_is_current=False,
+    )
+    answer = _localized_recommendation_candidates(
+        ToolObservation(content=content, products=(row,), tool_name="recommend_products"),
+        language,
+    )
+
+    assert row.name in answer and "25.000" in answer
+    assert {"vi": "giá tham khảo", "en": "reference price", "zh": "参考价"}[language] in answer
+    for phrase in (
+        "Giá tại cửa hàng có thể khác catalog", "Tồn hiện tại chưa được xác minh",
+        "Mình chưa kiểm tra được hàng còn tại cửa hàng", "Store price may differ",
+        "Store prices may differ", "Current availability has not been verified",
+        "门店价格可能与目录不同", "门店实际价格可能与目录不同", "当前库存尚未核实",
+    ):
+        assert phrase not in answer
+
+
+@pytest.mark.parametrize("query,product_type,budget", [
+    ("Tìm bánh quy dưới 50 nghìn.", "bánh quy", 50_000),
+    ("Tìm nước giặt dưới 150 nghìn.", "nước giặt", 150_000),
+    ("Tìm kem đánh răng dưới 50 nghìn.", "kem đánh răng", 50_000),
+    ("Gợi ý mì ăn liền dưới 20 nghìn.", "mì ăn liền", 20_000),
+    ("Tìm nước rửa chén dưới 50 nghìn.", "nước rửa chén", 50_000),
+])
+def test_budget_filter_is_not_reported_as_missing_product_information(
+    query, product_type, budget,
+) -> None:
+    observation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps({"query": product_type, "preference_text": query, "limit": 3}),
+        repository=_snapshot(), current_user_text=query,
+    )
+
+    assert observation.status == "SUCCESS" and observation.products
+    assert all(row.price_vnd < budget for row in observation.products)
+    assert not observation.content.get("family_details_unverified")
+    assert not observation.content.get("unverified_constraints")
+    answer = _localized_recommendation_candidates(observation, "vi")
+    assert "chưa đủ thông tin" not in answer
+    assert "các tiêu chí khác" not in answer
+
+
+def test_single_unverified_catalog_match_is_described_as_one_option() -> None:
+    product = ProductSnapshot(
+        product_id="SAMPLE-1",
+        name="Dầu gội chống gàu 100ml",
+        category="Chăm sóc tóc",
+        price_vnd=95_200,
+        stock=5,
+        stock_is_current=False,
+        uom="Chai",
+    )
+    observation = ToolObservation(
+        content={"family_details_unverified": True, "current_stock_verified": False},
+        products=(product,),
+        tool_name="recommend_products",
+    )
+
+    answer = _localized_recommendation_candidates(observation, "vi")
+
+    assert "một lựa chọn" in answer
+    assert "Dầu gội chống gàu 100ml" in answer
+    assert "các biến thể hoặc chi tiết còn lại" in answer
+    assert "chưa thể kết luận hay so sánh đầy đủ" in answer
+    assert "hiệu quả" not in answer
+    assert "một số món cùng nhóm" not in answer
+
+
+def test_total_budget_collocation_is_not_misread_as_a_product_benefit_question() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Mình cần hai chai nước rửa tay, tổng cộng đừng quá sáu chục nghìn.",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.intent == "product_search"
+    assert result.budget_vnd == 60_000
+    assert result.budget_scope == "total"
+    assert result.budget_operator == "LTE"
+    assert result.quantity == 2
+    assert not result.clarification_needed
+
+
+def test_southern_vietnamese_address_and_chuc_budget_are_not_parsed_as_quantity() -> None:
+    result = understand_catalog_query("Bày tui món ăn vặt dưới hai chục nghìn.")
+    grouped_digits = understand_catalog_query("Gợi ý đồ uống dưới 10.000đ.")
+
+    assert result.quantity is None
+    assert result.budget_vnd == 20_000
+    assert result.budget_scope == "per_item"
+    assert grouped_digits.budget_vnd == 10_000
+    assert grouped_digits.budget_operator == "LT"
+
+
+def test_mens_body_wash_category_is_not_misread_as_a_five_dong_budget() -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(
+        "Cho mình xem Sữa tắm nam",
+        repository.list_category_hierarchies(),
+    )
+
+    assert result.product_type == "Sữa tắm nam"
+    assert result.budget_vnd is None
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_scope", "expected_operator", "needs_clarification"),
+    [
+        (
+            "Mình cần hai chai nước rửa tay, tổng cộng dưới sáu chục nghìn.",
+            "total",
+            "LT",
+            False,
+        ),
+        (
+            "Mình cần hai chai nước rửa tay, dưới sáu chục nghìn mỗi chai.",
+            "per_item",
+            "LT",
+            False,
+        ),
+        ("Mình cần hai chai nước rửa tay dưới sáu chục nghìn.", None, "LT", True),
+        ("Nước rửa tay tổng cộng dưới sáu chục nghìn.", "total", "LT", True),
+    ],
+)
+def test_budget_parser_preserves_scope_and_asks_when_scope_is_ambiguous(
+    query: str,
+    expected_scope: str | None,
+    expected_operator: str,
+    needs_clarification: bool,
+) -> None:
+    repository = _snapshot()
+    result = understand_catalog_query(query, repository.list_category_hierarchies())
+
+    assert result.budget_scope == expected_scope
+    assert result.budget_operator == expected_operator
+    assert result.clarification_needed is needs_clarification
+
+
+def test_snapshot_spice_exclusion_is_reported_as_unavailable() -> None:
+    repository = _snapshot()
+    observation = execute_catalog_tool(
+        "recommend_products",
+        json.dumps(
+            {"query": "mì", "preference_text": "Mình muốn mì không cay", "limit": 5},
+            ensure_ascii=False,
+        ),
+        repository=repository,
+    )
+
+    assert observation.status == "DATA_UNAVAILABLE"
+    assert observation.content["unavailable_fields"] == ["product_attributes"]
+
+
+@pytest.mark.parametrize("product", ["khăn giấy", "dầu gội", "nước rửa tay", "bút bi"])
+def test_difficulty_finding_is_removed_from_location_identity(product):
+    parsed = understand_catalog_query(f"Em tìm mãi không thấy {product}, nó nằm khu nào vậy?")
+    assert parsed.intent == "location"
+    assert parsed.product_reference == product
+    assert parsed.negative_constraints == ()
