@@ -1,0 +1,1015 @@
+# Retail-AI Production Quality Master Report
+
+**Assessment date:** 2026-11-07 (latest continuation; historical baseline sections retained below)
+**Release decision:** `NOT READY` for production; suitable for controlled demo only
+**Latest continuation:** 2026-11-07 — [round 4: actual dialogue, budget repair, manufacturer knowledge routing and composition boundaries](consultation_repair4_20261107.md). Repaired contradictory basket feedback, title/uom bag normalization, empty native advice, bounded repair/review ordering, why-follow-up scope, empty-reason negative reviews, and an evaluation harness that incorrectly erased the displayed product page after fallbacks. Rebound four manufacturer records only after checking their exact identities; fact contents and timestamps are unchanged. With consultation enabled, explicit named-product instructions now reach the existing evidence controller. The actual streaming HTTP replay answers four original fact questions plus one grounded follow-up; final UI also answers preparation instructions immediately after an advice fallback. This establishes factual routing, not employee-quality recommendation. Actual UI advice still repeats facts, overinterprets a sugar label, or falls back. The observed no-added/exclusive-composition inference is now rejected by bounded local checks, including false model approvals; the latest generative UI retry encounters rate limits and a deadline, so semantic acceptance after that repair remains unproven. Full backend before the last composition change: **2,870 passed/1 skipped/1 warning**; final related checks pass **1,402 tests** with clean scoped Ruff and unchanged source hashes; details are in the linked report/manifest. No new physical mic, VAD/TTS/echo or LiveKit readiness evidence. Demo remains open; laptop stays running. Release remains `NOT READY`.
+**Previous repair round:** 2026-11-06 — [round 3: actual failures, general consultation repairs and Vietnamese speech transport](consultation_repair3_20261106.md). Added role-preserving alternatives, explicit sale-unit constraints, narrower negative discovery cues, unshown-reference clarification, exact same-product price rebinding and verified qualified budget comparisons. Independent limited checks reject unsupported fit, bodily-comfort, ingredient-absence and supply-duration promises, including false LLM approvals; they do not establish semantic employee quality. Fourteen exposed development turns across intermediate/final source versions have 6 semantic failures,7 service failures and1 weak answer, with0 employee-quality passes; the final-source API turn still falls back. These repeated related probes are not independent accuracy samples. Latest speech replay returns14/14 HTTP200, with all5 non-speech controls empty, after bounded large-WAV FLAC preparation and reverting the unsuccessful10s STT cutoff to20s. Regional/brand errors persist; no physical mic/room/echo/LiveKit claim. Final backend: **2,813 passed/1 skipped/1 warning**; scoped Ruff passes. Detailed report separates raw provider/UI captures, manual grades, offline replay and final-source evidence. Release remains `NOT READY`.
+**Latest direct-conversation round:** 2026-11-06 — [round 2: actual UI/API conversations, semantic fixes and Vietnamese audio replay](interactive_employee_round2_20261106.md). The latest 10-turn HTTP run contains 8 service failures and 2 semantic failures; two additional UI breakfast turns also fail to advise. Added bounded choice counts, partial-basket state/subtotals, native single-copy questions, comparison witnesses, sentence-bounded exclusions and verified budget comparisons. This remains below employee quality. Full backend before the final subtotal-only fix: **2,682 passed/1 skipped**; after that fix, **272 related tests passed**, with final scoped Ruff clean. Voice replay exercises 3 human, 6 synthetic speech and 5 non-speech files; regional/brand recognition errors remain despite uncertainty confirmation. No physical mic/room/browser-VAD/LiveKit readiness claim follows.
+**Latest Vietnamese-only continuation:** 2026-11-06 — [intent, consultation and paired ASR research/report](vietnamese_intent_asr_research_20261105.md). The kiosk fixes `vi` and removes the English selector. Added role-aware filtering for visible products, descriptor/negation checks, an advice-only route, numeric/dimension checks, and bounded optional ASR verification with transcript confirmation. Fact IDs remove false rejection caused by regenerated JSON quotations; four frozen reviewer probes matched expected labels, without establishing end-to-end quality. Later fixes pass actually delivered comparison references to the reviewer and preserve budget/exclusions through general-advice recovery. The latest two-turn HTTP capture is still **0 pass, 1 weak, 1 service failure**; the earlier seven-turn capture remains 0 pass/1 weak/6 service failures. This is not employee quality. PhoASR on the same 33 scheduled files did not justify replacing the default. Audio endpoint replay returned 14/14 HTTP200 with all five controls empty, but regional and brand errors remain. Azure fast transcription availability was checked on one public file: ordinary mode returns200; enhanced LLM mode is rejected400 by the current endpoint, so no model or accuracy claim follows. Final backend regression: **2,554 passed/1 skipped**; frontend unchanged since 121 passed/build success. Physical microphone, loudspeaker echo and LiveKit readiness remain unverified.
+**Latest text-first diagnosis:** 2026-11-03 — [real text probes, fixes and remaining defects](text_advice_diagnosis_20261103.md). The fixed-source paced delivery probe has 11 shopping turns: 1 useful, 4 partial, 6 failures (including all 4 fallbacks), plus 2 correct calendar controls. Shopping p50/p95 latency is 11.945/32.021s; this remains below employee quality. Routing, continuation, measurement roles, false preparation rejection, decimal questions and invented identity filters were repaired; provider cooldown/default recovery and opt-in voice diagnostics were added. Full backend regression: 2,280 passed/1 skipped before the final default-recovery refinement; final related regression: 419 passed; frontend 120 passed/build succeeds. Current token-limit evidence does not establish daily quota exhaustion. The detailed report distinguishes prior historical quota claims, live advice defects, and unverified physical-microphone quality.
+**Latest STT complaint audit:** 2026-11-03 — [Vietnamese/English recognition diagnostic](stt_regression_20261103.md). Live responses confirm Whisper Large v3 as primary. Fixed an accent-stripping/cross-sentence catalog correction that changed “quốc dân” into “Jordan”; verified the fix through the restarted endpoint. Related backend tests pass 498/498 and frontend tests 115/115, with a successful build. The same cached FLEURS/valid ViVoice inputs retain their previous decoder outputs; regional speech errors remain. Wrong-language forcing is reproduced, while tested automatic-language variants introduce other errors, so the default was preserved. This does not establish the cause of the user's physical-microphone failures or microphone readiness.
+**Latest acoustic-noise audit:** 2026-11-03 — [noise filtering report](noise_filtering_20261103.md). Silero v6 is shipped on both browser and server with matching weights and stronger browser capture hints. Endpoint replay rejects tested long fan-like noise and preserves a quiet Vietnamese speech sample mixed with fan-like noise. A paired 152-request `whisper-large-v3` ablation found RNNoise, GTCRN and DeepFilterNet3 worsened Vietnamese WER in the tested low-SNR rows, so none is enabled by default. This is a reproducible synthetic/file endpoint diagnostic, not proof that the user's physical mic and room are solved; production remains `NOT READY`.
+**Latest wording audit:** 2026-11-03 — [customer response wording fix](customer_response_wording_fix_20261103.md). Removed internal title-matching explanations and routine price/stock tails from shared recommendation, combo, unranked-category, and lowest-price replies. The 10-question comparison falls from 8/10 detected routine log tails to 0/10; the final expanded real-snapshot offline replay detects 0/13, with products in 11/13 turns. Final backend regression passes 2,098 tests, with one skipped and zero failures. One remaining legacy milk query gives a generic response. The final five-turn provider probe has two recommendations with products, one weak scope clarification, and two unavailable answers; it has zero detected routine log phrases, zero degraded lookups, and zero HTTP errors. These wording checks do not establish employee quality; `NOT READY` remains unchanged. The linked report records final regression and both provider-probe runs.
+**Latest continuation:** 2026-11-03 — [whole-catalog consultation audit and answer-quality review](consultation_human_quality_20261103.md), [employee-quality iteration v7](consultation_employee_iteration_20261103.md), and [voice/STT/TTS optimization](voice_optimization_20261103.md). The catalog audit passes 12,357 checks over 3,081 products and 346 taxonomy paths. The final backend regression passes 2,057 tests (1 skipped), frontend passes 115 tests, and the build succeeds after server-side Silero and Vietnamese TTS normalization. Acoustic replay retains 46 valid speech variants, blocks 34 controls and separately records four over-duration input errors. Live consultation still falls short of employee quality: the latest eight-turn probe contains six unavailable responses and two weak clarifications, and the provider subsequently exhausted its daily quota. Technical passes and small voice diagnostics do not establish employee quality or physical microphone/echo readiness; the release decision remains `NOT READY`.
+**Working branch:** `codex/retail-text-quality-v4-20261019` (kept as-is; no new branch created)
+**Historical benchmark base commit:** `7eeaa179d0ca0753a9759e67df3e4b2bf494a0ae`
+**Catalog snapshot:** WinMart JSON, dated 2026-09-15; Windows raw-byte SHA-256 `a0eb16ac1ae2557ea8c272c680a1f17d360934da6138585e09314df5d04f19d6`; LF-normalized content SHA-256 `8f2ee3771be548b85a8d8981127b2518b8e8e5868584491df36b96317476cbbc`.
+
+This report separates deterministic regressions, synthetic evaluation, live provider probes, and human review. None of the synthetic scores below should be read as real-world consultation accuracy.
+
+## 1. Executive summary
+
+The current implementation improves exact product/category retrieval, multi-turn scope retention, alternative pagination, runtime hot paths, and explicit soft-preference retention. This continuation fixes alternative lookup truncation beyond the repository's 20-row page, ties session novelty to products actually shown, and adds per-attribute catalog evidence (`VERIFIED` / `INFERRED` / `UNKNOWN`) with provenance. Simulated and demo shelf coordinates are no longer described as physically verified. The retrieval comparison now uses the exact 3,081-product corpus accepted by the runtime repository for BM25, E5-small, and RRF; the old 3,099-row raw-corpus comparison is retained only as historical evidence. A blinded two-reviewer queue now pools all three systems on the same 150 development queries. The latest changes route natural comparisons through grounded candidate selection and list/availability questions naming two to five distinct taxonomy categories through parallel, category-filtered catalog searches. Product flavors/variants resolving to one category remain a single-category search. After a category listing, ordinal factual follow-ups resolve against displayed product IDs, “cheapest” compares only displayed candidates, and an explicit “quay lại món ban đầu” reference resolves to the first product from the active browse flow. The API also preserves the visible candidate list through a detail-price question and supports removing a named, ordinal, or clearly referenced item from that recommendation list without changing the cart. Retrieval evaluation fixes multi-gold Recall@k and adds paired uncertainty estimates clustered by shared gold product IDs.
+
+The frozen development benchmark reports 100% on generated exact-product/category checks and zero encoded hard-constraint violations, but its candidate Recall@5 is 0.6878 after correcting a grader bug (98 cases had eligible candidates; two were separately nonempty-result failures). A second generated dev set scores 0.6841 over 100 evaluable hard-constraint cases. The old 0.98–1.00 values used an invalid denominator/rank window and are superseded. All results remain provisional because queries are templated from the same catalog, labels have not been independently reviewed, and they do not grade semantic suitability or naturalness. A live, manually written Groq probe returned HTTP 200 on all five turns. In the post-fix run, Qwen included “dễ chia” in its tool arguments and the response acknowledged it while leaving the plan items unchanged. Because the model itself emitted the preference on this repeat, the live run does not prove that the semantic guard rescued an omitted field; the focused unit test covers that path. This is one successful probe, not a statistical quality estimate. Latest focused flow/evaluation tests pass 379/379 and the complete backend suite passes 1,294 tests.
+
+Continuation result (2026-10-29): a seven-turn, five-case Vietnamese text probe passed all seven automated grounding checks after fixing nutrition-query product extraction and ambiguous-variant handling. All turns used deterministic local catalog routes (`total_llm_calls=0`), so the median 111 ms does not measure Groq or LLM latency. The latest full local suite passes 1,312 tests in 181.48 s; 568 focused API/catalog/parser/evaluator/tool/review tests pass. These checks supersede the earlier 379/1,294 local count above but do not change the human-evaluation or production-readiness decision.
+
+Latest same-branch continuation (2026-10-29): manufacturer-published nutrition, caffeine, and preparation facts are now rendered from the existing four-product evidence sidecar with their source and package scope. Natural “dùng thế nào/pha thế nào” questions reach the product-knowledge route; named product-use questions no longer get diverted into broad category recommendations. Real Uvicorn/TCP SSE tests cover delayed first-event timing and cancellation without session/cart drift. Final local verification passes **1,523 tests, 1 skipped**, plus repository Ruff, Python compile, and diff checks. This remains deterministic/provider-fake evidence, not a live Groq latency, browser, customer-quality, or production-readiness result.
+
+**Decision:** do not release as a production retail advisor. Keep demo-only until there is a human-authored, blind held-out set, independent qrels review, multi-user API load testing, and reliable current store data. The runtime has a four-product manufacturer-source pilot, but most of the 3,081-item catalog still lacks independently reviewed product attributes; the pilot supports only claims and package scopes recorded in its sidecar. Current latency at concurrency 5–20 is also too high for a production conversational target.
+
+## 2. Commit & environment
+
+- Work stays on `codex/retail-text-quality-v4-20261019`; no branch was created for this continuation.
+- The 2026-10-29 semantic V2 rerun used base commit `7eeaa179d0ca0753a9759e67df3e4b2bf494a0ae` with a dirty working tree; its artifact records the tracked diff hash. It is not a clean release-commit result. Historical probes listed below may use earlier base commits.
+- Full-suite code under test: commit `68da9468dee3764ce373ea092de501506b270ee0` on existing branch `codex/retail-text-quality-v4-20261019`; 1,267 tests pass locally in 171.53 s and GitHub Actions run [`40759292984`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40759292984) passes lint, the offline backend suite, and compile on Ubuntu. No branch was created.
+- Latest same-branch continuation adds two end-to-end follow-up regressions: cheapest-item ranking must use only IDs in the preceding displayed list, and an ordinal price question must resolve to the product at that displayed position. The initial ordinal test exposed a real failure; after the fix, the full local suite passes 1,269 tests in 170.65 s. Ruff, compileall, and `git diff --check` also pass. GitHub Actions run [`40761103420`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40761103420) passes lint, the offline backend suite, and compile on commit `29413e20fc9c2f50dd2a2dd294c35dd0f8abec8d`. No API calls or paid-provider benchmark were used.
+- Current same-branch continuation generalizes explicit multi-category list/availability requests to two through five distinct taxonomy groups and fixes “quay lại món ban đầu” after alternative pages by retaining up to 10 prior pages plus a pinned opening page per browse scope. The exact original product ID and snapshot price are covered by an API regression; a session test confirms the opening page survives more than 10 pages and resets on a new category/scope. The final full local suite passes 1,280 tests in 209.32 s; the focused parser/session/catalog/API set passes 126 tests in 58.43 s. Ruff, compileall, and `git diff --check` pass. Code commit `350505e8adba722d6ea21766aa748fa59d987b79` passes GitHub Actions run [`40765305100`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40765305100) (lint, offline suite, compile); no new branch was created.
+- This continuation stays on the same branch and adds list-only removal after product-detail follow-ups, preserving the visible page across a narrowed detail lookup. Four categories (bao, face towels, bottled water, shampoo) cover ordinal price lookup and removal by pronoun/ordinal; ambiguous references ask which item and preserve both the remaining list and cart. The focused API/session/evaluator suite passes 379 tests; the full backend suite passes 1,294 tests in 174.64 s. Ruff and `git diff --check` pass. Commit `08dfa7ab661b146fbe32bb174d6c27bfe06153c8` passes GitHub Actions run [`40769166250`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40769166250) for lint, the offline backend suite, and Python compile. Benchmark artifacts record the base commit and dirty-tree fingerprint from before the continuation was committed.
+- Current continuation remains on this branch without creating another branch. ProductKnowledge now distinguishes source-record values from current operational state, physical store evidence, retailer listing, and recommended planogram. Snapshot capture time is `observed_at`; `verified_at` stays null without a separate verification event. A probe exposed nutrition terms leaking into the product search query; generic attribute-question stripping now preserves the named product, keeps accent-disambiguated `dầu`/`đậu` tokens, and shows grounded package variants when size is ambiguous. The output abstains on missing nutrition data and uses singular language for a single recommendation. The seven-turn Vietnamese development probe passes 7/7 automated checks; all routes are local deterministic/catalog routes and the median 111 ms is not Groq latency. Artifact [`live_text_vietnamese_dev_20261029.json`](artifacts/live_text_vietnamese_dev_20261029.json) records case/catalog hashes, base commit, tracked-diff hash, OS/Python, and package versions. A human answer-quality rubric, schema, exporter, and two blank reviewer queues were added; no human labels were filled. A three-turn SSE regression checks validated chunk order/content, catalog cards, session messages, and cart invariance. Focused API/catalog/parser/evaluator/tool/review tests pass 568/568; the full suite passes 1,312 tests in 181.48 s. Ruff, compileall, and `git diff --check` pass. GitHub Actions run [`40773580870`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40773580870) succeeded on committed HEAD `d7d4eb3d6ded02e9b4773b451cae1309d6b60965` (lint, backend suite, compile). Human evaluation and production gates remain incomplete.
+- Evidence-link follow-up on the same branch adds a safe `source_url` to ProductKnowledge facts derived from a retailer source record or retailer listing. Only absolute HTTP(S) links without credentials, whitespace, or control characters are exposed; this URL locates the source listing and does not constitute independent verification. Tests: `tests/test_retail_tools.py` 96 passed; full suite 1,315 passed in 171.44 s; Ruff, compileall, and `git diff --check` pass. The report now records direct source-code review of ViRE/ESCI/URASys, the required negation-search paper, and corrected E5 index-build timing. No external human labels or product facts were added; the production decision remains `NOT READY`.
+- Baseline full suite on `7eeaa17`: 1,222 passed in 299.31 s. A previous continuation passed 1,233 tests in 217.86 s. The seeded-invariant run based on `af1f979b7c4ce01b1f7aef3f19523ababcb3a6b4` passed 1,238 in 248.48 s. After the qrels exporter and branch-CI changes, a full suite passed 1,238 tests in 250.70 s based on `b5d46c9`. The preceding pushed code passed 1,241 tests locally in 157.31 s and on GitHub Actions run `40748503030` for commit `42479e7` in 151.11 s. Commit `89472bf` passes 1,252 tests locally in 210.89 s; GitHub Actions run `40755659331` passes on Ubuntu for the same SHA.
+- New deterministic regression suite: 5/5 tests passed in 14.66 s using seed `20261029` and the catalog hash below. It sampled 64 SKUs for title variants, checked 17 retrievable price-filter scopes, exercised 32 brand-exclusion scopes, tried 32 unseen query tokens, and rebuilt an index from one synthetic new catalog row. Artifact: [`catalog_metamorphic_invariants_20261029.json`](artifacts/catalog_metamorphic_invariants_20261029.json).
+- Local environment: Windows, Python 3.13+, `uv`; runtime catalog is the WinMart JSON snapshot. The imported dataset has 3,099 raw rows, 3,081 accepted products, and 18 quarantined rows.
+- Provider configuration was present for the live probe. No API key or credential value is written to reports or artifacts. Voice was not evaluated in this task.
+- The snapshot date is 2026-09-15. Price and stock must be presented as snapshot evidence, not guaranteed live store values.
+
+## 3. Root cause
+
+| Failure class | Evidence | Root cause / treatment |
+| --- | --- | --- |
+| Alternative recommendations repeated items | Audit of 50 synthetic conversations found 48/50 alternative turns overlapping prior IDs; 42/50 repeated the exact same five IDs. | Parser intent was counted as success without checking novelty. Session now tracks seen product IDs by scope, and exhaustion is explicit. |
+| “Below” price boundary labels | H-037/H-082 expected equality under “dưới”. | Dataset generator used a strict phrase with an inclusive boundary. Dev cases now say “tối đa”; historic artifacts remain unchanged. |
+| LLM omitted a newly stated preference | Live picnic follow-up “ưu tiên món dễ chia…” returned an empty `preferences` field. | Tool-call semantic guard now uses the shared parser to recover only explicitly cued, parser-supported soft preferences. It does not make them hard constraints. |
+| Unsupported snack attribute | Snapshot had no verified spice field; snack need had zero candidates. | Correct data insufficiency, not a retrieval bug. System abstained from saying a snack was non-spicy and excluded it from totals. |
+| Alternative search stopped after seen products filled page one | Repository caps results at 20; asking for 100 still returned 20, which could be mistaken for catalog exhaustion. | Added stable `offset` pagination for demo, JSON snapshot, and Postgres repositories. Alternative lookup now advances page-by-page and reports exhaustion only at the last page. |
+| Session remembered filtered-out candidates | Candidate state was captured before audience/hard filtering while the UI showed a narrower product list. | Session selected/seen IDs now come from the final visible product cards, so the next turn tracks what the customer actually saw. |
+| “Quay lại món ban đầu” lost its first result after pagination | Session state kept only the latest `selected_product_ids`, so a later page replaced the original list and an ordinal-like follow-up could resolve against the wrong products. | Keep up to 10 prior displayed pages per active browse scope; clear history on a fresh recommendation, scope change, or category change. Resolve explicit original-item references to the first product ID on the first page, then use the normal snapshot tool for the requested facts. |
+| Demo shelf looked verified | `DEMO`, `SIMULATED`, and planogram sources are not proof of physical placement. | Shelf evidence is `VERIFIED` only when explicitly marked `PHYSICALLY_VERIFIED`; other stored coordinates are qualified as inferred. |
+| Shelf lookup failed only on Linux CI | Run `40744779694` failed two natural shelf lookups and one inferred-shelf provenance assertion; all three passed locally. GitHub checked out the catalog as LF, while the planogram hash had been generated from Windows CRLF bytes. | Planogram metadata now carries both the legacy raw-byte hash and an LF-normalized content hash. Lookup accepts only one of those exact catalog fingerprints, preserving fail-closed behavior while making the same snapshot portable across operating systems. The Linux checkout simulation passes locally, and GitHub Actions run `40748503030` now passes the full suite.
+| High concurrency latency | The earlier five-request smoke reported p50 0.71/3.86/4.87 s at configured C1/C5/C20. The corrected 20-request run measures 0.131/0.515/2.552 s, with all 20 requests simultaneously in flight at C20. | Caching reduced the measured path, but catalog work still serializes under CPU load; C20 remains too slow. The corrected in-process profile is not a deployment capacity or production pass. |
+| Recommendation quality is under-measured | Generated exact-SKU tests select a catalog-derived gold item. | Exact name resolution is being measured, not whether a product is suitable for an indirect human need. Human qrels are still required. |
+| List follow-up lost candidate context | Asking the price of the second displayed product narrowed the session to that SKU; the later “bỏ loại đó khỏi danh sách” could lose the original choices and return an empty list. | Preserve page history when a visible candidate is narrowed to its detail; remove only from the active displayed recommendation list, clarify ambiguous pronouns, and leave the cart unchanged. |
+| Hard-constraint Recall@5 overstated coverage | The old grader filtered invalid rows before slicing top five and divided by `min(5, eligible_count)`, confusing top-k hit coverage with recall. | Use the raw top-five ranks divided by all eligible gold IDs; report empty-gold cases as non-evaluable and report the evaluable count separately. Old 0.98–1.00 values are deprecated. |
+
+## 4. Research literature
+
+| Work | Relevance and limitation | Decision for Retail-AI |
+| --- | --- | --- |
+| [Which Works Best for Vietnamese?](https://aclanthology.org/2026.findings-eacl.110/) | Compares retrieval approaches across Vietnamese domains; retrieval performance depends on task/domain. | Keep BM25/exact matching as measured baselines; do not generalize title-query scores to semantic needs. |
+| [ProductAgent](https://aclanthology.org/2025.emnlp-industry.25/) | Conversational product search with clarification and structured interaction. Its benchmark/simulation setup is not a substitute for this store’s user evaluation. | Retain stateful needs and clarification; do not claim paper results transfer to this catalog. |
+| [Hint-Augmented Re-ranking](https://aclanthology.org/2025.ijcnlp-short.19/) | Decomposes product-search hints and reranks candidates; requires relevance supervision. | Do not train/promote a reranker before product-level relevance labels exist. |
+| [When in Doubt, Ask First](https://aclanthology.org/2025.findings-ijcnlp.27/) | Retrieval agent for ambiguous/unanswerable questions. | Preserve abstention and clarification when evidence is missing; calibration remains unmeasured. |
+| [PEPPER](https://aclanthology.org/2025.findings-emnlp.1067/) | Target-free user simulation addresses target leakage in conversational recommender evaluation. | Treat generated conversations as development probes; obtain human-authored blind cases. |
+| [Negation-aware product search (ND4Q/FIP)](https://www.amazon.science/publications/improving-the-relevance-of-product-search-for-queries-with-negations) | ND4Q labels negation cue/scope; FIP filters retrieved titles where the negated scope appears without a nearby negation cue. The study reports 95.38% exact query annotation and a +9.41% relative nDCG@16 gain only for queries whose negation starts with “without,” on manually labeled English retailer queries. | Preserve cue and scope separately, enforce explicit negative constraints against verified product attributes, and reject missing-evidence assumptions. Do not transfer the English scores or title-only filter directly to Vietnamese retail. |
+| [Retrieval Augmented Spelling Correction for E-Commerce](https://aclanthology.org/2024.emnlp-industry.7/) | Uses catalog candidates when correcting noisy product queries. | Keep fuzzy correction bounded by actual catalog candidates; protect brand/variant identity. |
+| [M3-Embedding / BGE-M3](https://arxiv.org/abs/2402.03216) | Multilingual dense, sparse, and multi-vector retrieval. The paper does not establish benefit on this WinMart task. | Keep as a candidate for a qrels-backed experiment, not production default. |
+| [Qwen3 Embedding and Reranking](https://arxiv.org/abs/2506.05176) | Multilingual embedding/reranking model family with several model sizes. | Benchmark only after CPU, RAM, cold-start, and human relevance gates are defined. |
+| [Amazon ESCI](https://www.amazon.science/code-and-datasets/shopping-queries-dataset-a-large-scale-esci-benchmark-for-improving-product-search) | Exact, substitute, complement, irrelevant grades are useful for product relevance labeling; market/catalog differ. | Reuse the graded-label idea, not its English/Amazon labels as Vietnamese gold. |
+| [VN-MTEB](https://leaderboard.mteb.org/benchmark/VN-MTEB%20(vie,%20v1)) | Vietnamese embedding benchmark across multiple task types, not retail-specific relevance. | Use only to shortlist models, never as Retail-AI accuracy. |
+
+Paper findings are design inputs, not evidence that any untested technique works here. For example, Vietnamese embedding scores do not substitute for product qrels, and a simulated dialogue benchmark does not certify live customer usefulness.
+
+## 5. GitHub implementation references
+
+- [ViRE](https://github.com/longstnguyen/ViRE) source review: [`lexical.py`](https://github.com/longstnguyen/ViRE/blob/main/src/vi_retrieval_eval/lexical.py) tokenizes through `vi_segment` before TF-IDF/BM25; BM25 exposes `k1` and `b`. [`fusion.py`](https://github.com/longstnguyen/ViRE/blob/main/src/vi_retrieval_eval/fusion.py) implements rowwise min-max and rank-based RRF; [`metrics.py`](https://github.com/longstnguyen/ViRE/blob/main/src/vi_retrieval_eval/metrics.py) uses stable tie sorting and multi-gold binary metrics. Retail-AI's BM25/E5/RRF trial adopts the matched-query/corpus comparison principle, not a full ViRE reproduction; its current qrels are title-derived and unreviewed.
+- [Amazon ESCI data repository](https://github.com/amazon-science/esci-data) review: its schema joins query judgments and product metadata by `(product_locale, product_id)`, with E/S/C/I labels for Exact, Substitute, Complement, and Irrelevant. The public queries are English, Japanese, and Spanish, so Retail-AI reuses the relevance rubric only; it does not import its labels as Vietnamese gold.
+- [URASys](https://github.com/ura-hcmut/URASys) source review: `FAQRetriever` and `DocumentRetriever` expose separate dense/sparse fields through a shared hybrid retriever; `server_app.py` runs bounded tool loops with timeout/retry and moves synchronous model/retrieval work to an executor. Its manager, dual indexes, Milvus and FAQ-generation pipeline demonstrate clarification and parallel evidence paths, but are not copied wholesale: the local 3,081-SKU catalog has no verified FAQ/product-attribute corpus to support that infrastructure yet.
+- No GitHub reference repository is treated as an authoritative source for this catalog’s price, stock, product properties, or shelf assignments.
+
+## 6. Architecture decision
+
+Keep a hybrid, evidence-bounded architecture:
+
+1. Normalize language and parse explicit product identity, category, price, budget, quantity, negation, ranking cue, reference, and ambiguity.
+2. Resolve taxonomy and retrieve candidates from the active repository.
+3. Apply hard constraints only when a matching catalog field can verify them.
+4. Rank with supported exact/lexical/catalog evidence and session state.
+5. Use the agent model for conversational tool selection and explanation, with a semantic guard correcting bounded state omissions.
+6. Abstain or ask a focused follow-up if a required attribute is unknown; never invent a SKU, price, stock fact, sales rank, or use claim.
+7. For a selected product's requested attributes, preserve value, evidence status, source, observation/verification date, catalog version, and confidence. Do not promote inferred retailer copy or simulated placement to verified evidence.
+
+Do not promote LLM structured extraction to the every-request fast path: its recorded ablation passed 20/60 cases, with 34 provider errors and 6 invalid/incomplete extraction outputs. Do not promote dense retrieval: it did not improve the measured catalog-title queries and has not been measured against independently labeled semantic needs.
+
+## 7. Code changed
+
+- `backend/api/main.py`: preserve cumulative alternative IDs/scope in session, clean pagination language, clarify exhaustion, and keep local smalltalk fallback bounded to greetings/farewells/wellbeing.
+- `backend/services/sessions.py`: backward-compatible per-scope seen-product state.
+- `backend/services/retail_tools.py`: bounded alternative exclusions and explicit exhaustion behavior.
+- `backend/products/knowledge.py` and `get_product_knowledge`: per-attribute evidence envelope with provenance and explicit unknowns; safe HTTP(S) retailer-row URLs are returned for source-record and retailer-listing facts, while non-HTTP, credentialed, or whitespace/control-character URLs are rejected. The agent can call it only for a uniquely grounded product candidate. Reviewer identity and independent product-fact enrichment are still absent; the snapshot itself has no verified ingredient/spice facts.
+- `backend/products/repository.py`, `snapshot_repository.py`, and `postgres_repository.py`: stable bounded offset pagination used to walk beyond page one.
+- `backend/api/main.py`: for an explicitly identified product, retrieve attribute evidence before abstaining on benefits, taste, usage, nutrition, allergen, and suitability questions; responses name the grounded product and state the missing evidence. Unknown product references still trigger clarification/abstention. Session state remembers only products actually rendered to the customer.
+- `backend/services/retail_agent.py`: preserve explicit soft preferences omitted by a model tool call; keep budget, party size, rejected items, and hard constraints intact.
+- `backend/services/shopping_mission.py`: acknowledge a newly recorded preference without claiming the catalog proves product fit.
+- `backend/services/smalltalk.py`: broaden wellbeing detection for the local response path.
+- `backend/products/category_taxonomy.py`, `snapshot_repository.py`, `postgres_repository.py`: bounded caches for repeated taxonomy, token, and normalization work.
+- `backend/services/vietnamese_intent.py`: cache compiled boundary/cue patterns and pre-normalize static category cues; a 50-query parser microbenchmark retains 150/150 outputs and cuts repeated-path CPU time by 8.85× on this Windows run.
+- `backend/data/catalog_import.py`, `scripts/generate_planogram.py`, `backend/products/planogram.py`, `data/winmart_planogram_assignments.json`: add a stable LF-normalized catalog fingerprint alongside the original raw hash so recommended shelf locations still resolve after Windows/Linux checkouts.
+- `evaluation/semantic_intelligence_v2_benchmark.py`, `build_semantic_intelligence_v2_frozen.py`: fix alternative metric semantics, inclusive budget language, and deterministic frozen-dataset generation.
+- `evaluation/export_vietnamese_qrels_review.py`: accept multiple same-query retrieval artifacts, form a rank-interleaved/deduplicated candidate union, hide retrieval sources and ranks, and independently randomize query/candidate order for reviewer A/B. An evaluator-only manifest records dataset/catalog/artifact hashes and candidate counts.
+- `.github/workflows/retail-backend-quality.yml`: run locked-dependency Ruff, offline backend tests, and Python compile checks on `main` and the requested text-quality branch. The initial run failed on cross-platform shelf/hash assertions; run `40748503030` passes all three CI steps on commit `42479e7`.
+- `evaluation/api_runtime_load_sanity.py`: exercise at least 20 requests at each C1/C5/C20 level, report observed in-flight concurrency and p99/max samples, capture environment and tracked-diff hash, and keep warm-up/heap probes separate from timed latency.
+- `evaluation/vietnamese_parser_hot_path_benchmark.py`: compare current parser functions against pinned base `295133b`; artifact [`vietnamese_parser_hot_path_20261029.json`](artifacts/vietnamese_parser_hot_path_20261029.json) reports 150/150 output parity and 8.846× repeated-path speedup. This is a development microbenchmark, not a human semantic-quality score.
+- `evaluation/generalized_retrieval_variants.py`: compare BM25, multilingual E5-small, and reciprocal-rank fusion on the runtime-validated catalog; validate gold product IDs before scoring and record catalog/query/commit hashes, full query latency, CPU, environment, and index-build time. The temporary `fastembed` environment is not added to project dependencies.
+- `backend/services/product_comparison.py` and `backend/api/main.py`: let the shared structured query parser supply natural comparison operands when the local grammar does not match; for category-level ambiguity, search both sides and ask the shopper to choose exact products from grounded catalog candidates rather than compare arbitrary SKUs.
+- `backend/services/catalog_browse.py`, `backend/products/category_taxonomy.py`, `backend/services/retail_agent.py`, and `backend/api/main.py`: for clear list/availability questions, resolve two to five distinct category mentions against the active taxonomy, search each through the bounded catalog-tool gateway, group only returned snapshot products, disclose unverified live stock, and retain grounded product IDs for follow-up turns. Same-category flavor/variant pairs, comparisons, price/location questions, and ambiguous categories do not enter this route. Added taxonomy aliases for common “cá biển” and “thịt bò” wording; no SKU-specific routing was added.
+- `backend/api/main.py`: resolve factual ordinal follow-ups (for example, “giá sản phẩm đầu tiên?”) against the most recently displayed catalog candidate list, and keep the existing cheapest-price follow-up restricted to the saved displayed IDs.
+- `backend/services/query_understanding.py`, `backend/services/sessions.py`, and `backend/api/main.py`: recognize explicit original-item references, store up to 10 prior visible product pages scoped to the active browse flow, and resolve the first item through the snapshot lookup path. Fresh recommendations and changed categories/scopes reset that history to prevent cross-query product confusion. Redis decoding remains compatible with session records written before this field existed.
+- `backend/services/sessions.py` and `backend/api/main.py`: retain the candidate page when a user selects one displayed item for a factual detail follow-up; add a generic remove-from-current-list action by name, ordinal, or unambiguous deictic reference. Ambiguous references request clarification, and the operation only updates recommendation state, never cart contents. Tests cover bao, face towels, bottled water, shampoo, negated removal, ordinal removal, and unchanged cart state.
+- `backend/api/main.py`: remove generic nutrition-attribute clauses before extracting product names; preserve accent-disambiguated `dầu`/`đậu` tokens. For named product families with several matching sizes, show grounded variants and abstain on unsupported nutrition instead of returning a generic ungrounded reply. Single-result recommendation wording now reflects one result.
+- `evaluation/live_text_conversation_benchmark.py`: grade product-ID relations across turns (subset, same list, list difference, or novelty) and record case/catalog hashes, commit and tracked-diff fingerprint, platform/Python, and package versions without serializing credentials.
+- `evaluation/cases/retail_ai_live_text_vietnamese_dev_20261029.json`: seven Vietnamese development turns across five manual cases grounded in the dated snapshot. This exposed diagnostic set is not blind, human-validated, or representative. Artifact: [`live_text_vietnamese_dev_20261029.json`](artifacts/live_text_vietnamese_dev_20261029.json).
+- `evaluation/vietnamese_answer_quality_annotation_guide.md`, `evaluation/schemas/vietnamese_answer_quality_v1.schema.json`, and `evaluation/export_vietnamese_answer_quality_review.py`: add a six-dimension answer-quality rubric, critical-error flags, blind queue exporter, schema and blank template. The exported five-turn reviewer queues remain `UNREVIEWED`; they are not scores.
+- `tests/test_retail_api.py`: cover three-turn catalog SSE ordering, deltas matching the fully validated answer, product cards and session/message consistency, unchanged cart, and grounded variants on an unsupported nutrition question.
+- `tests/test_api_network_stream.py`: use a local Uvicorn server over TCP to check SSE order after delayed answer validation and provider cancellation when the HTTP client disconnects; this is not browser or reverse-proxy E2E.
+- `evaluation/generalized_retrieval_variants.py`: correct Recall@k to divide by the complete relevant-ID set and report paired product-cluster bootstrap confidence intervals; the resampling unit groups paraphrases connected by shared gold product IDs.
+- `evaluation/semantic_intelligence_v2_benchmark.py`: correct hard-constraint candidate Recall@5 to use all eligible IDs as denominator and the actual unfiltered rank-1–5 window; cases without eligible products now have no recall value and are counted separately. New integration/unit tests prevent the previous inflated 0.98–1.00 scores from returning.
+- `tests/test_product_comparison.py`, `tests/test_contextual_consultation_regressions.py`, `tests/test_catalog_browse.py`, and `tests/test_generalized_retrieval_variants.py`: cover natural category comparison and availability-query negative control, cross-department category browsing across beverages/fish/produce/meat, exact SKU/category grounding, retained session candidates, cheapest/ordinal follow-ups constrained to displayed products, and negative controls for same-category flavors/egg types and non-browse intents; also cover multi-gold recall, deterministic cluster bootstrap, and cluster linkage.
+- `evaluation/export_vietnamese_qrels_review.py`: only export query cases present in a retrieval artifact, reject candidates outside the validated runtime catalog, preserve explicit no-candidate queries, and normalize content hashes across Windows/Linux line endings.
+- `tests/test_generalized_retrieval_variants.py`: cover runtime-catalog parity, quarantined rows, held-in catalog IDs, and invalid gold IDs; benchmark/export regressions also cover missing-run cases.
+- Added qrels schema/annotation guide/export workflow and regression coverage for state, alternative turns, injection protections, and the newly recovered soft preference.
+
+The preference guard requires an explicit preference cue and an existing parser-supported soft preference. It does not infer arbitrary product suitability from the utterance, alter need requiredness, or assert that candidates satisfy the preference. The post-fix live run returned the expected acknowledgement, but did not change the drink-only plan because the required snack attribute remains unverified. The raw trace shows Qwen emitted the preference itself, so this live run is not evidence that the backend guard rescued a missing tool field.
+
+## 8. Dataset provenance
+
+Primary catalog: `data/winmart_products.json`, 3,081 accepted products from 3,099 rows; catalog SHA-256 `a0eb16ac1ae2557ea8c272c680a1f17d360934da6138585e09314df5d04f19d6`.
+
+The runtime-validated repository accepts 3,081 products from 3,099 rows and quarantines 18. Raw catalog SHA-256 is `a0eb16ac1ae2557ea8c272c680a1f17d360934da6138585e09314df5d04f19d6`; LF-normalized content SHA-256 is `8f2ee3771be548b85a8d8981127b2518b8e8e5868584491df36b96317476cbbc`. New retrieval artifacts use only the accepted products, and every gold ID is validated against that corpus before retrieval.
+
+The semantic-intelligence V2 benchmark includes frozen variants. The 2026-10-29 rerun used 300 generated query cases (100 exact product, 100 category, 100 hard-constraint) and 50 generated conversations / 200 turns from `retail_ai_semantic_intelligence_v2_frozen_20261028.json`, SHA-256 `d030d8f860f426a0ffcba7d44b542f8f7b23e9d361a51d8810c052670ba8b1e9`. The corrected Recall@5 is 0.6878 across 98 evaluable hard-constraint cases; two empty-gold cases are excluded from recall and separately reflected in nonempty-result rate 0.98. Earlier `dev_rev1` / `dev_rev2` artifacts use a separate file/hash (`8f129beecee14b7c8ff1bbba106fae154a3321a55ef2efaad718e3493de27d3b`); corrected rerun Recall@5 is 0.6841 across all 100 evaluable cases. These are synthetic, templated catalog-derived development data, not blind or human-reviewed. An audit found 280/300 exact query-case matches and all 50/50 conversations match between the purported frozen set and dev_rev1 despite distinct file hashes and the same generator seed; the two files are therefore not independent splits.
+
+The live Groq probe has two manually written cases and five turns (picnic and Pantene). The author was also the evaluator; it is a diagnostic example set, not independent human evaluation. The earlier Vietnamese 200-query set remains development/regression because its cases were reviewed while fixing code. No true held-out human set is available in this run.
+
+The source audit did not find a safe SKU-level enrichment pilot. The [Pantene Vietnam page](https://www.pantene.com.vn/vi-vn/mua-s%E1%BA%A3n-ph%E1%BA%A9m/d%E1%BA%A7u-g%E1%BB%99i-su%C3%B4n-mu%E1%BB%99t-%C3%B3ng-%E1%BA%A3) matches a product line but omits GTIN and package size, so it cannot verify the catalog record's barcode or `650g` value. [Nestlé Vietnam](https://www.nestle.com.vn/vi/brands/coffee/nescafe-cafe-ca-phe-hoa-tan) and its [official brochure](https://www.nestle.com.vn/sites/g/files/pydnoa216/files/2023-01/Nestle-IMS-Export-Brochure.pdf) do not resolve a `25×20g` product-title versus `25×24g` URL-slug conflict in one catalog record. The Vinamilk result was a staging page with no barcode; official Coca-Cola formula pages found were for other markets; Unilever's Sunlight page was brand-level. No manufacturer fact was imported or labeled verified.
+
+An additional manually authored parser/retrieval development set has 200 queries across 20 catalog leaf categories. Its category labels were selected before running the parser version, but the set was then inspected during development and is not blind. The post-category-browse rerun remains at product type 98%, intent 95.31%, negative constraints 76.92%, and comparison exact match 80%; end-to-end case exact match is 95% (190/200). Tool retrieval is relevant@1 90.5%, relevant@5 92.5%, and category precision@5 89.7%. There are 10 exact-case failures, including comparison intent/type mismatches and three negative-constraint spans; these do not establish that an incorrect product was returned. Results are diagnostic and do not estimate blind quality. New artifact: [`independent_consultation_v2_post_category_browse_20261029.json`](artifacts/independent_consultation_v2_post_category_browse_20261029.json); prior run: [`independent_consultation_v2_dev_parallel_20261028.json`](artifacts/independent_consultation_v2_dev_parallel_20261028.json).
+
+## 9. Gold-label audit
+
+- Product identity, category, price and brand in generated cases are derived from snapshot rows. This supports deterministic identity checks, not semantic suitability.
+- The two current V2 generated files are not independent query splits: a file-level audit found 280/300 identical `(case_id, query)` pairs and all 50/50 conversations/user turns match. Different JSON hashes do not make the data independent. The 120-SKU-disjoint generalized “heldout” set also uses title-derived templates and overlapping taxonomy templates, so it is not a blind semantic test.
+- Generated category precision checks category membership, not fit to an intended use.
+- Hard-constraint checks cover encoded fields and empty-result behavior. They cannot validate absent attributes such as “ngon”, “không cay”, “dễ chia”, efficacy, or suitability.
+- The former alternative measure counted parser intent only. Its labels allowed 48/50 repeated prior SKUs and 42/50 exact repeated lists. It is now labeled intent-only; candidate novelty is `NOT_EVALUATED_REQUIRES_STATEFUL_API_SESSION` in the parser benchmark. The implementation has a deterministic page-walk regression, but this benchmark still does not grade end-to-end session novelty.
+- H-037/H-082 wording was corrected in the development generator; old JSON artifacts were retained for audit.
+- Annotation schema and review tooling are scaffolding only. No annotator-completed qrels were available; labels requiring judgment must remain `needs_review`.
+
+## 10. Baseline vs experiments
+
+| Measurement | Earlier baseline | Latest generated development run | Interpretation |
+| --- | ---: | ---: | --- |
+| Exact product Recall@1 / @5, n=100 | 0.32 / 0.37 | 1.00 / 1.00 | Improvement on catalog-derived exact product queries only. |
+| Category Precision@5, n=100 | 0.80 | 1.00 | Taxonomy membership; not semantic usefulness. |
+| Hard-constraint cases passed, n=100 | 0.57 | 1.00 | Generated constraints from represented fields only. |
+| Constraint violations | 1 | 0 | Does not prove correctness for missing/unrepresented attributes. |
+| Candidate Recall@5 | 0.7628 (legacy grader; not comparable) | 0.6841 (100 evaluable cases, corrected grader) | Provisional synthetic candidate coverage; corrected denominator uses all eligible IDs and only raw ranks 1–5. |
+| Category scope / context / price ordering | Not comparable | 150/150; 100/100; 50/50 | Parser/tool harness, not response prose. |
+| Alternative intent / candidate novelty | Not measured | 50/50 intent; novelty 0 cases | Intent recognition is not successful alternative recommendation. |
+| Manually authored parser/retrieval dev set, n=200 | Direct-search relevant@1/.@5 .075/.090 | Post-category-browse rerun: tool relevant@1/.@5 .905/.925; category P@5 .897; product type 98%; intent 95.31%; negation 76.92%; comparison exact match 80%; case exact match 95% | Exposed development set, not blind; distinct from generated exact-match cases. Ten exact-case failures remain; see the new artifact. |
+
+Latest corrected dev artifact: [`semantic_intelligence_v2_dev_rev1_post_grader_20261029.json`](artifacts/semantic_intelligence_v2_dev_rev1_post_grader_20261029.json). Historical `retail_ai_semantic_intelligence_v2_dev_rev2_20261028.json` used the invalid Recall@5 calculation and its value of 1.00 must not be used. The separate frozen run is [`semantic_intelligence_v2_post_grader_20261029.json`](artifacts/semantic_intelligence_v2_post_grader_20261029.json). Baseline and historical numbers are documented in [`retail_ai_semantic_intelligence_v2.md`](retail_ai_semantic_intelligence_v2.md).
+
+Post-pagination rerun: [`semantic_intelligence_v2_final_20261029.json`](artifacts/semantic_intelligence_v2_final_20261029.json). On its separate frozen synthetic dataset, exact product R@1/R@5 was 1.00/1.00; category P@5 was 1.00; encoded-constraint cases passed 100/100 with zero violations; corrected candidate Recall@5 was 0.6878 over 98 evaluable cases and nonempty results were 0.98. Context retention, parser scope, category scope, price ordering, alternative-intent recognition, and first-item references passed their encoded checks. The artifact marks alternative candidate novelty as not evaluated. Deterministic p50/p95 latency was 89.508/149.740 ms in this run; these are regression diagnostics, not semantic-answer quality or LLM latency.
+
+## 11. Ablation by dimension
+
+| Dimension | Result | Decision |
+| --- | --- | --- |
+| Deterministic parser + catalog | Dev product R@1/R@5 and category P@5 are 1.00 on generated cases. | Keep as low-latency/evidence-grounded path; do not infer human quality. |
+| LLM structured extraction | 20/60 pass; 34 provider errors; 6 schema/parse/incomplete responses. | Keep model as conversational tool agent; do not call structured extraction for every query. |
+| BM25 vs E5-small vs RRF, runtime-catalog title-derived dev n=150 | On the same 3,081 accepted products: BM25 R@1/R@5 .9800/1.0000, MRR@5 .9867, nDCG@5 .9900; E5 .9667/.9800, MRR .9711, nDCG .9733; RRF .9733/.9933, MRR .9833, nDCG .9860. | BM25 leads this explicit title-resolution set; dense/RRF do not justify a default change. |
+| BM25 vs E5-small vs RRF, previously inspected SKU-separated title variants n=360 | Same runtime catalog: BM25 R@1/R@5 .9889/1.0000, MRR@5 .9944, nDCG@5 .9959; E5 .9389/.9833, MRR .9595, nDCG .9656; RRF .9722/.9917, MRR .9819, nDCG .9845. | Exploratory only: this split is exposed and is not a blind or semantic-fit test. |
+| Retrieval latency, local Windows CPU, refreshed 2026-10-29 | Dev p50/p95 ms: BM25 full rank 21.147/26.963; E5 embedding only 10.535/13.716; E5 full embedding+score+sort 24.281/27.931; RRF fusion 0.169/0.215. Exploratory n=360 p50/p95: 21.115/26.376; 10.665/13.713; 25.163/29.394; 0.163/0.213 respectively. | Compare full E5 against full BM25; embedding-only timing is not an end-to-end retrieval comparison. Machine-specific, not API/LLM latency. |
+| Bounded in-memory caches | Deterministic ASGI p50 improved vs prior same-script run: approx 1,354→707 ms at C1, 7,541→3,855 ms at C5, 7,878→4,871 ms at C20. | Retain bounded caches, but remeasure on server deployment and real query traffic. |
+| Soft-preference recovery | New unit tests prove explicit parser-supported preference survives an omitted LLM field and budget-only revision is not treated as preference. | Keep as a narrow generic state guard; post-fix live run passed but the model emitted the preference itself. |
+
+Artifacts: [`generalized_retrieval_variants_runtime_dev_20261029.json`](artifacts/generalized_retrieval_variants_runtime_dev_20261029.json) and [`generalized_retrieval_variants_runtime_heldout_exploratory_20261029.json`](artifacts/generalized_retrieval_variants_runtime_heldout_exploratory_20261029.json). Both use the same validated runtime corpus per run, but the generated queries are catalog-title variants, not human semantic-need queries. The paired bootstrap uses 5,000 resamples over 50 dev product-connected clusters and 120 exploratory clusters; it is an uncertainty estimate for these exposed synthetic query sets, not an independent semantic result. On exploratory queries, dense E5 vs BM25 has Recall@1 delta −5.00 pp (95% CI −7.22 to −3.06 pp); RRF vs BM25 has −1.67 pp (−3.33 to −0.28 pp). These results do not justify changing the BM25 production default. FastEmbed 0.9.1 / ONNX Runtime 1.31.1 were installed into a one-off `uv run --with fastembed` environment; no project dependency/lockfile was changed. Cold index build including model initialization and embedding all 3,081 items took 92.1 s for dev and 92.6 s for the exploratory run; the FP32 vector payload was 4,732,416 bytes. RSS/peak memory and model-download time were not measured. Cross-encoder and large embedding reranking were not implemented because reviewed qrels, hardware profile, and expected benefit are missing.
+
+## 12. Error analysis
+
+1. The previous alternative metric was misleading: 48/50 turns reused an item; 42/50 repeated all five IDs. Session novelty tracking is implemented, but the synthetic conversation harness still does not grade session-visible candidate novelty.
+2. Picnic probe: the model proposed drinks, but the required “snack không cay” group had zero verified candidates because the catalog lacks a spice attribute. The answer disclosed this and did not count a substitute in the total. This is grounded abstention, though the plan is incomplete.
+3. The first picnic run omitted the follow-up preference; the second run's raw Qwen trace included it. The second response said “Mình đã ghi nhận thêm ưu tiên bạn vừa nêu,” preserved the budget and unverified-snack status, and did not claim the product meets the preference. The selected items remained unchanged because the catalog has no shareability evidence. Unit tests separately verify the parser guard when a model call omits the field.
+4. “Best seller” cannot be inferred from catalog order or snapshot stock. The probe abstained because verified sales data is absent.
+5. Shelf position is explicitly labeled a recommended planogram (`A03-B03-L03-P07`), while the source row records `C1-L2`; it is not represented as verified physical placement.
+6. Human naturalness, dialect robustness, ASR transcript tolerance, useful substitutions, and multi-intent accuracy remain unmeasured independently.
+7. The exposed 200-query parser rerun is recorded in `independent_consultation_v2_post_category_browse_20261029.json`: it still has 10 exact-case failures, including comparison/variant intent mismatches (V2-097, V2-137, V2-167, V2-197) and three exact-negation-span mismatches. The V2-137 API router now retrieves both grounded categories and asks for explicit products, but the parser's primary `product_type` field still follows the first operand and misses the benchmark's expected second operand. The new category-browse route is separately covered by API regressions. Negation-span failures preserve the excluded concept with a different span (`cay` vs `loại cay`, or include `rau`); they are not established product violations. These exposed labels require semantic audit rather than automatic code changes.
+8. The runtime snapshot assigns both “Ếch làm sạch” and “Nhộng tằm” to the leaf `Cá nước ngọt tươi`. Category browse faithfully follows that stored path, so this upstream catalog-classification error can surface semantically wrong results even when the search tool and response match the snapshot. No product-specific filter was added; the source taxonomy/data needs review before claiming semantic accuracy for these categories.
+
+## 13. End-to-end conversation examples
+
+**Picnic:** “Picnic cho 4 người, khoảng 200 nghìn, snack không cay và nước uống.” The response grounds Aquafina 5L at 26,900đ from the 15/09/2026 snapshot, describes stock as not real-time, says the snack attribute is unavailable, and does not add to the cart. Good grounding; incomplete shopping coverage is expected from missing evidence.
+
+**Follow-up:** “Ưu tiên món dễ chia cho mọi người…” The first live run repeated the same drink-only plan and failed to acknowledge the new preference. On the repeat, Qwen itself included the preference in tool arguments and the response acknowledged it while keeping the 26,900đ plan unchanged. Unit tests verify the backend also preserves a parser-supported preference if a model omits it, while keeping budget/party size and hard requirements intact. The repeat therefore verifies end-to-end acknowledgement, but not the omitted-field guard under live model output. The catalog has no verified shareability field, so the system does not claim the selected drink is shareable.
+
+**Pantene:** Exact query returned snapshot price 169,900đ; shelf follow-up returned `A03-B03-L03-P07` explicitly as a proposed location, with physical placement unverified; bestseller follow-up abstained because sales data is missing.
+
+See [`live_snapshot_provider_probe_after_preference_fix_20261028.json`](artifacts/live_snapshot_provider_probe_after_preference_fix_20261028.json) for post-fix per-turn inputs, outputs, tools, IDs, and safety checks. [`generalized_live_hard_cases_20261028.json`](artifacts/generalized_live_hard_cases_20261028.json) records the separate `/agent/respond` and SSE smoke. Do not treat HTTP 200s as high-quality human-graded answers.
+
+## 14. Quality gates
+
+| Gate | Result | Status |
+| --- | --- | --- |
+| Full backend/evaluation pytest suite | `uv run pytest tests -q --tb=short`: 1,315 passed in 171.44 s locally before commit, including source URL serialization and unsafe-URL rejection. The previous committed HEAD `d7d4eb3d6ded02e9b4773b451cae1309d6b60965` passes GitHub Actions run [`40773580870`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40773580870); this follow-up awaits its own CI run. | Pass locally; new commit CI pending. |
+| Focused catalog-tool tests | `uv run pytest tests/test_retail_tools.py -q --tb=short`: 96 passed, including exact retailer URL provenance and rejection of non-HTTP, credentialed, and control-character URLs. The preceding broader focused set (568 tests) predates this small evidence-link change. | Pass locally. |
+| Ruff, compileall, and `git diff --check` | `uv run ruff check backend tests evaluation scripts`, `uv run python -m compileall -q backend tests evaluation scripts`, and `git diff --check` all pass. Git emits only expected Windows line-ending conversion warnings. | Pass locally. |
+| Seeded catalog metamorphic invariants | 5/5 passed: punctuation/accent variants preserve 64 sampled SKUs; budget caps held across 17 retrievable scopes; brand exclusions held across 32 scopes; 32 unseen tokens returned no product; a newly added synthetic SKU was indexed without product-specific code. | Pass for deterministic catalog regressions only; not a relevance or human-quality score. |
+| Runtime-catalog multi-system qrels exporter | Fresh export pooled BM25/E5/RRF for the same 150 development queries; two reviewer files contain 1,134 rows each, 5–14 candidates/query, all products in the accepted catalog, identical candidate membership with independent order, no source/rank leakage, and all grades/rationales blank with status `UNREVIEWED`. Forty dataset cases absent from the retrieval artifact were correctly skipped. | Pass for queue integrity only. Human relevance has not been judged; this is not an accuracy result. |
+| Branch CI workflow | Prior run `40744779694` failed 3/1,238 tests on Linux because the committed planogram only matched the Windows raw-byte catalog hash. Commit `42479e7` adds a canonical-hash path and LF-checkout integration regression; run `40748503030` passes Ruff, all 1,241 tests, and compileall on Ubuntu 24.04. Runs `40755659331`, `40757067626`, `40759292984`, `40761103420`, `40761593020`, `40765305100`, `40769166250`, and `40773580870` pass their corresponding commits; `40773580870` passed on `d7d4eb3`. | Previous pushed HEAD passed; source-URL follow-up CI is pending. Human evaluation and production readiness remain unmet. |
+| Vietnamese parser hot path | 50 authored development queries × 3 functions; baseline 564.280 ms first pass / 1,684.934 ms repeated; optimized 64.310 ms / 190.479 ms; 150/150 outputs identical. | 8.846× repeated-path speedup on this machine only; not an end-to-end latency or blind semantic-accuracy score. |
+| Synthetic product/category/constraint checks | 100/100 exact-product and category checks; zero encoded-constraint violations. Corrected candidate Recall@5 is 0.6841 on dev_rev1 (100 evaluable) and 0.6878 on the separate frozen file (98 evaluable); 2/100 frozen hard-constraint cases have no eligible item. | Pass for represented deterministic invariants; recall is provisional and synthetic. |
+| Post-pagination frozen benchmark | 300 generated queries + 50 synthetic dialogues; corrected candidate R@5 0.6878, zero encoded-constraint violations, and novelty status not evaluated. | Development regression only; old 0.98 value used the faulty grader and is superseded. |
+| Live API grounding invariants | Earlier provider probe: 5/5 turns HTTP 200 and grounding passed, including two Groq model turns. Latest five-case/seven-turn Vietnamese probe: 7/7 HTTP 200 and automated checks pass; it made zero Groq calls and exercised deterministic catalog routes. | Local route/grounding gate only; not human-graded or a Groq benchmark. |
+| SSE multi-turn flow | In-process API regression streams three catalog turns and checks one start/complete pair per turn, ordered deltas equal the validated answer, returned cards map to catalog rows, session messages remain synchronized, and cart is unchanged. | Pass as API regression; browser/network E2E is not claimed. |
+| Prompt-injection and unauthorized-write regressions | Covered by API/support tests for false price changes, secret requests, fake role/tool, payment, and ticket boundaries. | Regression coverage; not a penetration test or formal security certification. |
+| Human qrels, naturalness, helpfulness, abstention calibration | Six-dimension answer rubric, critical-error flags, schema, exporter, and two independently shuffled five-turn queues now exist. All answer-quality and qrels annotations remain blank and `UNREVIEWED`; reviewers have not submitted ratings. | Infrastructure ready; human evaluation not completed. Fail release gate. |
+| Concurrency capacity / deployment SLA | Not measured; local in-process smoke degrades at C5/C20. | Fail production release gate. |
+| STT/TTS voice quality | Not measured in this text-only evaluation. | No voice-quality claim. |
+
+## 15. Latency/RAM/CPU
+
+Latest [`api_runtime_load_sanity_20261029.json`](artifacts/api_runtime_load_sanity_20261029.json), deterministic catalog-only in-process ASGI; 20 actual requests per level, warm-up excluded, and observed concurrency verified:
+
+| Configured concurrency | Requests / observed in flight | p50 | p95 | p99 / max | Throughput | HTTP errors / identity-price mismatches |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 20 / 1 | 130.922 ms | 169.333 ms | 172.410 / 172.410 ms | 7.314 req/s | 0 / 0 |
+| 5 | 20 / 5 | 515.055 ms | 672.084 ms | 679.909 / 679.909 ms | 7.668 req/s | 0 / 0 |
+| 20 | 20 / 20 | 2,552.342 ms | 2,563.249 ms | 2,563.859 / 2,563.859 ms | 7.750 req/s | 0 / 0 |
+
+A separate single-request `tracemalloc` probe measured Python heap current 323,238 B and peak 704,006 B. Repository construction took 538.707 ms; excluded warm-up response took 297.247 ms. The harness excludes network, browser, TLS, reverse proxy, server worker pools, provider calls, STT, and TTS. Twenty requests per level are still a smoke profile, not a capacity or SLA claim. C20 p50 remains about 2.55 s, unsuitable for a responsive production chat target.
+
+The 2026-10-28 five-request run is retained for audit but is not directly compared: it did not send enough work to reach C20 and excluded neither a dedicated warm-up nor environment metadata. This run corrects those measurement limits.
+
+The separate deterministic V2 run measured p50 105.075 ms and p95 203.005 ms over 300 catalog-only cases. It excludes Groq and should not be compared with end-user or provider latency; it is separate from the five-request ASGI concurrency probe above.
+
+## 16. Provider reliability
+
+The post-fix live probe used Groq `qwen/qwen3.8-27b` for two turns and local deterministic/catalog paths for the other three. All five returned HTTP 200, all five passed automated grounding checks, and both model calls succeeded with the primary credential; no fallback was recorded. The two model turns consumed 7,599 reported tokens (3,344 + 4,255). This is a tiny single-run sample and does not estimate outage/fallback reliability or production latency distributions.
+
+Per-turn API latency in the post-fix probe: 2,830 ms and 2,303 ms for the model-backed picnic turns, 293 ms, 222 ms, and 111 ms for catalog/local turns. The provider-call timings were 2,443 ms and 1,968 ms. These are one-run timings, not provider p50/p95. Credentials were configured, but secret values were excluded.
+
+## 17. Security regression
+
+Automated regression coverage checks that user-provided injection does not override catalog price, expose secrets, fabricate an admin role/tool, mutate payment/cart state without authorization, or create an unrelated support ticket. Relevant tests include `tests/test_retail_api.py` injection-context cases and `tests/test_support.py` ticket-policy cases.
+
+Commit `0d6f628c4d3677d7781e80a28dc5ec398efd53ee` closes one indirect replay path: customer-visible assistant prose is still retained in session history, but `messages_for_model()` now projects only user turns for both in-memory and Redis stores. This prevents an assistant answer that quoted an untrusted catalog name/description from being replayed as an assistant instruction on the next turn. Regression tests verify both that the injected string stays in display history and that it is absent from the next LLM context. Results are recorded in [`session_model_context_security_20261029.json`](artifacts/session_model_context_security_20261029.json).
+
+This change does not sanitize catalog text in tool observations during the current model turn, and it does not establish resistance to every prompt-injection technique, malicious user input, model/provider compromise, or cross-tenant deployment issue. The current catalog tool allowlist is read-only and cart/payment actions remain controller-validated, but those are blast-radius limits rather than proof the model cannot be influenced. Tool authorization, session isolation, backend validation, and data provenance remain the primary security boundaries. No live Groq red-team run was performed.
+
+## 18. Human review status
+
+**No independent human qrels or conversation-quality review was completed.** The 300-query / 50-conversation semantic benchmark is synthetic and development-facing. A split audit found 280/300 identical `(case_id, query)` pairs and 50/50 matching conversations between the two V2 files; both were made from the same seed. The separately titled generalized “heldout” set is SKU-disjoint but uses product-name-derived templates, while its taxonomy and conversation templates overlap with development. None qualifies as a blind semantic-quality set. The two-case live probe was manually authored and inspected by the implementer, so it is diagnostic only. A matched retrieval run pools BM25, E5-small, and RRF over the same 150 development queries and exact runtime-accepted catalog. Two blinded qrels reviewer queues each contain 1,134 ungraded rows; candidate membership matches while ordering differs. Every qrels label and rationale remains blank and `UNREVIEWED`. A conversation answer-quality rubric and review exporter have since been added, but no reviewer agreement or adjudication is available and no ratings have been submitted. These are review queues, not completed human evaluation or relevance/quality scores.
+
+The separate answer-quality rubric rates need understanding, product choice, explanation, evidence, naturalness, and helpfulness on a 1–5 scale, with critical flags for wrong product, hard-constraint, price/unit, invented-benefit, false-stock, unauthorized-purchase, session-leakage, and other serious errors. A schema, annotation guide, exporter, blank CSV template, and two shuffled reviewer queues were added. The current queue contains five turns from an earlier probe, all blank and `UNREVIEWED`; reviewers have not submitted ratings. The evaluator-only manifest is separate from the reviewer CSVs. This is review infrastructure, not completed human evaluation.
+
+Annotation schema, guidance, and exporters are present under `evaluation/schemas/`, `evaluation/review/`, and `evaluation/`. Product-qrels queue files: [`annotator A`](../../evaluation/review/vietnamese_qrels_runtime_catalog_dev_20261029_annotator_a.csv), [`annotator B`](../../evaluation/review/vietnamese_qrels_runtime_catalog_dev_20261029_annotator_b.csv), with evaluator-only metadata in [`manifest`](../../evaluation/review/vietnamese_qrels_runtime_catalog_dev_20261029_evaluator_only_manifest.json). Answer-quality queues: [`reviewer A`](../../evaluation/review/answer_quality_probe_20261028_annotator_a.csv) and [`reviewer B`](../../evaluation/review/answer_quality_probe_20261028_annotator_b.csv); keep the separate [`answer-quality evaluator manifest`](../../evaluation/review/answer_quality_probe_20261028_evaluator_only_manifest.json) out of reviewer packets. The next review should use two independent annotators, adjudicate disagreements, and freeze a separately authored blind set before tuning against it.
+
+## 19. Remaining limitations
+
+- Catalog freshness is 2026-09-15; stock and price may have changed.
+- Descriptions are sparse/repetitive; many efficacy, flavor, spice, audience, compatibility, material, and use attributes are unavailable.
+- No verified sales, rating, or popularity data; bestseller/tastiest claims must abstain.
+- Shelf planogram is synthetic/recommended and not proof of physical placement.
+- Search metrics do not validate suitability for implicit needs, accepted substitutes, complements, or multi-product tasks.
+- Both new retrieval query sets are catalog-derived title variants. The 360-case exploratory set has previously been inspected; neither retrieval artifact is a blind holdout or human relevance benchmark.
+- CPU-only E5 indexing has a material cold-start cost. The matched runtime-catalog artifacts linked in §11 measured 92.1–92.6 s for model initialization plus embedding the 3,081-item corpus; model download time and peak RSS were not measured. Earlier 65–74 s notes are superseded for these runs. The retrieval experiment is not integrated into production runtime.
+- The seeded metamorphic suite verifies repeatable repository/tool invariants against this snapshot; it does not measure semantic relevance, naturalness, or recommendation suitability. Its one synthetic catalog row is only a generic index-rebuild check.
+- Synthetic development cases have leakage risk and narrow language coverage; accentless text, typos, dialects, ASR errors, and long multi-intent conversations need independent review.
+- Alternative SKU novelty is not measured by the parser benchmark; current load test is too small for capacity estimates.
+- No browser E2E, reverse-proxy validation, production worker-pool test, or voice/STT/TTS benchmark is part of this report. A focused real Uvicorn/TCP SSE regression now checks delayed first-event timing and cancels an in-flight provider when the requesting client is cancelled; it is not browser or production-network evidence.
+- Post-fix preference handling now has focused unit coverage and one successful live provider re-run; repeated sessions and broader preference types still need independent coverage.
+- Product knowledge models evidence/provenance. The four-product sidecar contains manufacturer-published usage, nutrition, caffeine, and marketing statements; these do not establish independent efficacy, individualized suitability, live price/stock, or facts about an unlisted package variant. Most of the 3,081-item catalog still has no independently reviewed use, taste, efficacy, or suitability evidence.
+- Runtime snapshot audit on 3,081 accepted products found 0 non-null ingredient fields, 0 non-null spice fields, all 3,081 shelf assignments sourced from `RECOMMENDED_PLANOGRAM`, and 2,844 descriptions equal to the product name. ProductKnowledge exposes the catalog row's safe HTTP(S) `source_url` for `SOURCE_RECORD` and retailer-listing facts; this link locates the retailer record and is not independent product verification. Reviewer metadata is still absent. The sparse sidecar does not support broad suitability advice.
+- The four-product source pilot covers Coca-Cola Zero, P/S toothpaste, Hảo Hảo noodles, and Pantene. Exact-SKU versus product-line limits remain enforced; a product-line declaration cannot be transferred to a different size or package without an explicit source basis.
+- Alternative page-walking is unit and repository tested; actual novelty over multi-turn live API sessions remains ungraded by the frozen benchmark.
+
+## 20. Release decision
+
+**NOT READY for production. Demo-only with an operator aware of snapshot staleness and unknown product attributes.**
+
+The implementation passes deterministic development regressions and guarded grounding examples, but lacks evidence for the core release claim: accurate and natural advice on independently written, unseen Vietnamese requests across the whole catalog. Production should be reconsidered after human-reviewed blind evaluation, acceptable API load profile, reliable current store data, and successful live preference/session revalidation.
+
+## 21. Reproduction commands
+
+Run from repository root:
+
+```powershell
+uv run pytest tests -q --tb=short
+uv run ruff check backend tests evaluation
+uv run pytest tests/test_catalog_metamorphic_invariants.py -q --tb=short
+uv run pytest tests/test_semantic_intelligence_v2_benchmark.py -q --tb=short
+uv run pytest tests/test_retail_agent.py tests/test_shopping_mission.py -q --tb=short
+uv run python -m evaluation.semantic_intelligence_v2_benchmark `
+  --dataset evaluation/cases/retail_ai_semantic_intelligence_v2_dev_rev1_20261028.json `
+  --output docs/reports/artifacts/retail_ai_semantic_intelligence_v2_dev_rev2_20261028.json
+uv run python evaluation/semantic_intelligence_v2_benchmark.py `
+  --output docs/reports/artifacts/semantic_intelligence_v2_postfix_20261029.json
+uv run python -m evaluation.api_runtime_load_sanity `
+  --requests-per-concurrency 20 `
+  --output docs/reports/artifacts/api_runtime_load_sanity_20261029.json
+uv run python -m evaluation.vietnamese_parser_hot_path_benchmark `
+  --output docs/reports/artifacts/vietnamese_parser_hot_path_20261029.json
+uv run --with fastembed python -m evaluation.generalized_retrieval_variants `
+  --cases evaluation/cases/generalized_catalog_consultation_dev_v1.jsonl `
+  --output docs/reports/artifacts/generalized_retrieval_variants_runtime_dev_20261029.json
+uv run --with fastembed python -m evaluation.generalized_retrieval_variants `
+  --cases evaluation/cases/generalized_catalog_consultation_heldout_v1.jsonl `
+  --output docs/reports/artifacts/generalized_retrieval_variants_runtime_heldout_exploratory_20261029.json
+uv run python -m evaluation.export_vietnamese_qrels_review `
+  --dataset evaluation/cases/generalized_catalog_consultation_dev_v1.jsonl `
+  --results docs/reports/artifacts/generalized_retrieval_variants_runtime_dev_20261029.json `
+  --output-prefix evaluation/review/vietnamese_qrels_runtime_catalog_dev_20261029 `
+  --catalog data/winmart_products.json `
+  --split development `
+  --seed 20261029 `
+  --max-candidates-per-query 15
+uv run python -m evaluation.live_text_conversation_benchmark `
+  --case-file evaluation/cases/vietnamese_snapshot_provider_probe_20261028.json `
+  --pace-seconds 2.5 `
+  --output docs/reports/artifacts/live_snapshot_provider_probe_after_preference_fix_20261028.json
+uv run python -m evaluation.live_text_conversation_benchmark `
+  --case-file evaluation/cases/retail_ai_live_text_vietnamese_dev_20261029.json `
+  --pace-seconds 9 `
+  --output docs/reports/artifacts/live_text_vietnamese_dev_20261029.json
+uv run python -m evaluation.catalog_taxonomy_api_smoke `
+  --output docs/reports/artifacts/catalog_taxonomy_api_smoke_20261029.json
+uv run pytest tests/test_vietnamese_answer_quality_review.py tests/test_live_text_conversation_benchmark.py -q --tb=short
+git diff --check
+```
+
+Live Groq execution requires credentials in local environment/`.env`; do not print or commit them. The live command is text-only, can consume provider quota, and is not an independent statistical evaluation.
+
+## 22. Rollback plan
+
+1. Keep this work on the existing branch until review; do not merge to `main` as part of this task.
+2. If a regression is found, revert the specific code commit on this branch (or use `git revert <commit>` after it is pushed); do not reset/force-push shared history.
+3. The bounded cache changes can be reverted independently from session alternative tracking and preference preservation. Preserve regression tests and benchmark artifacts when reverting production behavior so the defect remains visible.
+4. If the preference parser causes noisy ranking, disable the soft-preference recovery path first; hard requirements and budget validation must stay enabled.
+5. Restore the prior report/artifacts from Git history if a report correction is needed; retain historical benchmark JSON and never overwrite it with a post-fix run.
+
+## 23. Generalized family retrieval and hard-constraint regression — 29/10/2026
+
+Two end-to-end API defects were reproduced and fixed on the existing branch `codex/retail-text-quality-v4-20261019`:
+
+1. **Family/category filtering happened after top-k ranking.** Soft preference matches could fill the candidate window with products from an adjacent leaf (for example, sunscreen/body moisturizer for a face-moisturizer query); filtering those rows afterward left no results. Candidate scope is now applied before ranking/truncation and resolved once from the active catalog taxonomy. No SKU-specific rule was added.
+2. **An unsupported negative attribute could be lost in a fresh session.** “Không chứa hương liệu” could route through generic product lookup without the original constraint reaching the tool, allowing an unsupported product result. The router now detects catalog-negative constraints that cannot be verified and abstains with a clear disclosure. A supported brand exclusion remains searchable.
+
+The deterministic API regression artifact [`family_scoped_preference_regression_20261029.json`](artifacts/family_scoped_preference_regression_20261029.json) records **4/4** cases: face moisturizer, men’s shampoo, floor cleaner, and an unsupported fragrance-free hard constraint. All returned product IDs, names, prices, and category leaves match the dated snapshot. It made no LLM or external-provider calls and is not human or blind evaluation.
+
+Verification after these changes: focused regression coverage **593 passed**; full repository suite `uv run pytest tests -q --tb=short` **1,347 passed in 180.47 s**; focused Ruff passed; `compileall` and `git diff --check` passed. The work remains in the existing branch; no new branch, commit, or push was made in this continuation.
+
+These results establish regression behavior only. Soft suitability such as “dịu nhẹ” is not verified by the catalog unless an evidence-backed attribute exists. Live stock, current shelf presence, sensitive product benefits, independent human relevance, and blind quality remain unverified. Release status remains **demo-only / not production-ready**.
+
+## 24. Catalog-label intent collisions and all-taxonomy API sweep — 29/10/2026
+
+A generated smoke run over every distinct catalog leaf exposed three reusable parser/router defects:
+
+1. **Exact labels made only of stop words were dropped.** The resolver removed both tokens in `Bàn là`, so a product request fell through to fuzzy search. Exact multiword taxonomy labels are now retained when normal tokenization removes the whole phrase; single-word accent-sensitive resolution remains on its existing path.
+2. **Taxonomy text was mistaken for an intent cue.** `Giá đỗ` was routed to price facts because `giá` is also a price keyword; taxonomy labels containing `vs` were routed to product comparison. The parser now evaluates price/comparison cues outside a matched catalog label. The API comparison route receives the live hierarchy, and fact-field routing does not intercept an exact category-only lookup. Explicit price questions and comparison cues outside the label remain active.
+3. **A parser-only fix was insufficient for routing.** API-level collision cases are now tested through session creation and `/agent/respond`, including card ID/name/price and taxonomy-path checks.
+
+The reusable sweep is `evaluation/catalog_taxonomy_api_smoke.py`. Final artifact [`catalog_taxonomy_api_smoke_20261029.json`](artifacts/catalog_taxonomy_api_smoke_20261029.json) records **344/344** distinct leaf-label requests passing through `/agent/respond`, with **0** LLM/provider calls. Every result had a taxonomy type, non-price/non-comparison lookup intent, at least one product in the requested taxonomy path, and cards matching snapshot IDs/names/prices. Local API latency in the final run was p50/p95 **188.49/218.54 ms**; it is not Groq latency or a production SLO.
+
+The property-style parser regression now checks every active taxonomy leaf rather than a fixed list of products. Four representative API collision cases cover the all-stopword label and price/comparison keyword collisions; a separate parser regression checks that `vs` inside a category label does not hijack a within-category cheapest-item question. Final verification on the current working tree: `uv run pytest tests -q --tb=short` **1,356 passed in 194.04 s**; `uv run ruff check backend tests evaluation`, `compileall`, and `git diff --check` passed.
+
+This sweep proves category routing and snapshot grounding only; it does not grade product suitability, answer quality, human relevance, or live store truth. It is exposed development evidence, not validation or blind evaluation. Independent qrels and human reviews remain uncompleted, so the release decision remains **demo-only / not production-ready**. All work stays on `codex/retail-text-quality-v4-20261019`; no additional branch was created.
+
+## 25. Brand questions, unsupported storage requirements, and parser regression — 29/10/2026
+
+The next review of realistic customer turns found three response-quality defects and fixed them on the existing branch:
+
+1. **Brand phrasing was missed.** A question such as “Mì ăn liền vị bò với vị gà đang có những nhãn nào?” was incorrectly routed as a stock lookup because “đang có” was over-weighted and “nhãn nào” was not recognized as a brand question. The parser now recognizes general Vietnamese brand/label questions, trims common availability suffixes, and asks the stock tool only when the user explicitly asks about stock (for example “còn hàng”, “hết hàng”, or “tồn kho”). The API fallback preserves the original user wording and lists brands only from matched catalog rows; it explicitly says packaging labels were not independently verified.
+2. **A storage requirement could show unverified products.** “Sữa tươi hộp giấy để ngoài được, có loại nào không?” could display candidates despite the snapshot having no verified storage-condition field. The API now detects this type of product attribute requirement and abstains without product cards when the catalog has no evidence. It distinguishes shelf location questions from storage-condition questions.
+3. **One-item fallback copy was irrelevant.** A single unverified candidate could receive a generic “hiệu quả” disclaimer. It now names the missing requested evidence in Vietnamese and the supported fallback languages.
+
+The 200-query development parser benchmark was rerun after these fixes and is recorded in [`independent_consultation_v2_after_storage_guard_20261029.json`](artifacts/independent_consultation_v2_after_storage_guard_20261029.json). Exact parse match is **95.0% (190/200)**; product type is **98.0% (196/200)**; intent **95.31% (61/64)**; budgets **20/20**; ranking criterion **21/21**; quantity **4/4**. Exact negative-constraint spans remain the weakest field at **76.92% (10/13)**; comparison intent is **80% (16/20)**. Category retrieval hit@1 is **92.5%** and tool category precision@5 is **92.0%** on this authored dataset. These scores are development/regression metrics, not a blind estimate: failure cases were inspected and this same dataset was rerun after code changes. Retrieval hit rate measures catalog category membership, not recommendation suitability or product relevance.
+
+The artifact now records the command, commit SHA, dirty-worktree state, dataset/catalog/configuration hashes, runtime/dependency versions, and that no model or randomized sampling was used. Local snapshot search latency was p50/p95 **62.36/110.98 ms** (baseline **76.44/232.86 ms**); this is local CPU tool latency, not LLM latency or an API production SLO.
+
+Focused regressions cover colloquial brand lookup through `/agent/respond`, positive/negative storage-intent detection, and withholding candidate cards when required storage evidence is absent. The end-to-end local API probes also confirmed that “nhãn nào” returns only brands from matched snapshot fields and includes a packaging-verification caveat. One catalog inconsistency remains visible: some product names contain brands that do not match the row's `brand` field, so the returned values are explicitly described as catalog brand fields rather than verified package brands.
+
+Verification for this continuation: focused consultation/parser tests **152 passed**; catalog browsing **20 passed**; benchmark-provenance test **1 passed**; full repository suite **1,366 passed in 193.58 s**; `uv run ruff check backend tests evaluation`, `compileall`, and `git diff --check` passed. Reproduction commands:
+
+```powershell
+uv run python evaluation/independent_consultation_benchmark.py `
+  --cases evaluation/cases/independent_consultation_v2.json `
+  --output docs/reports/artifacts/independent_consultation_v2_after_storage_guard_20261029.json
+uv run pytest tests/test_query_understanding.py tests/test_catalog_consultation.py -q --tb=short
+uv run pytest tests/test_catalog_browse.py -q --tb=short
+uv run pytest tests/test_independent_consultation_benchmark.py -q --tb=short
+uv run pytest tests -q --tb=short
+uv run ruff check backend tests evaluation
+```
+
+The benchmark is manually authored and does not measure naturalness, quality of recommendation, stock freshness, ASR, or actual customer satisfaction. Catalog attributes such as product efficacy, suitability, and storage remain largely absent. Independent blind queries, human relevance/suitability judgments, data provenance cleanup, and production load evaluation are still required. Release status remains **demo-only / not production-ready**. Work remains on `codex/retail-text-quality-v4-20261019`; no extra branch was created.
+
+## 26. Cross-platform dataset split authorization — 29/10/2026
+
+GitHub Actions on commit `e35b98b0ab85ba1f146fa6d4f643cf3d024400b0` exposed a Windows/Linux portability defect in `evaluation/split_policy.py`: the repository-visible development registry stored Windows CRLF hashes, while Linux checked out the same JSON/JSONL files with LF. The test `test_known_semantic_frozen_dataset_is_registered_as_exposed_development` therefore treated a known exposed set as unregistered; 1,365 other CI tests passed in that run.
+
+The split policy and registry now hash text after normalizing line endings to LF. All 10 registered exposed datasets were checked against the normalized content and have zero missing paths or hash mismatches. The canonical SHA-256 for the frozen V2 dataset is `0fbfbdcecb83a0cfe2a8fc24bb688526a8a5db4a7ab797a3c73217b677d2e1f1`; the earlier `d030…` value in historical Windows benchmark artifacts is its CRLF raw-byte hash. A regression writes identical registered data as both LF and CRLF and asserts both remain `registered_exposed_development`; the protected-data hash and modification checks use the same canonical hash rule. Local full suite: **1,367 passed**. Commit [`26b388d`](https://github.com/chinhdz102/Retail-AI-/commit/26b388d926672b1e63953bb0e23cea200ae05cf8) is on the existing branch; GitHub Actions run [`40793937826`](https://github.com/chinhdz102/Retail-AI-/actions/runs/40793937826) passes Ruff, all offline backend tests, and Python compilation on Ubuntu. No new branch was created.
+
+## 27. Remove uncalibrated parser confidence — 29/10/2026
+
+The deterministic parser assigned `confidence` values of `0.94`, `0.76`, or `0.35` from the presence of a category/product phrase. No runtime consumer used the field, and no calibration data or reliability analysis supported interpreting those numbers as probabilities. The field and fixed assignments have been removed; parser output retains its explicit `ambiguity` and `clarification_needed` signals without presenting an uncalibrated score. A parameterized regression covers category, product-reference, and unrecognized-query shapes.
+
+Focused parser/split-policy suite: **139 passed**. Full local suite with the confidence change: **1,370 passed in 190.11 s**. Ruff and `git diff --check` pass. This is a reporting-correctness change, not a measured semantic-accuracy improvement. Human calibration and blind evaluation remain outstanding; release status remains **demo-only / not production-ready**.
+
+## 28. Implicit use-case routing and reviewer-agreement tooling — 29/10/2026
+
+Testing natural shopping turns found that the parser could identify an implicit recommendation and its intended use, but the API router only entered catalog recommendation flow when a separate lexical cue matched. As a result, turns such as “Tôi muốn thịt bò để nấu lẩu” and “Mình muốn bột mì để làm bánh” could miss grounded catalog retrieval. The API now passes the structured parse into the recommendation router and uses its recommendation/use-case signal alongside existing routing signals. Category resolution still uses the active catalog taxonomy; this change adds no SKU-specific rules.
+
+The same flow exposed misleading fallback wording: a first-time cooking request could be described as “lựa chọn khác” even though no earlier recommendation existed. That false alternative flag is no longer set by the generic audience fallback. When catalog evidence cannot establish suitability, the response lists grounded catalog candidates and their snapshot prices, clearly says fit is unverified, and avoids echoing an arbitrary raw phrase from the customer as if it were a normalized use case. Existing price and stock caveats remain in force.
+
+The API regression checks two different product groups (meat for hotpot and flour for baking), verifies every returned ID/name/price/category against the dated snapshot, confirms the missing-suitability disclosure, and asserts the LLM is not called. The parser regression also checks that unverified-use responses do not repeat the customer's full raw phrase.
+
+For the review workflow, newly exported qrels queues include blank reviewer ID and timestamp fields. A new scorer validates two independently labeled packets, frozen dataset/catalog metadata, completeness, reviewer separation and timestamps; reports per-field exact agreement, nominal Cohen's kappa, and confusion matrices; retains each annotator's judgments; leaves disagreements unresolved unless a distinct adjudicator supplies a complete annotation; and never promotes the set to validation/blind status. Older queues must be regenerated before review. This is evaluation infrastructure only and is not evidence that any human review has occurred.
+
+Focused verification: **166 passed**; the full repository suite: **1,378 passed in 176.41 s**. Focused Ruff, Python compilation, and `git diff --check` passed; full-repository lint and final artifact checks are rerun before commit. Reproduction commands:
+
+```powershell
+uv run pytest tests/test_query_understanding.py::test_unverified_need_is_not_rendered_as_a_suitability_recommendation tests/test_retail_api.py::test_implicit_cooking_need_uses_grounded_catalog_without_claiming_fit tests/test_vietnamese_intent.py tests/test_vietnamese_qrels_agreement.py tests/test_semantic_intelligence_v2_benchmark.py::test_review_queue_pools_retrievers_and_independently_blinds_reviewers -q --tb=short
+uv run pytest tests -q --tb=short
+uv run ruff check backend tests evaluation
+uv run python -m compileall -q backend evaluation tests
+git diff --check
+```
+
+No independent human ratings, blind labels, browser/network E2E, or production latency evidence were added by this change. Catalog fit and current stock remain limited by snapshot evidence. Release status remains **demo-only / not production-ready**. All work remains on `codex/retail-text-quality-v4-20261019`; no additional branch was created.
+
+## 29. Cross-turn use-case refinement and catalog review integrity — 29/10/2026
+
+An additional review of natural consultation turns found that a preference-only reply could replace the active product query with a skin/hair condition or an exclusion. The API now retains the active catalog group and query when the customer only refines a use case, soft preference, or negative constraint. It keeps the existing preference scope across those turns, while an explicitly named new product group can still switch the search. When a use case is stated without a product group, the assistant asks which group to look up rather than searching for a guessed item.
+
+The parser now separates common Vietnamese skin and hair conditions from catalog product wording. These conditions remain unverified suitability context; they do not assert that a listed product will work. The implementation also guards the homonym “bánh đa khô” from being interpreted as dry skin. Negative constraints stop at punctuation/clause boundaries, so a later positive preference such as “ưu tiên da khô” is not accidentally included in a rejected-brand phrase. Catalog responses retain the unverified-detail marker when the customer gives a use case that the snapshot cannot substantiate.
+
+The full test pass caught one more contextual regression: “Tư vấn thịt nhúng lẩu giúp mình” was sent to catalog search as the literal conjunctive title query “thịt lẩu” and returned no products. For semantic use-case requests, the API now resolves the product group from the structured product reference when the full utterance is too conversational for category resolution. The cooking-use fallback then searches title-backed preparation wording inside that resolved group. The multi-turn regression now passes while preserving the catalog’s caveat that suitability is not verified.
+
+Reviewer and adjudicator CSV queues are now rejected if rows mix dataset ID, frozen dataset hash, catalog hash, or split. This prevents a scorer from accidentally combining judgments across different snapshots or evaluation partitions.
+
+Verification on the final working tree: focused parser/API/tool/qrels regressions **677 passed**; the repaired multi-turn cooking regression **1 passed**; full repository suite `uv run pytest tests -q --tb=short` **1,398 passed in 182.00 s**; `uv run ruff check backend tests evaluation`, Python compilation, and `git diff --check` passed. Reproduction commands:
+
+```powershell
+uv run pytest tests/test_retail_tools.py::test_ambiguous_product_family_stays_with_title_backed_products tests/test_query_understanding.py tests/test_vietnamese_intent.py tests/test_retail_api.py tests/test_vietnamese_qrels_agreement.py -q --tb=short
+uv run pytest tests/test_contextual_consultation_regressions.py::test_cooking_goal_survives_an_ingredient_reply_and_resets_on_new_department -q --tb=short
+uv run pytest tests -q --tb=short
+uv run ruff check backend tests evaluation
+uv run python -m compileall -q backend evaluation tests
+git diff --check
+```
+
+These are local deterministic regression checks against the catalog snapshot. They do not establish human-rated conversational quality, suitability, live stock, browser/network E2E, or production performance. No new branch was created; all work remains on `codex/retail-text-quality-v4-20261019`. Release status remains **demo-only / not production-ready**.
+
+## 30. Frozen semantic-intelligence baseline and metric interpretation — 29/10/2026
+
+Reran the frozen V2 parser/catalog benchmark at commit `df198eb441fedccc7b42f765bef7dd1b74aa7284`. The full machine-readable output is [`semantic_intelligence_v2_post_df198eb_20261029.json`](artifacts/semantic_intelligence_v2_post_df198eb_20261029.json). It covers 300 catalog/taxonomy-derived queries and 50 generated four-turn conversations (200 turns); the dataset is explicitly provisional, synthetic, and not human validated.
+
+Results in this harness:
+
+- Exact-title product resolution: **Recall@1 100%, Recall@5 100%, MRR 1.0** over 100 catalog-title variants. This measures name resolution, not semantic suitability.
+- Taxonomy browsing: **Precision@5 100%** and parser category accuracy **100%** over 100 taxonomy-derived requests. This measures category scope, not whether a product is a good recommendation.
+- Hard filters (category, maximum price, excluded brand): **100/100 cases passed**, **0 constraint violations**. There were 98 non-empty results and two correct abstentions where no matching product existed. For the 98 non-empty cases, all shown top-five items met the encoded constraints (**Precision@5 100%**).
+- The artifact's **Candidate Recall@5 68.78%** is the macro share of every eligible catalog item surfaced when the tool shows at most five results. It is a coverage measure over queries with 1–49 eligible products, not the proportion of shown recommendations that are correct. It must not be reported as “recommendation accuracy.”
+- Conversation harness: category scope **150/150**; context retention and parser scope **100/100 each**; price ordering, alternative-intent parsing, and first-item-reference parsing **50/50 each**. Alternative-item novelty was evaluated in **0** cases; first-item references checked parsing only. The harness does not simulate assistant-visible state for those two behaviors.
+- Local parser+catalog-tool latency: p50/p95 **82.651/133.018 ms** (parser p50/p95 **25.810/38.849 ms**, catalog-tool p50/p95 **59.370/102.743 ms**). These are in-process local measurements, not browser/API round-trip, Groq, speech, concurrent-load, or production SLO results.
+
+No code behavior changed in this benchmark rerun. The high exact-title/category scores come from generated queries built from the same catalog/taxonomy and cannot establish performance on natural customer language. The results still do not answer whether a recommendation is useful, suitable, natural, or factually complete; those require independent human qrels and answer-quality review. The 200-turn conversation dataset is exposed development data, not a blind set. Release remains **demo-only / not production-ready**.
+
+Reproduction command:
+
+```powershell
+uv run python evaluation/semantic_intelligence_v2_benchmark.py `
+  --output docs/reports/artifacts/semantic_intelligence_v2_post_df198eb_20261029.json
+```
+
+This update stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 31. Full repository quality gate on the report commit — 29/10/2026
+
+After publishing the benchmark report, reran the repository checks on code HEAD `0f844575cc94c63c321ace617a7521e587eadefe`:
+
+- `uv run pytest tests -q --tb=short`: **1,398 passed, 0 failed in 180.10 s**.
+- `uv run ruff check backend tests evaluation`: **passed**.
+- `uv run python -m compileall -q backend evaluation tests`: **passed**.
+- `git diff --check`: **passed**.
+
+The run artifact [`quality_gate_head_0f84457_20261029.json`](artifacts/quality_gate_head_0f84457_20261029.json) records the commit, branch, Windows/Python/tool versions, catalog snapshot hash, exact commands, and limits. The tracked code tree was clean at test start. Eight already-present untracked artifacts were preserved and were not staged.
+
+This is a local repository regression gate. It does not establish human-rated recommendation quality, blind-set performance, browser/network end-to-end behavior, provider reliability, or production capacity. Those release gates remain open, so the release status remains **demo-only / not production-ready**. This continuation remains on `codex/retail-text-quality-v4-20261019`; no branch was created.
+
+## 32. Catalog-grounded lowest-price questions across product groups — 29/10/2026
+
+The customer API had two early exits that prevented category price questions from reaching a dependable ranking path: one asked for a category even when a catalog group was named, and another returned a generic candidate list before a lowest-price request could be evaluated. The category detector now also uses the active catalog taxonomy. Unscoped questions still ask which group to compare.
+
+Lowest-price order is now applied inside the repository before pagination, for the JSON snapshot, demo catalog, and PostgreSQL implementations. The SQL order is selected from a fixed allowlist. Explicit price ranking is treated as a hard ordering request and does not get displaced by soft-preference reranking. The answer identifies the lowest catalog reference price (including ties) and states the snapshot date, package-size caveat, and current price/stock limitation.
+
+The scope stays tied to the customer's wording. “Thịt thăn bò” remains a narrow product lookup instead of being widened to any meat item; generic category questions such as shampoo, face towels, and laundry detergent compare their own catalog results. API regressions compute expected minima from all matching snapshot pages rather than hard-coding product IDs. A new-category query after browsing another category also verifies that prior product IDs are not reused. An unscoped “find the cheapest product” still asks a brief category question.
+
+Verification on the working tree based on `cae607c`: focused catalog/API/repository tests **106 passed**; full `uv run pytest tests -q --tb=short` **1,404 passed in 201.65 s**; `uv run ruff check backend tests`, `uv run python -m compileall -q backend tests evaluation`, and `git diff --check` passed. Artifact: [`cheapest_category_e2e_20261029.json`](artifacts/cheapest_category_e2e_20261029.json). The PostgreSQL ordering is verified by SQL-construction tests; no live PostgreSQL connection was exercised.
+
+This is deterministic local API/catalog regression evidence, not independent human evaluation, blind-set performance, current in-store price or stock verification, or production load evidence. “Cheapest” currently means lowest listed package price; different package sizes are not normalized to a per-unit price. Those limitations remain visible in the response. Release status remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 33. Manual browser conversation smoke — 29/10/2026
+
+The visible Vue kiosk was opened at `http://127.0.0.1:5173/` with the local backend health endpoint returning `ok`. The browser rendered its ready state without adding an unsolicited chat turn. In one text-chat session, I asked “Coca Zero giá bao nhiêu?”, followed with “loại nào rẻ nhất?”, then asked “loại nào bán chạy nhất?”.
+
+All four first-turn product cards (IDs `WIN_10307381`, `WIN_10194711`, `WIN_10194712`, and `WIN_10011651`) matched the local product-search endpoint by exact product name and reference price. The relative cheapest follow-up selected the displayed 600ml Coca-Cola Zero bottle at **9,900đ**, the minimum price among the four visible cards. The bestseller question did not invent a sales rank: Sky stated that verified sales data is unavailable, retained the active Coca-Cola Zero group, and offered a supported next filter. The full turn-by-turn evidence is in [`manual_browser_consultation_smoke_20261029.json`](artifacts/manual_browser_consultation_smoke_20261029.json).
+
+This is a manual smoke against an already-running local demo. Its health endpoint does not expose a commit SHA, so the run cannot be attributed to code HEAD `83953fd`; it is exploratory browser evidence and not final-HEAD acceptance. The run did not capture request timing, prove first-token latency, or assess token-level model streaming. It covers one Vietnamese session only and does not validate current store price/stock, human-rated suitability, blind performance, voice, or concurrent load. Keep the release decision **demo-only / not production-ready**.
+
+## 34. Repository quality gate on code HEAD `83953fd` — 29/10/2026
+
+Reran the full repository quality gate after the latest product-ranking code had been committed. The tested application and test sources match code HEAD `83953fd0f8f6738b47de85a6dbc1c6fe65ed2957`; the only tracked working-tree diff during the run was this report update. The nine untracked artifacts present during the run were not staged. [`quality_gate_head_83953fd_20261029.json`](artifacts/quality_gate_head_83953fd_20261029.json) records commands, environment, catalog hash, dirty-state details and limits.
+
+- `uv run pytest tests -q --tb=short`: **1,404 passed, 0 failed** in **200.51 s**.
+- `uv run ruff check backend tests evaluation`: passed.
+- `uv run python -m compileall -q backend evaluation tests`: passed.
+- `git diff --check` and browser-artifact JSON parsing: passed.
+
+This is a deterministic local regression gate. It does not close the independent human review, blind evaluation, provider reliability, server-commit-attributed browser E2E, real-store freshness, or production-load gaps. Release remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 35. Parser rerun and catalog-category integrity probes — 29/10/2026
+
+Reran the 200-query Vietnamese consultation development set at commit `59ce118ec52d456de42fc0afa4cb4dfe8dc3d2f3`. The machine-readable results are [`independent_consultation_v2_post_59ce118_20261029.json`](artifacts/independent_consultation_v2_post_59ce118_20261029.json). Whole-case exact match is **190/200 (95.0%)**. Intent is **61/64 (95.31%)**, product type **196/200 (98%)**, negative-constraint raw-span exact match **10/13 (76.92%)**, and comparison-dimension exact match **16/20 (80%)**. Catalog retrieval in this deterministic harness has relevant@1 **92.5%**, relevant@5 **92.5%**, category precision@5 **92%**, and local snapshot-search p50/p95 **54.99/96.42 ms**. These are development-set parser/tool measurements, not human-rated end-to-end answer quality; the development cases were inspected during tuning.
+
+The parser misses are not all demonstrated customer-answer failures. For example, “Mì ăn liền vị bò với vị gà đang có những nhãn nào?” is parsed as a brand/list request; “Nước tinh khiết ... với nước khoáng...” retains both category targets even though the single-label parser metric expects one; and “Trứng gà ta với trứng gà công nghiệp có loại nào?” is parsed as a same-category variant request. The comparison-dimension scores therefore need a future multi-target adjudication set before they can be interpreted as an end-to-end comparison failure rate. The benchmark artifact contains the case-level outputs; its gold labels were not changed.
+
+A separate read-only scan of all **3,081** snapshot products found **1,379** titles with a direct taxonomy resolver match. Of those, **320** are lexical candidate mismatches where the resolved category does not exactly equal a stored hierarchy segment. This broad resolver scan is **not** a set of 320 confirmed bad rows: parent/child wording, common words, product modifiers, abbreviations, and cross-listing produce false positives. The complete diagnostic and all candidate rows are in [`catalog_title_taxonomy_candidate_audit_20261029.json`](artifacts/catalog_title_taxonomy_candidate_audit_20261029.json). It deliberately does not feed an automatic filter or modify source records.
+
+Two deterministic API probes expose limits that need to remain visible:
+
+- “Cá nước ngọt tươi và cá biển đang bán gồm những loại nào?” returned `Nhộng tằm` under `Cá nước ngọt tươi`. The API followed the stored source hierarchy; the title and hierarchy contradict each other. This is a catalog-data quality issue. No SKU-specific runtime exception was added because the catalog-wide lexical scan has too many false positives to justify an automatic exclusion policy.
+- “Trứng gà ta với trứng gà công nghiệp có loại nào?” found one `Trứng gà ta` product. The answer at the time of this probe only said the catalog could not verify that the item met all criteria; it did not explain that the requested variants/details were not confirmed. The product is not labeled “công nghiệp” in the snapshot, so the system must not infer that subtype or claim a comparison.
+
+These API probes used the local snapshot and a provider stub; no Groq call was made. They reproduce deterministic routing and expose a source-data defect and a response-specificity gap. They do not establish general product relevance. The source taxonomy needs reviewed corrections or a separately validated, general category-consistency model before this browse path can be considered reliable. No category gold labels or SKU rules were added. Release remains **demo-only / not production-ready**.
+
+All work remains on `codex/retail-text-quality-v4-20261019`; no new branch or worktree was created.
+
+## 37. Natural personal-care follow-ups and honest single-result wording — 29/10/2026
+
+Improved the shared Vietnamese query parser so common frequency wording such as “hay” and “thường”, plus short causal or time context such as “sau khi rửa” and “vào cuối ngày”, stays attached to a skin, scalp, or hair need. A condition-only utterance remains a clarification rather than becoming a product title. In an active recommendation, the same utterance refines the existing category and query; the catalog still does not get treated as evidence that a product suits that condition.
+
+The response now distinguishes a single catalog result from several results in the unverified-use-case path. It explicitly says suitability is not verified and avoids adding the generic “chưa có dữ liệu đã xác minh” sentence a second time. The tests cover three natural condition-only forms, the homographic “Bánh đa khô” regression, and a three-turn cream consultation that keeps the `Kem dưỡng da mặt` category, excludes Pond’s when requested, and does not claim Nivea is suitable for dry skin. This is shared parser and response behavior; no product ID or SKU-specific rule was added.
+
+On the local WinMart snapshot, the deterministic API conversation returned `Kem dưỡng mềm da Nivea 50ml` after the dry-skin preference, kept it in the cream category, and did not return the excluded Pond’s items. The response disclosed that catalog evidence cannot verify suitability. No Groq provider call was made. Case-level probes, output product IDs and commands are recorded in [`personal_care_natural_context_quality_gate_20261029.json`](artifacts/personal_care_natural_context_quality_gate_20261029.json).
+
+Verification on the final working tree based on `537756963d65e19edd487d55f03f80f3c8edee2c`: focused regressions **10 passed**; full `uv run pytest tests -q --tb=short` **1,409 passed in 199.40 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed.
+
+This does not prove product suitability, freshness, or current in-store stock; it is a deterministic local evaluation against a dated snapshot. Human-rated blind evaluation, live-store checks, provider reliability, browser E2E on a verified server commit, and production load tests remain open. Release remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 36. Clearer response when only one requested variant is found — 29/10/2026
+
+Changed the shared one-result response for `family_details_unverified` in Vietnamese, English, and Chinese. It now states that only one catalog option was found and that the remaining variants or details are not verified, so the assistant cannot complete a comparison. It does not assign an unverified subtype to the returned product. This is a shared response path, not a special case for eggs.
+
+Added both a localization regression and a real-snapshot API regression using the question “Trứng gà ta với trứng gà công nghiệp có loại nào?”. The API still returns only the catalog-listed “Trứng gà ta” product and now clearly says it cannot verify or fully compare the remaining variants/details. No SKU ID, product-specific rule, or catalog change was added.
+
+Verification on the working tree based on `086c6c47c6832e0b5214953e7ca3072221388eee`: focused tests **2 passed**; full `uv run pytest tests -q --tb=short` **1,405 passed in 196.76 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. Artifact: [`quality_gate_followup_response_specificity_20261029.json`](artifacts/quality_gate_followup_response_specificity_20261029.json).
+
+The earlier “Nhộng tằm” category issue remains: the snapshot assigns it to fresh-water fish, and no general classifier has been validated to correct that source data safely. Human-rated blind evaluation, real-store data checks, provider reliability, final-head browser E2E, and production load testing also remain open. Release stays **demo-only / not production-ready**. This update is on the existing `codex/retail-text-quality-v4-20261019` branch; no branch or worktree was created.
+
+## 38. Blind-test split boundary hardening and cross-agent audit — 29/10/2026
+
+The split policy previously rejected `evaluation/cases/` paths but could authorize another repository-visible file as `blind_test` if a registry record asserted the required provenance flags. The guard now rejects every blind-test path lexically inside the repository and every resolved path inside it. Checking both forms also blocks a repository symlink that points outside and an external symlink that resolves back into the repository. A regression uses a repository test file outside `evaluation/cases/` and a complete-looking registry record; authorization now fails closed. Development and validation behavior are unchanged.
+
+Verification on the working tree based on `cc1c12a6ce4dfac8c7ac1a3d1552d998f9d926fd`: focused split-policy tests **10 passed**; full `uv run pytest tests -q --tb=short` **1,410 passed in 200.63 s**; full Ruff, compileall, and `git diff --check` passed. Details are recorded in [`evaluation_split_policy_hardening_quality_gate_20261029.json`](artifacts/evaluation_split_policy_hardening_quality_gate_20261029.json). The pre-existing untracked artifacts were preserved and excluded from staging. Work remains on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+A read-only current-base runtime audit also passed **89 focused backend tests** and **10 frontend SSE-client tests**. On a temporary TCP server running the local catalog path, warm `n=10` response latency was p50/p95 **86.85/94.09 ms**, SSE headers **85.44/87.07 ms**, first `delta` **85.92/87.38 ms**, and completion **86.48/87.91 ms**; cold first `delta` was **887.84 ms**. A local catalog-only load with 20 sessions per concurrency level had zero failures: p50/p95 was **97.96/104.35 ms** at concurrency 1, **492.79/610.50 ms** at 5, and **1,289.37/1,976.76 ms** at 20. This is exploratory snapshot-path timing, not provider latency or a production SLO.
+
+The audit confirmed an important streaming limitation: `/agent/respond/stream` waits for the full agent response before sending `start` and `delta` events. The text is chunked after generation, so this is not live model-token streaming. No streaming rewrite was made in this continuation. The temporary audit server on port 8001 was stopped; existing 8000/5173 servers predated the base commit and were not treated as current-commit browser evidence.
+
+The evaluation registry still contains **zero** protected validation/blind datasets. Existing qrels and answer-quality review sheets remain unannotated, so there is no independent human relevance or answer-quality score. The local audit also did not exercise Groq, live inventory, real Redis, browser/network end-to-end, or same-session concurrency. These gaps keep the release **demo-only / not production-ready**.
+
+## 39. Reproducible retrieval and answer-review scoring — 29/10/2026
+
+Added an offline graded-retrieval scorer and a two-reviewer answer-quality agreement scorer on the existing branch. The retrieval scorer checks frozen dataset/catalog hashes, qrels provenance, candidate-pool authorization, query identity, and full top-k judgment coverage before reporting Precision/Recall, MRR, and graded nDCG. Unknown, unjudged, and unresolved candidates stay out of the metrics; bootstrap comparisons operate on query units and are reported only when the judged sample is large enough.
+
+The answer-quality scorer reports each 1–5 dimension separately, including exact and within-one-point agreement, quadratic-weighted Cohen's kappa, distributions, and coverage. Critical flags are reported separately with nominal kappa, positive/negative agreement, confusion matrices, and missing counts. It does not invent a composite score. Independent-review disagreements remain unresolved unless a distinct third reviewer supplies a validated adjudication CSV. The exporter now fingerprints the frozen customer-visible packet; scoring verifies the fingerprint and both queues' content against the evaluator-only manifest before accepting any labels.
+
+The scoring suite passed **24 focused tests**; full Ruff passed. A fresh temporary export of the real answer-review source packet was correctly rejected because both queues still have `UNREVIEWED` rows. The retained answer-quality packet has **5 rows per reviewer** and **zero completed human labels**. No human answer-quality or retrieval metric was produced. This only verifies scorer behavior on synthetic test fixtures and refusal of blank review queues; it is not evidence that the assistant's answers are correct or natural.
+
+The full repository suite passed on code commit `c6f1b0900be840bb225bc2357694baff5890e99c`: `uv run pytest tests -q --tb=short` reported **1,429 passed, 0 failed in 431.16 s**. `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` also passed on that code revision. The machine-readable run record is [`vietnamese_review_scoring_tool_quality_gate_20261029.json`](artifacts/vietnamese_review_scoring_tool_quality_gate_20261029.json). Eight pre-existing untracked artifacts were preserved and excluded from the commit.
+
+Old answer-review manifests created before `frozen_review_packet` must be regenerated before annotation. The existing packets have not been overwritten. The independent blind set and reviewer labels remain absent, so release status stays **demo-only / not production-ready**. Work remains on `codex/retail-text-quality-v4-20261019`; no additional branch or worktree was created.
+
+## 40. Third-reviewer answer-quality adjudication — 29/10/2026
+
+Closed a gap in the review workflow: the prior scorer could report A/B disagreement but had no way to represent a third reviewer's resolution. The answer-review CSV now includes `adjudication_decision`; an optional third CSV uses status `ADJUDICATED`, a distinct reviewer ID, and one of `KEEP_A`, `KEEP_B`, or `NEW_JUDGMENT`. The scorer preserves the original A/B agreement statistics and records resolved labels separately by field. It rejects an adjudicator reusing either independent reviewer, changing the visible packet, adding a non-disputed label, omitting a disputed field, or claiming `KEEP_A`/`KEEP_B` while returning a different label.
+
+Tests cover all three adjudication modes, exact disputed-field coverage, preserved A/B and adjudicator separation, visible-packet integrity, and the updated schema/template. Focused answer-quality plus retrieval scoring tests: **28 passed**. The full repository suite passed on code commit `cd9919371ac85c4475ca306909cf0ee714949ee8`: **1,433 passed, 0 failed in 427.17 s**. Full Ruff, compileall, and `git diff --check` also passed. Results are recorded in [`answer_quality_adjudication_quality_gate_20261029.json`](artifacts/answer_quality_adjudication_quality_gate_20261029.json).
+
+The retained queues still contain **zero** human labels, so the scorer path is verified only on synthetic fixture judgments; no human quality or suitability rate is available. The existing answer-review packet predates the frozen-content fingerprint and must be regenerated before annotation. Missing fields remain unscored; adjudication does not create a product-truth oracle. Release remains **demo-only / not production-ready** and work stays on the same branch, with no new branch or worktree.
+
+## 41. Multi-turn alternative recommendation state regression — 29/10/2026
+
+Added a general API regression for the full recommendation-state sequence using generated, non-SKU-specific snack and drink fixtures: show an initial page, ask for more items, exhaust the category without repeating products, switch categories, then start a fresh request in the original category. The assertions verify that only IDs already shown in the same scope are excluded, exhaustion returns no grounded products, and both a category change and an explicit fresh request clear the prior exclusion set. This closes a missing test for state handoff at `/agent/respond`; it does not change production routing behavior.
+
+Verification on the working tree based on code HEAD `5e3cf1d8e21697f290724d53c5f0f05a495f4c53`: the focused API/session and alternative-pagination checks passed **4 tests**; the complete `tests/test_retail_api.py` suite passed **373 tests**; the complete `tests/test_retail_tools.py` suite passed **96 tests**; Ruff passed for `tests/test_retail_api.py`. The full API and tool suites contain the focused cases, so their counts are not additive. Commands and exact limits are recorded in [`alternative_recommendation_session_quality_gate_20261029.json`](artifacts/alternative_recommendation_session_quality_gate_20261029.json).
+
+The route regression stubs only the recommendation lookup to control the displayed pages. The real recommendation tool and pagination paths are exercised by the complete tool suite, but this is not a live database/Groq/browser test and does not measure recommendation relevance. No product-specific rule or sample catalog data was added. Human relevance labels, a blind evaluation, fresh store inventory, and production-load evidence remain absent; release remains **demo-only / not production-ready**. Work remains on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 42. API-level category browse and alternative follow-up — 29/10/2026
+
+Fixed the actual API handoff behind “còn loại khác không?” after a shopper browses a product group. A category browse now applies the catalog taxonomy as a filter, and the session carries forward a category only when the displayed snapshot rows support that scope. An alternative request can inherit that verified scope, seed the seen-ID set from the prior visible page, and ask the recommendation tool for unseen products. This prevents an ambiguous follow-up from widening to an unrelated parent department. The category filter is shared across product groups; no SKU-specific rules were added.
+
+The same 20 three-turn development conversations were rerun through the in-process `/agent/respond` API against the dated WinMart snapshot (60 API turns, provider stubbed). All checks passed: grounded IDs matched visible product cards **100%**, category precision **100%**, visible-product state retention **100%**, lowest price within the prior visible page **100%**, non-repetition **100%**, return of an unseen in-category alternative when one existed **100%**, and provider-free deterministic execution **100%**; **0/20** conversations had a failure. The complete machine-readable case traces and metrics are in [`generalized_catalog_consultation_api_dev_quality_gate_20261029.json`](artifacts/generalized_catalog_consultation_api_dev_quality_gate_20261029.json).
+
+The benchmark now measures price against the page the customer had just seen and checks visible IDs across selected products, recommendation history, and displayed pages. Its earlier parser/tool-only alternative-scope diagnostic is still reported separately (**95%**) and must not be mistaken for API conversation quality. The 190-query development retrieval run also reported query-compiler product recall@1/@5 **100%**, category precision@5 **100%**, and local latency p50/p95 **120.06/174.14 ms**; these are tuned development-set snapshot measurements, not independent human relevance or live-provider measurements.
+
+The multi-category run exposed a separate intent collision: normalized “giò” in “Giò chả” matched the cart-view word “giỏ”. Cart view now requires “giỏ” with Vietnamese spelling, “giỏ hàng”, or an unambiguous cart phrase; an unaccented bare “gio” is only accepted as cart view when already in the cart state. Regression tests cover both category browsing and actual cart queries.
+
+Verification for this slice: **19 focused API/cart tests passed**; the full 20-conversation API development benchmark passed. The first full-suite run exposed one existing spoken-query regression when the new category-browse path forwarded unrelated words as filter context. That input is now passed only for an actual category browse; the affected regression passed afterward. Final `uv run pytest tests -q --tb=short`: **1,445 passed in 227.00 s**. Full `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed on the final working tree. The snapshot has stale stock and does not verify product-use suitability; no Groq generation, human reviewer, live store, browser, or production load was part of this run. Release remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 43. Production customer search path baseline — 29/10/2026
+
+The BM25/E5/RRF experiment used a separate research ranker and did not measure the customer tool path. Added a snapshot-only baseline that runs `execute_catalog_tool(search_products)` on the same 150 development product-identity queries. It includes deterministic Vietnamese query understanding, hard-filter routing, `SnapshotProductRepository` ranking, and tool observation construction; it does not call an LLM or external provider. The ablation harness now also records this production-tool baseline alongside BM25, E5, and RRF, so later retrieval comparisons can be interpreted against the actual app route.
+
+On 150 repo-visible catalog-derived queries (50 conversational-title variants, 50 accentless variants, and 50 single-typo variants), the tool returned `SUCCESS` for **150/150**. Identity Recall@1 and Recall@5 were **100%**; MRR@5 and nDCG@5 were **1.0**. Local deterministic tool-path latency, excluding one-time snapshot load, was p50/p95/p99 **56.208/92.439/118.796 ms**; snapshot load was **600.107 ms**. Per-case outputs and source hashes are in [`production_tool_search_dev_20261029.json`](artifacts/production_tool_search_dev_20261029.json).
+
+This is an exact identity-resolution check on generated queries that retain the catalog product name. It does **not** establish retrieval quality for natural need-based requests, semantic fit, answer naturalness, or recommendation correctness. The run used code HEAD `453a5d64a7e53d07ff0ce0ddbe47be454441c1fa` with tracked evaluator changes; the artifact records that dirty state and its diff hash. It excludes HTTP/LLM/voice latency, live stock, and concurrency. Existing human qrels queues are still blank, and no blind set is registered, so production-tool ranker quality on independent customer language remains unverified.
+
+Reproduction command:
+
+```powershell
+uv run python evaluation/production_tool_search_benchmark.py
+```
+
+Focused validation for this slice: `uv run pytest tests/test_generalized_retrieval_variants.py -q --tb=short` **11 passed**; the ablation integration test used a mocked FastEmbed module so it did not download a model. Full verification after the change: `uv run pytest tests -q --tb=short` **1,448 passed in 256.03 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. The dense model ablation itself was not rerun because FastEmbed is not installed in this environment; the snapshot-only production tool benchmark did run. Work remains on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 44. Research review for retrieval and conversational advice — 29/10/2026
+
+Reviewed the required ViRE, ProductAgent/PROCLARE, ESCI, product-negation search, URASys, PEPPER, multilingual E5, BGE-M3/FlagEmbedding, Qwen3 Embedding/Reranker, Vietnamese_Embedding_v2, and Sentence Transformers references. The source-by-source problem, method, evidence, limits, resource fit, license notes, and adoption decision are documented in [`retail_product_retrieval_research_20261029.md`](retail_product_retrieval_research_20261029.md).
+
+The evidence supports running a matched hybrid-retrieval experiment, but it does not support a production ranking change: published Vietnamese retrieval results are from passage/customer-support tasks, the local product-title experiment is not semantic-fit evidence, and the current reviewer queues have no completed judgments. The decision is to keep exact identity and hard filters authoritative, use clarification/abstention when catalog evidence is missing, and compare the production tool, BM25, E5-small, and rank fusion on independently authored Vietnamese need queries with two-reviewer graded qrels before promoting any model. No external dataset, vector database, model dependency, or production ranking behavior was added in this research slice. Release remains **demo-only / not production-ready**.
+
+## 45. Generalized positive scope and negated subtype filtering — 29/10/2026
+
+Fixed the shared correction pattern “A, không phải B” so the positive phrase alone sets product scope, while B remains an exclusion. The parser now handles both taxonomy categories and catalog-backed title subtypes such as “mì ly”, which has no separate taxonomy node. A title subtype is enforced only when its exact phrase is evidenced in product titles within the selected category. The filter runs before candidate ranking and the result limit, so an excluded top candidate cannot leave an otherwise valid request with an empty list. If a snapshot taxonomy is wrong, exclusion can also use the category’s ordered words in a product title; “gas” by itself is not treated as evidence that mineral water is a soft drink.
+
+End-to-end API checks exposed a second issue: deterministic product lookups normalized the query and dropped the original correction. The API now forwards the original wording only when the shared parser identifies a negative constraint, preserving existing exact lookup behavior for ordinary price, stock, and freshness questions. Exclusion checks use both the product's category label and hierarchy, so a disagreement between those snapshot fields does not silently reintroduce a disallowed subtype.
+
+The behavior was tested across **nước khoáng, khăn giấy, sữa tươi, and mì ăn liền**, through both `search_products` and `recommend_products` (**8/8 tool cases passed**), plus four `/agent/respond` integration cases. The requests retain their positive category, return catalog-backed products, and omit the explicitly excluded subtype, including categories whose label and hierarchy disagree. A negative-only request still asks the customer to clarify the desired category. No product ID/SKU rule or single-query alias was added. The artifact with tool-level outputs, catalog hash, working-tree diff hash, per-case timing and limitations is [`negative_scope_retrieval_quality_gate_20261029.json`](artifacts/negative_scope_retrieval_quality_gate_20261029.json).
+
+Reran the authored 200-query parser and catalog-tool development set after the change. Exact parser-field match is **191/200 (95.5%)**, product type **196/200 (98%)**, intent **61/64 (95.31%)**, and negative-constraint raw-span exact match **11/13 (84.62%)**. Against the prior run on the same exposed set, V2-060 (“khăn giấy ... không phải khăn ướt”) is now correct; it is the only case whose field-check output changed. The other nine cases remain failures, including comparison-label disagreements and unresolved packaging/storage/preparation details. Gold labels were not changed. Current tool relevant@1/@5 is **92.0%** and category precision@5 **91.5%**, each 0.5 percentage points below the preceding run, so this result does not show an overall retrieval-quality gain. The complete case-level run and exact environment metadata are in [`independent_consultation_v2_after_negative_scope_20261029.json`](artifacts/independent_consultation_v2_after_negative_scope_20261029.json). This is an exposed development set, not blind or human relevance evidence.
+
+The same local one-process run measured deterministic tool-path p50/p95 **123.51/210.91 ms**; the raw snapshot-search baseline was **171.07/513.18 ms**. The prior run measured both paths substantially faster, so these numbers are not a controlled before/after performance result; concurrency, memory, and production load were not measured. No LLM, Groq, browser, live database, STT, or TTS call was used.
+
+Verification on the working tree based on code HEAD `89c48e2398b313f510293fa8ac939171d6e18917`: focused correction/API regressions **9 passed** (five context/fact regressions plus four `/agent/respond` correction cases); the tool-level correction gate **8/8 passed**; full `uv run pytest tests -q --tb=short` **1,466 passed in 253.43 s**. `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. These tests establish local deterministic regressions, not real-world suitability or human-rated consultation quality. The reviewer queues remain unlabelled and no blind set is registered; source prices and stock are dated snapshots. Release remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 46. Catalog-tool CPU profile and in-process load sanity — 29/10/2026
+
+Profiled 40 direct `search_products` tool calls (10 repeats of four Vietnamese need-based queries) against the same 3,081-product snapshot, with no LLM or external provider. The profile showed repeated product-title scanning and repeated pure product-audience parsing on the hot path. The general optimization removes one duplicate title scan when the initial match is empty and memoizes the pure audience parser with a bounded 4,096-entry cache. No product-specific rule, retrieval threshold, result limit, or response behavior was changed. The reproducible profiler is [`catalog_tool_cpu_profile.py`](../../evaluation/catalog_tool_cpu_profile.py).
+
+In cProfile, total function calls fell from **9,426,302 to 7,109,060** (−24.6%) and profiled elapsed time from **4.197 s to 3.486 s** (−16.9%). Product-title matcher calls fell from **80 to 40**; its cumulative time fell from **0.942 s to 0.584 s**. On the separate unprofiled 40-call sample, p50 was **26.469 ms before / 26.735 ms after** (no p50 gain), and p95 was **88.494 / 78.593 ms**. These are short local CPU diagnostics, not a controlled performance claim; cProfile timing includes profiler overhead and the p95 sample is variable.
+
+Ran the same in-process ASGI smoke profile before and after the optimization, with 20 requests at concurrency 1, 5, and 20. Every level returned **20/20** successful responses with **zero** HTTP errors and **zero** identity/price mismatches. At concurrency 20, the two baseline runs measured p50/p95 **4,190/4,223 ms** and **3,331/3,538 ms**; the two optimized-tree runs measured **2,890/3,208 ms** and **3,072/3,085 ms**. At concurrency 5, the optimized runs were not consistent (p95 **1,338 ms** and **819 ms**), while baseline p95 was **962 ms** and **991 ms**. The run-to-run spread means these results do not establish an end-to-end latency improvement. At 20 concurrent requests the local deterministic path still takes about **3 seconds** and is not production-ready.
+
+Evidence: [`CPU profile before`](artifacts/catalog_tool_cpu_profile_f7dc587_before_20261029.json), [`CPU profile after`](artifacts/catalog_tool_cpu_profile_f7dc587_after_optim_20261029.json), and [`ASGI load runs`](artifacts/api_runtime_load_sanity_f7dc587_20261029.json), [`repeat`](artifacts/api_runtime_load_sanity_f7dc587_repeat_20261029.json), [`optimized`](artifacts/api_runtime_load_sanity_f7dc587_after_profile_opt_20261029.json), [`optimized repeat`](artifacts/api_runtime_load_sanity_f7dc587_after_profile_opt_repeat_20261029.json). All artifacts record the catalog hash, query-set hash, code commit, and dirty-tree diff where applicable.
+
+Focused catalog/repository/API/parser/context tests after the optimization pass **488 tests passed**. Final verification on this code tree: `uv run pytest -q --tb=short` **1,466 passed in 295.73 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. The ASGI test uses deterministic catalog routes and excludes browser, sockets, production workers, Groq, STT/TTS, live databases, and real traffic. No blind human relevance judgments were added; reviewer queues remain empty and the release decision remains **demo-only / not production-ready**. Work stays on the existing branch; no new branch or worktree was created.
+
+## 47. Manufacturer-source product knowledge pilot — 29/10/2026
+
+Added a versioned, data-driven evidence sidecar at [`product_knowledge_enrichment_pilot.json`](../../data/product_knowledge_enrichment_pilot.json), covering four representative catalog products across drinks, oral care, instant noodles, and hair care. The records are tied to the active WinMart snapshot SHA-256 and matched by product ID, exact name, brand, and barcode. If the registry is malformed, its catalog hash is stale, or any identity field differs, enrichment fails closed to the ordinary catalog evidence. Existing direct catalog fields always take precedence; enrichment only fills a missing field and cannot set price, stock, shelf, or current availability.
+
+The pilot separates a manufacturer declaration from an efficacy claim. `MANUFACTURER_DECLARATION` means the manufacturer publishes a value; it does not mean independent testing or personal suitability. `MANUFACTURER_CLAIM` remains `INFERRED` and the response explicitly attributes the statement to its source and marks the product-line scope. Product-specific evidence was checked against the official [Coca-Cola Vietnam product page](https://www.coca-cola.com/vn/vi/brands/coca-cola) and [caffeine FAQ](https://www.coca-cola.com/vn/vi/about-us/faq/coca-cola-ch_a-bao-nhieu-caffeine), the [P/S 230 g product page](https://www.psvietnam.vn/p/p-s-baking-soda-and-huong-thao.html/08934839126100), [Acecook's Hảo Hảo page](https://acecookvietnam.vn/product/mi-hao-hao/), and [Pantene Vietnam's soft-smooth product line](https://www.pantene.com.vn/vi-vn/mua-s%E1%BA%A3n-ph%E1%BA%A9m/ch%C4%83m-s%C3%B3c-t%C3%B3c-m%E1%BB%81m-m%C6%B0%E1%BB%A3t). Caffeine remains explicitly scoped to the manufacturer's 330 ml can figure; the system must not multiply it into a claim for the catalog's 1.5 l bottle. The Pantene entry is manufacturer marketing copy, not independent proof that the shampoo works or suits a particular person.
+
+API responses now ask which exact variant the shopper means when a brand-level product question returns several candidates. This prevents the system from selecting one variant's source record and answering as if it described every item under that brand. A Vietnamese normalization collision was also fixed: “dưỡng tóc” no longer triggers a sugar/nutrition lookup, while “nước này có đường không?” and “bao nhiêu đường?” still request nutrition evidence.
+
+Focused regression coverage verifies the four enrichment records, catalog/identity mismatch rejection, invalid registry rejection, direct-field precedence, attributed manufacturer claims, ambiguous-variant clarification, and the “dưỡng/đường” distinction. The API/tool/evidence focused run passed **500 tests**. The complete repository suite, lint, compile, and diff checks were rerun for this slice; results and the run details are recorded in [`manufacturer_enrichment_pilot_quality_gate_20261029.json`](artifacts/manufacturer_enrichment_pilot_quality_gate_20261029.json).
+
+This is a four-product source-evidence pilot, not enriched coverage of all 3,081 catalog rows. Several product lines still have no official source evidence; those questions must continue to abstain. Data are sourced from public manufacturer pages, not the package in the shopper's hand or an independent laboratory. The dated catalog still cannot confirm today's price, stock, product suitability, or current store placement. No blind set or human-reviewed answer-quality labels were added; release remains **demo-only / not production-ready**. Work remains on `codex/retail-text-quality-v4-20261019`; no branch or worktree was created.
+
+## 48. Post-commit semantic-intelligence regression run — 29/10/2026
+
+Reran the deterministic V2 benchmark on committed HEAD `a9e294217b3b2cfcd02ef83f3e9688c204451a2f` and saved the complete case-level output, source hashes, environment, and timing data to [`semantic_intelligence_v2_post_a9e2942_20261029.json`](artifacts/semantic_intelligence_v2_post_a9e2942_20261029.json). The frozen corpus contains 300 catalog-derived queries and 50 synthetic conversations (200 turns); its status remains `provisional_requires_human_review`.
+
+The 100 exact product-resolution queries achieved Recall@1/Recall@5 **100%/100%**. The 100 category-browse queries achieved Precision@5 and parser category accuracy **100%**, with zero parser errors. The 100 hard-constraint cases had zero recorded violations, and 98% returned a nonempty result. The **68.78% Recall@5** across 98 evaluable cases is the macro-average over *all* eligible products, so it equals the mathematical top-five capacity ceiling for this corpus; it does **not** show that the retriever missed products within its five-result window. This synthetic benchmark has no human relevance labels, so these figures say nothing about recommendation suitability or answer quality.
+
+The synthetic conversation checks recorded context retention **100/100**, parser scope **100/100**, price ordering **50/50**, alternative-intent parsing **50/50**, and first-item-reference parsing **50/50**. The harness does not simulate assistant messages or selected-item state; it explicitly does not evaluate whether an alternative is a genuinely new SKU or whether the selected first item is returned. These parser checks do not measure answer quality, dialogue naturalness, or customer success. Deterministic catalog-tool latency was p50/p95 **48.153/71.904 ms** on this local run, excluding LLM, HTTP deployment, voice, and production load.
+
+Verification on this commit: `uv run pytest tests -q --tb=short` **1,480 passed in 237.31 s**; Ruff and Python compile checks passed. No live LLM arm was run. The benchmark's working-tree status was marked dirty by pre-existing untracked artifacts; its tracked diff hash was empty. This remains a regression run on a synthetic, repository-visible dataset, not an independent validation or blind test. The reviewer queues remain unlabelled and no protected validation/blind set is registered; release remains **demo-only / not production-ready**. Work stays on the existing branch; no new branch or worktree was created.
+
+## 49. Bounded filtered-result refill and top-K capacity audit — 29/10/2026
+
+Fixed result underfill when a category/price page is filtered afterward by excluded brands, categories, title phrases, or unresolved product families. The catalog tool now keeps its original query, category, price, stock, spice, and sort criteria while scanning at most five repository pages of 20 products each. It deduplicates IDs and applies the same post-search hard filters before adding a candidate. If the bounded scan still cannot fill the requested window, the tool returns fewer products and does not relax a constraint. Exact product identity lookups and the child-audience fallback do not use this refill path.
+
+Added regression cases for tea excluding C2 with a 22,300 VND ceiling, instant noodles excluding KORENO below 84,000 VND, and breakfast cereal excluding Kellogg's with a 103,900 VND ceiling. Each case returned 10 products from the current WinMart snapshot, and every returned product satisfied the category, excluded-brand, and price conditions. The full deterministic V2 benchmark on the same 300 catalog-derived queries now reports zero recorded hard-constraint violations. Across its 98 cases with eligible products, top-10 underfill fell from **20/98** to **0/98**; the reported top-10 Recall (**86.94%**) equals that corpus's top-10 capacity ceiling, and capacity-normalized coverage is **100%**. Top-5 Recall remains **68.78%**, also equal to its capacity ceiling, with capacity-normalized coverage **100%**. These are constraint-coverage measurements against provisional catalog-derived cases, not judgments that the returned products are relevant, good recommendations, or naturally explained.
+
+The new run and repeat are saved at [`semantic_intelligence_v2_post_filter_refill_20261029.json`](artifacts/semantic_intelligence_v2_post_filter_refill_20261029.json) and [`semantic_intelligence_v2_post_filter_refill_repeat_20261029.json`](artifacts/semantic_intelligence_v2_post_filter_refill_repeat_20261029.json). Both record base commit `9f3eefea6ef4745d07adb40e3142ef5546b21fff`, the tracked implementation/test diff hash, dataset hash, catalog hash, case results, and timing. Across the two local runs, production-tool p50 was **53.163–63.141 ms** and p95 **78.148–105.298 ms**, versus **48.153/71.904 ms** in the prior run. Total parser-plus-tool p50 was **79.105–94.531 ms** and p95 **113.938–159.446 ms**, versus **71.407/102.352 ms**. The run-to-run spread means these single-host timings do not establish a stable latency impact or production performance.
+
+Verification after the change: `uv run pytest tests/test_semantic_intelligence_v2_benchmark.py tests/test_retail_tools.py -q --tb=short` **121 passed in 46.62 s**; `uv run pytest tests -q --tb=short` **1,483 passed in 244.86 s**; full repository Ruff, Python compile, and `git diff --check` passed. The benchmark corpus is still repository-visible and provisional, reviewer queues remain unreviewed, and no protected blind test exists. No real LLM, browser, voice, or human product-relevance evaluation was performed. Release remains **demo-only / not production-ready**. Work remains on the existing `codex/retail-text-quality-v4-20261019` branch; no new branch or worktree was created.
+
+## 50. Assistant-history injection isolation — 29/10/2026
+
+Fixed cross-turn replay of assistant prose into the LLM context. Catalog-derived assistant text remains in the customer-visible transcript for display and audit, while both session-store implementations now expose only user turns through `messages_for_model()`. Structured shopping state continues to carry selected product IDs and constraints. This general session-boundary change is not tied to a single product, query, or catalog item.
+
+Regression coverage includes an in-memory session containing a malicious catalog-derived assistant string; the Redis session-store projection with the same untrusted string; and an `/agent/respond` follow-up where a recording provider confirms the previous customer turn remains available, the catalog-derived assistant injection is absent from model context, and the displayed transcript retains the assistant text. The existing multi-turn streaming API regression was adjusted to assert that model context contains only user messages while the full visible transcript still stores user and assistant turns.
+
+On committed HEAD `0d6f628c4d3677d7781e80a28dc5ec398efd53ee`, focused session/API/security regressions passed **13 tests**. The full repository suite passed **1,485 tests in 295.04 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. Exact commands and run metadata are in [`session_model_context_security_20261029.json`](artifacts/session_model_context_security_20261029.json).
+
+Scope limit: §51 below closes the current-turn path that could replay catalog tool observations into another model decision. No live Groq test, browser run, or human security review was performed. This is not a blanket prompt-injection certification. Other release gaps remain: no registered protected validation/blind set, no completed independent qrels or answer-quality review, and no production browser/provider/load sign-off. Status remains **demo-only / not production-ready**. Work stays on `codex/retail-text-quality-v4-20261019`; no new branch or worktree was created.
+
+## 51. Current-turn catalog observation isolation — 29/10/2026
+
+On code commit `0164c8870abcdcc6113e0e7cb821d9b0a3c5b72e`, the retail agent now makes at most one model tool-planning call per turn. It executes the selected catalog tools, then returns typed observations to the API/controller without appending free-form catalog values as `role=tool` or asking the model to make another tool decision from those values. The existing grounded response renderer and deterministic controller lookups handle the observations and any follow-up data needed by the response.
+
+The shopping-mission planner prompt no longer embeds live catalog taxonomy or previous mission JSON. It receives a static system instruction; prior mission context is filtered to explicit state fields, serialized in a separate user-role data message, and excludes `proposed_items` and their catalog product names. The API resolves model-proposed product types against the active catalog taxonomy itself.
+
+Regression coverage injects malicious instruction-like text into a catalog product name and into a taxonomy label. Tests assert that catalog results are not replayed to the model, the model cannot trigger a second cart tool call from a malicious result, taxonomy strings never enter provider messages, and prior proposed product names do not enter later mission-planner context. Targeted verification: `tests/test_retail_agent.py` **40 passed**; `tests/test_retail_api.py` **385 passed**; focused mission prompt/API regressions **2 passed**. On this code commit, `uv run pytest tests -q --tb=short` passed **1,485 tests in 216.01 s**; `uv run ruff check backend tests evaluation`, `uv run python -m compileall -q backend evaluation tests`, and `git diff --check` passed. Exact commands, commit identity, assertions, and limitations are in [`catalog_observation_isolation_20261029.json`](artifacts/catalog_observation_isolation_20261029.json).
+
+These are local scripted-provider/control-flow regressions. No live Groq adversarial test, browser test, real customer data, or independent security review was run. The test demonstrates isolation of the exercised catalog observation path; it is not a general prompt-injection certification. Release remains **demo-only / not production-ready** because blind human relevance and answer-quality evidence, production provider/browser checks, and load sign-off remain outstanding. Work stays on `codex/retail-text-quality-v4-20261019`; no branch was created.
+
+## 52. Evaluation source and assignment provenance gates — 29/10/2026
+
+Closed individual-file tampering and split-downgrade gaps in the human evaluation workflow. Qrels scoring now requires the frozen source dataset and evaluator manifest for every split, validates the requested split against the source file and registry, checks the queue's dataset hash, and verifies each row's query identity, query text, candidate identity, and frozen product evidence against the manifest. Protected qrels assignments must cover every registered dataset case; development packets may still represent an explicit subset, but that subset must be fully bound to its manifest. The CLI now requires `--dataset` and `--evaluator-manifest`.
+
+Answer-quality packets bind each reviewer assignment to its source result artifact SHA-256, source label, original case and turn. Scoring reloads the artifact, checks its split/dataset/catalog/prompt provenance, verifies the registered dataset path and complete protected prompt coverage when applicable, recomputes opaque assignment IDs, and rejects incomplete or changed source records. The text benchmark refuses partial validation/blind case lists and authorizes the output location before calling a provider. Split policy rejects repository-visible protected datasets and outputs, including paths that resolve into the checkout, and rejects a protected dataset hash relabeled as development.
+
+The adjacent live Groq probe is deliberately small: **2 cases, 5 turns, 5/5 HTTP 200**, 5/5 automated grounding/safety checks, **2 LLM calls**, and a **161 ms median turn latency**. It is a one-run connectivity and deterministic-check smoke, not a broad answer-quality benchmark or a reliable latency estimate; manual Vietnamese conversation review is still required. The complete trace is in [`live_snapshot_provider_probe_post_security_20261029.json`](artifacts/live_snapshot_provider_probe_post_security_20261029.json).
+
+Verification: the six focused evaluation modules passed **87 tests**, with **1 Windows symlink test skipped** because creating the link requires a privilege unavailable in this environment. The full `.venv` suite passed **1,511 tests, 0 failures, 1 skip in 280.65 s**. Full repository Ruff, `compileall`, and `git diff --check` passed. The machine-readable run record, environment, changed-file list, and evaluator/test diff fingerprint are in [`evaluation_split_provenance_binding_quality_gate_20261029.json`](artifacts/evaluation_split_provenance_binding_quality_gate_20261029.json).
+
+The independent audit confirms that changing only split/hash metadata, deleting only a source record, manifest assignment, or reviewer row is rejected. Coordinated rewriting of every linked source artifact, dataset copy, manifest, and reviewer queue remains possible because the workflow has no immutable or signed external trust anchor; the audit identified this as a residual threat-model limit. Also, the registry currently contains **zero protected validation/blind datasets** and reviewer queues still have **zero completed human labels**. These checks prove tooling integrity on local fixtures, not model quality or production safety. No new branch or worktree was created; release remains **demo-only / not production-ready**.
+
+## 53. Product-knowledge rendering and network SSE cancellation — 29/10/2026
+
+Completed the runtime path for the existing manufacturer-source sidecar. A request for calories can now use the sidecar's verified `nutrition.energy_kcal` value while preserving its `per 100 ml` basis and manufacturer provenance. Caffeine answers retain the FAQ's 32 mg per 330 ml can scope and explicitly avoid extrapolating that amount to the catalog's 1.5 l bottle. Nutrition, usage, and ingredients are rendered only from verified manufacturer declarations with source field and product-line/exact-variant scope. If an answer combines a supported declaration with an unverified suitability question, the response provides the supported fact and abstains only on suitability.
+
+The route recognizes common Vietnamese usage/preparation phrasing such as “dùng thế nào”, “pha thế nào”, and “nấu ra sao”, plus English equivalents. A specific product-use question takes precedence over a broad product-category recommendation only when the request names a product and asks for its usage; ordinary personal-care recommendations retain their prior path. Matching ignores Vietnamese/English conjunctions that otherwise break a name containing `&`, while unresolved sibling variants continue to trigger clarification. API regressions exercise Coca-Cola Zero nutrition/caffeine, P/S toothpaste instructions, Hảo Hảo preparation instructions, Pantene's attributed product-line claim, and a mixed verified-calorie/unverified-suitability answer. The exact P/S and Hảo Hảo variant assertions ensure the source fact is not borrowed from a sibling catalog item.
+
+The stream endpoint now checks client disconnects while the complete answer policy/tool/grounding flow is pending, cancels the provider task, and avoids committing the interrupted user/assistant turn. The real Uvicorn/TCP tests validate SSE start/delta/complete ordering with a deliberately delayed fake provider and confirm that disconnect cancellation leaves session messages and the cart unchanged. This endpoint intentionally emits answer text only after the complete response has been validated; the test does not imply token streaming or Groq TTFB.
+
+Final verification on the working tree based on `2dc558e133016cec2bd4c5ca7097cb247eac0d95`: focused product-knowledge/API/network regressions passed **28 tests** before the final category-routing guard was narrowed; after that guard fix, the three affected recommendation regressions plus 10 product-knowledge/usage regressions passed **13/13**. The final complete `tests` run passed **1,523 tests, 0 failures, 1 Windows symlink-permission skip in 353.46 s**. `ruff check backend tests evaluation`, `compileall`, and `git diff --check` passed.
+
+Limits: no live Groq/provider request, browser, reverse proxy, voice/audio, real-world user, or human product-fact review was involved. The SSE test uses a local fake provider. The sidecar covers four products only and its manufacturer statements do not prove independent efficacy or individual suitability; catalog price/stock freshness and all previously registered blind/human-evaluation gaps remain. Release stays **demo-only / not production-ready**. Work remains on `codex/retail-text-quality-v4-20261019`; no branch was created.
+
+## 54. Re-run quality gates on pushed commit `a4667c1` — 29/10/2026
+
+The previous full-suite result was taken before its code commit, so the complete offline suite and deterministic frozen benchmark were rerun against the exact pushed HEAD `a4667c17dbb3433a531f35a77749d15877dd1d8f`. The local branch and GitHub branch ref resolved to the same commit. The full suite passed **1,523 tests, 0 failures, 1 Windows symlink-permission skip in 292.39 s**. The skipped test reports `WinError 1314` while creating an external-path alias; it is an environment privilege limitation. Repository Ruff, `compileall`, and `git diff --check` also passed on that HEAD.
+
+The deterministic V2 benchmark used the frozen provisional 300-query / 50-conversation set and the same WinMart snapshot (`a0eb16ac1ae2557ea8c272c680a1f17d360934da6138585e09314df5d04f19d6`). Exact product resolution scored Recall@1/5 and MRR **1.00** on 100 catalog-derived cases. Category browse scored Precision@5 and parser category accuracy **1.00** on 100 cases. Encoded hard constraints passed **100/100** with zero violations; candidate Recall@5 was **0.6878 on 98 evaluable cases**, Recall@10 **0.8694**, and results were non-empty in **98/100**. The deterministic end-to-end path measured p50/p95 **109.616/176.430 ms** on this local run. Across 50 generated conversations / 200 turns, category scope, context retention, parser-scope exact match, price ordering, and first-item reference checks each scored **1.00**. Candidate novelty for alternative recommendations had zero evaluable cases and remains untested.
+
+These are reproducibility/regression numbers for a synthetic, catalog-derived dataset, not human relevance, answer naturalness, hallucination rate, live-provider latency, browser/voice performance, or production readiness. The benchmark status remains `provisional_requires_human_review`; no independent blind labels were added. Artifact: [`semantic_intelligence_v2_a4667c1_postcommit_20261029.json`](artifacts/semantic_intelligence_v2_a4667c1_postcommit_20261029.json). Its working-tree flag is dirty because the workspace contains pre-existing untracked artifacts that were preserved; its tracked diff hash is empty. No new branch was created. Release remains **demo-only / not production-ready**.
+
+## 55. Complete database deadlines and bounded snapshot-page caching — 31/10/2026
+
+Completed the existing worker/timeout continuation on the same branch. Every one of the eight PostgreSQL catalog read paths now uses configurable connect and command deadlines, including connection cleanup; branch-information reads use the same policy. The immutable snapshot repository keeps up to 256 cached result pages per instance with every search criterion in the key, returns a fresh caller list, and starts a new cache when reloaded. New regressions cover changed snapshot prices, caller mutation, constraints/order/pagination, all database read deadlines and error cleanup, request cancellation, and context isolation.
+
+Final verification on the dirty working tree based on `20ed433b99efa9cff740ce2681324a88ee4e498f`: **1,551 backend tests passed, 1 Windows symlink-permission test skipped, in 225.59 s**; **100 frontend tests passed** and TypeScript/Vite build passed. Ruff, Python compile and diff checks passed. The frozen 300-query / 50-conversation benchmark has identical non-timing case and conversation results to the retained `a4667c1` artifact. Source hashes include the pre-existing untracked bounded-worker code and tests.
+
+A same-code cache-off/on/on/off ablation ran 240 timed requests and verified nonempty cards and identical ordered product IDs, names and prices in all four runs. At C20, p95 was **2,970–3,213 ms cache off** and **2,785–2,969 ms cache on**. The improvement is modest and variable; this four-query in-process workload is not a production capacity or provider-latency result. PostgreSQL checks used fake connections. No new live provider/browser/voice, human-review, protected blind-set or current-store evidence was added. Release remains **demo-only / not production-ready**.
+
+See the [31/10 detailed report](retail_ai_fix_optimization_20261031.md), [machine-readable quality gate](artifacts/quality_gate_optimization_20261031.json), and [source manifest](artifacts/verified_source_manifest_20261031.json) for commands, scope, results and remaining issues.
+
+## 56. General consultation grammar and category-wide verification — 31/10/2026
+
+Fixed shared request parsing, native-accent/operator collisions, location routing and
+category price ranking when a SKU has the same title as its category. No example SKU
+or example-query response is hardcoded. Replies list at most three recommendation
+items and summarize shared aisle/bay locations. Development-only synthetic sales are
+explicitly labeled in responses and cards; production ignores the demo-sales flag.
+
+The final working tree passed **1,590 backend tests, 1 Windows symlink-permission skip
+in 292.74 s**, **100 frontend tests**, TypeScript/Vite build, Ruff, compileall and diff
+checks. A new reproducible matrix passed **1,730 cases over all 346 hierarchy paths**
+(3,081 catalog products) plus **110 API conversation turns across 22 department scopes**.
+These check scope, price constraints/order, context and simulated ranking, with model
+calls blocked in the API sweep. Local browser checks verified synthetic sales on
+electrical appliances and a switch to school-supplies location lookup.
+
+Coverage is finite and catalog-derived, not exhaustive natural-language testing or
+human judgment of recommendation quality. Actual availability, placement, provider
+and voice performance, blind-set and human-review gaps remain unverified. See the
+[consultation report](retail_ai_consultation_generalization_20261031.md) and
+[detailed matrix](artifacts/consultation_coverage_20261031.json). Release remains demo-only.
+
+
+## 57. Exact 35-question review and experimental rollout — 01/11/2026
+
+Reviewed all 35 user-authored Vietnamese questions in fresh sessions and 14 authored
+multi-turn journeys (34 turns). The complete post-pagination run still has 9 failed,
+9 weak and 17 reasonable first-turn responses by agent self-review. This is exposed
+development evidence, not blind/human-rated consultation accuracy. HTTP 200 was not
+treated as success. Meal baskets, unsupported efficacy/taste claims and context
+handling remain inadequate.
+
+Added an opt-in structured dialogue policy, taxonomy-scoped bounded pagination,
+server-checked product/price/quantity binding and explicit experimental memory.
+Subsequent fixes preserve pending controllers and known-pair comparisons; the new
+pair renderer uses catalog facts and only computes unit prices for unambiguous
+single packs. No question-to-SKU table was introduced. The policy is now disabled
+by default and gated to development even when enabled. The local demo explicitly
+opts in; this does not establish production readiness.
+
+Verification: earlier full backend run 1,618 passed/1 Windows symlink skip with
+the semantic policy off; subsequent routing regression 512 passed; final contracts
+and comparison recognition 71 passed; frontend 100 passed and build succeeded.
+The finite catalog sweep passes 1,730 templates over 346 paths plus 110 API turns
+with the semantic policy off. Counts overlap and do not measure natural language
+quality. The final two-turn live replay checks pair retention/formatter only.
+
+See the [Vietnamese per-question report](customer_consultation_35_review_20261101.md),
+[research and source mapping](customer_consultation_research_20261101.md),
+[manual annotations](artifacts/customer_consultation_manual_review_20261101.json),
+[live 35-question trace](artifacts/customer_consultation_35_post_pagination_20261101.json)
+and [final pair replay](artifacts/customer_consultation_journeys_delivery_20261101.json).
+Release remains demo-only / not production-ready.
+
+## 58. Consultation research and real voice audit — 1 November 2026
+
+Continued the requested research and implementation with ALCE, official Groq/Azure/
+vad-web/Silero/LiveKit guidance and current manufacturer pages. Added typed product
+evidence projection, task-role/price diversity context, draft review, bound names and
+Unicode-price checks, finish-reason rejection and per-model/credential 429 cooldown.
+The reviewer still accepted unsupported claims. The 35 exposed development questions
+yielded 16 reasonable first actions, 8 weak and 11 failed under agent self-review;
+8 used the error fallback and only one returned product cards. These are not employee
+quality scores or an improvement claim. Six later journeys/16 turns remained weak.
+
+Fixed speech-start misfires interrupting TTS before confirmed speech, truncated
+fallback uploads at the 12-second cap, TTS upstream leakage on cancellation before
+first audio, cancelled-scope cleanup and rejected AudioContext.close promises.
+Bound the extra upload copy; fixed Vietnamese negation/reference collisions and
+kept direct price/location lookups on established controllers. A final laundry-location
+replay returns proposed-planogram facts, still not real shelf proof. Tissue-location
+still returns recommendations instead of location after the parser fix; it remains failed.
+
+Real Groq API diagnostics: FLEURS 12 clips, aggregate WER 7.41%/CER 4.43%; ViVoice34
+7 cached labeled clips, WER 21.30%/CER 10.92%. All 19 were accepted, illustrating that
+acceptance is not accuracy. These exposed read-speech clips are not live retail mic
+data. Installed v5 ONNX/WASM replay detected speech in 19/19 files and no speech in
+the tested synthetic controls; 13 resulting segments exceed the kiosk's 12 s cap.
+Azure vi/en/zh ticket streams decode, one-use tickets reject reuse, and four synthetic
+audio-to-agent-to-audio transports complete; their consultation content remains weak.
+
+Full backend at the earlier audit stage: 1,638 passed/1 Windows symlink skip; subsequent
+targeted regressions cover the final fixes (252 logic and 561 API/intent/search passed;
+counts overlap). Final frontend 101 passed,
+production build succeeds with the existing large-chunk warning. Physical microphone,
+room echo, real browser AudioWorklet/playback/autoplay and subjective TTS pronunciation
+are not verified in this run. LiveKit is not installed/integrated; no LiveKit success
+claim is made. Experimental consultation remains disabled by default/development-only.
+
+See [detailed Vietnamese report and all 35 replies](consultation_voice_audit_20261101.md),
+[research/source mapping](consultation_voice_research_20261101.md),
+[workplan and acceptance status](consultation_voice_workplan_20261101.md),
+[measured summary](artifacts/consultation_voice_measured_summary_20261101.json) and
+[version manifest](artifacts/consultation_voice_delivery_manifest_20261101.json).
+
+
+## 59. Hoàn tất sửa consultation/voice technical pass — 01/11/2026
+
+Đợt này tách selection sản phẩm thành schema typed có kiểm tra vai trò, nhãn đường, số lượng và ngân sách; làm phẳng schema tool; fallback planner lỗi/quota về controller catalog; sửa parser câu “tìm mãi không thấy … nó” và map audio malformed thành 422. Regression focused pass **603 tests**; lượt 35 câu development tại thời điểm này trả 35/35 HTTP 200, **12/35 có thẻ hàng**, median **0.928 s**, max **5.378 s**, không có consultation-fallback. Đây là dữ liệu đã lộ, tự kiểm tra, không phải blind human evaluation. **Lượt này đã được thay bằng replay mới hơn ở §61; không dùng số 12/35 làm kết quả cuối.**
+
+[Completion report](consultation_voice_completion_20261101.md) ghi artifact, hash, journey và giới hạn. Kết luận vẫn **demo-only / chưa production-ready**: một số câu chọn nhóm sai hoặc hỏi chưa đủ hữu ích, catalog là snapshot cũ, browser mic/loa/AEC/autoplay chưa xác minh, và LiveKit chưa triển khai.
+
+## 60. Final generic safeguards and voice regression — 01/11/2026
+
+The final audit added scope-gated constraint carryover for consultation follow-ups,
+grounded reasons in typed fallback answers, and a clarification sanitizer for unsupported
+safety, efficacy, taste, nutrition and stock claims. Voice barge-in now retains an
+interrupted TTS reply for 15 seconds and replays it only after empty/non-speech/repeated
+STT; accepted speech and explicit/session lifecycle actions clear the recovery. Groq
+malformed-media provider responses are classified as HTTP 422 input errors without retry.
+
+Validation: 287 focused backend tests passed, 102 frontend tests passed, production build,
+Ruff and Python compileall passed. These are software regressions only. Physical mic/room
+echo/AEC/autoplay and human TTS ratings remain unmeasured; LiveKit is documented as a
+readiness option but is not installed or integrated. Consultation remains development-only
+and not accepted as employee-quality.
+
+The final full backend regression then completed with **1668 passed, 1 skipped, 1 warning**.
+The skip is a Windows symlink-permission test; the warning is a Starlette/httpx deprecation.
+
+After that regression, an unscoped-consultation guard was added and replayed with the
+development flag: planner fallback no longer searches filler/use-case text and returns
+unrelated catalog rows. Cases for cleaning, a budgeted dinner and whole-house use now ask
+for the missing product group; explicit shampoo/category requests retain their catalog
+controller. The guard and consultation/API/parser suite pass **609 tests** with the same
+single deprecation warning. This improves abstention and routing safety, not a claim of
+employee-level recommendation quality.
+
+## 61. Identity guards and multi-role basket schema — 01/11/2026
+
+Added a generic identity clarification guard for color-only packaging references,
+previous-purchase/TikTok references and substitute requests without a named source item.
+It uses catalog brand names and parser signals, so ordinary category preferences such as
+“bút màu xanh” continue to retrieval while “cái loại sữa hộp màu xanh” asks for a brand or
+product name. The fallback scope wording was shortened for customer-facing Vietnamese,
+and multi-item fallback text now lists all represented categories instead of assigning the
+first item's category to every pick.
+
+Cross-agent review found a real schema mismatch: `GroundedSelection` capped every response
+at two picks while basket policy supports six bounded roles. The schema now allows six for
+baskets; the renderer still rejects more than two alternatives, and a three-role basket
+regression verifies role coverage and server-calculated totals.
+
+Validation after the latest source changes: **70 consultation tests passed** with the
+existing Starlette/httpx deprecation warning; frontend **102 tests passed** and production
+build passed with the existing model-viewer chunk warning. Ruff, compileall and diff checks
+passed. The frozen full backend artifact reports **1,683 passed, 1 skipped, 1 warning**;
+the final run is recorded in [`consultation_full_regression_final_v2_20261101.txt`](artifacts/consultation_full_regression_final_v2_20261101.txt).
+The taxonomy-prefix guard also has a **645-test** scoped regression artifact; the final
+full run above completed after that source change.
+LiveKit remains research/readiness only; physical mic, room echo/AEC/autoplay and independent
+human ratings remain unverified. Release remains demo-only and the consultation flag remains
+development-only by default.
+
+At this checkpoint the replay of all 35 exposed questions recorded **35/35 HTTP 200 but 2/35 product
+cards**; 12 turns used scope clarification after consultation/provider fallback. A separate
+post-fix replay of four affected cases and the scoped suite passed **645 tests**. This is
+evidence of safer routing and an unresolved conversation-quality gap, not a quality score.
+Voice provider/lifecycle regressions passed **73 tests**. Synthetic API controls reject
+silence/tone/noise before STT and classify malformed audio as **422**; see
+[`voice_input_controls_final_20261101.json`](artifacts/voice_input_controls_final_20261101.json).
+
+## 62. Diagnosed consultation fallback and server-side basket boundaries — 01/11/2026
+
+Added bounded error-code/status projection to the Groq chat trace and session-correlated
+consultation diagnostics. Logs contain reason labels and schema/rate-limit/cooldown counts,
+not raw provider errors, customer text, failed generations or credentials. A new exposed
+35-case replay recorded **35 HTTP 200, 9 cases with product cards**, but reading the replies
+still found unrelated products, a spicy child snack and incoherent baskets. Diagnostic
+logs identify 15 consultation failures: **13 rate-limit/cooldown, 1 structured-validation,
+1 mixed schema/cooldown**. These failures are different from the 10 final HTTP responses
+labelled scope clarification because some failures reached the legacy controller.
+
+The run predates the final delegation/fallback boundaries. It is retained with its original
+source hashes and is not a quality-improvement score or blind evaluation. Median/p95/max
+were 0.299/4.536/6.792 s on a host concurrently running offline tests, not a latency benchmark.
+See [`consultation_diagnostic_summary_20261101.json`](artifacts/consultation_diagnostic_summary_20261101.json)
+and [`customer_consultation_35_diagnostic_final35_20261101.json`](artifacts/customer_consultation_35_diagnostic_final35_20261101.json).
+
+Final changes keep special purpose/attribute/audience constraints out of broad legacy
+fallback, preserve a useful catalog path for clear single-type requests, and prevent a
+fresh single-type alternatives request from becoming a model-invented multi-item basket.
+Prefix-only scope must share one taxonomy family or use a curated alias; otherwise shared
+words such as a broad household label cannot identify a product scope. Targeted tests use
+multiple industries, context/constraint controls, real alias-family structure and valid
+multi-role baskets. No per-question/SKU response table was added.
+
+The final seven-case scoped replay is separate from the full 35 run and is not a new
+35-case result. It still contains generic clarifications and provider failures; no employee
+quality acceptance is claimed. Full/scoped source provenance, final counts and remaining
+voice/UI limitations are consolidated in the [completion report](consultation_voice_completion_20261101.md).
+Full v5 passed **1711 tests, 1 skip, 1 warning in 302.18 s**. Its manifest records source
+changes to main.py/API tests during the final alias correction, so it is a pre-alias
+baseline. The final scoped consultation/Groq/API/parser/shopping-flow suite passed **754 tests,
+1 warning in 158.18 s** on the post-alias source. A two-case live
+replay after that correction returns a directed household-scope question and two
+shampoo alternatives at 80,000/95,200 VND without an invented basket; it is not a new
+35-case or blind evaluation.
+LiveKit remains unimplemented; physical mic/room echo/AEC/autoplay and independent TTS
+ratings remain unverified. Release remains demo-only with consultation disabled by default.
+
+## 63. Server acoustic gate and Vietnamese TTS normalization — 03/11/2026
+
+Added server-side Silero v5 using the same bundled weights as the browser, decoding
+WAV/WebM/MP4/MP3 through PyAV to mono 16 kHz. Every upload/pass resets recurrent
+state and context. Quiet recordings can receive bounded gain for verification;
+Whisper still receives the original bytes. CPU work runs outside the event loop,
+with two active analysis slots, a cooperative 5-second budget and a 60-second
+decoded-duration limit. Cancellation does not release a still-running worker's slot.
+An unavailable acoustic verifier produces an error rather than bypassing the gate.
+
+Azure buffered/streaming synthesis now share SSML aliases for unambiguous Vietnamese
+currency and mass/volume tokens. Visible text remains unchanged and XML is escaped
+once. This applies the type-aware normalization idea from the Vietnamese NSW paper;
+it does not implement its learned tagger or establish perceived pronunciation quality.
+Whisper hallucination, Calm-Whisper, ViMD, VAD-window and incremental-TTS papers are
+mapped to applied/deferred decisions in the [detailed report](voice_optimization_20261103.md).
+
+Final validation: **2,057 backend tests passed, 1 Windows symlink-permission test
+skipped, 1 Starlette/httpx warning, 315.87 s**; **115 frontend tests / 21 suites**;
+production build, Ruff, compileall and diff checks pass. The scoped voice suite
+passes 148 tests (included in the full total). Acoustic replay uses the real decoder
+and ONNX model with fake ASR: **46 valid speech inputs retained, 34 controls blocked**,
+and **four >60-second ViVoice inputs recorded separately as input errors**. Correlated
+codec/gain variants and exposed clips are not independent or blind evaluation.
+
+After backend restart, real STT accepts three ViMD clips with WER **33.33%, 0%, 15%**;
+all five ESC-50 controls return empty text and `speech_detected=false` in 64–72 ms.
+Good confidence still accompanies incorrect words in the first clip. Azure vi/en/zh
+streams decode, ticket reuse returns 404, overlong text returns 422, and client cancel
+after first chunk works. First audio including ticket is **1,876 / 178 / 240 ms**,
+one sample per locale, not a latency improvement or MOS claim.
+
+See [full backend log](artifacts/voice_acoustic_full_backend_20261103.txt),
+[acoustic replay](artifacts/voice_acoustic_replay_20261103.json),
+[live STT](artifacts/voice_acoustic_stt_live_20261103.json) and
+[live TTS](artifacts/voice_acoustic_tts_live_20261103.json). Physical microphone,
+speaker echo/AEC, mixed/background speech, endpoint boundaries and independent TTS
+ratings remain unverified. LiveKit remains unintegrated; current public turn-detector
+language lists omit Vietnamese. Release remains controlled-demo only.

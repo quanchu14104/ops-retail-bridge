@@ -52,6 +52,9 @@ Write-Step 'Mo cac cua so dich vu'
 $script:Started = @()
 $opsEnv = ConvertTo-Hashtable (Read-EnvFile (Join-Path $Bridge 'demo\ops-chest.env'))
 $retailEnv = ConvertTo-Hashtable (Read-EnvFile (Join-Path $Bridge 'demo\retail-ai.env'))
+if ($RetailAI -eq $EmbeddedRetailAI) {
+    $retailEnv['OPS_FEED_PATH'] = Join-Path $Bridge 'out\ops_feed.json'
+}
 $retailEnv['PYTHONIOENCODING'] = 'utf-8'
 Start-ServiceWindow 'Ops Chest API :8000' (Join-Path $OpsChest 'backend') $opsEnv `
     'uv run uvicorn app.api.main:app --host 127.0.0.1 --port 8000'

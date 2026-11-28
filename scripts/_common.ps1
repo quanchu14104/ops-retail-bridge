@@ -3,7 +3,12 @@
 $Bridge = Split-Path -Parent $PSScriptRoot
 $Workspace = Split-Path -Parent $Bridge
 $OpsChest = Join-Path $Workspace 'ops_chest'
-$RetailAI = Join-Path $Workspace 'Retail-AI-'
+$EmbeddedRetailAI = Join-Path $Bridge 'Retail-AI-'
+if (Test-Path (Join-Path $EmbeddedRetailAI 'pyproject.toml')) {
+    $RetailAI = $EmbeddedRetailAI
+} else {
+    $RetailAI = Join-Path $Workspace 'Retail-AI-'
+}
 $Kiosk = Join-Path $RetailAI 'apps\kiosk-airi'
 
 function Write-Step([string]$Message) { Write-Host "`n==> $Message" -ForegroundColor Cyan }

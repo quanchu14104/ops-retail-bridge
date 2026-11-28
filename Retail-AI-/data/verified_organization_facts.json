@@ -1,0 +1,132 @@
+{
+  "schema_version": 2,
+  "profiles": [
+    {
+      "entity_id": "thanh_lam_mart",
+      "entity_type": "organization",
+      "aliases": [
+        "thanh lam mart",
+        "thanh lam",
+        "cửa hàng thanh lam",
+        "siêu thị thanh lam"
+      ],
+      "display_name": {
+        "vi": "Thanh Lam Mart",
+        "en": "Thanh Lam Mart"
+      },
+      "claims": [
+        {
+          "claim_id": "store_identity_and_dataset",
+          "facts": {
+            "vi": "Theo thông tin nhóm cung cấp, Thanh Lam Mart là cửa hàng bán lẻ độc lập gần nhà thành viên nhóm và là đơn vị cung cấp bộ dữ liệu danh mục sản phẩm thực tế cho dự án.",
+            "en": "According to the team-provided context, Thanh Lam Mart is a local independent retail store that provided the real product catalog dataset for the project."
+          },
+          "source_ids": [
+            "team_provided_store_context"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "source_id": "team_provided_store_context",
+          "name": "User-provided store context",
+          "url": null,
+          "verified_at": null,
+          "basis": "user_provided"
+        }
+      ]
+    },
+    {
+      "entity_id": "fpt",
+      "entity_type": "organization",
+      "aliases": [
+        "fpt",
+        "fpt corporation"
+      ],
+      "display_name": {
+        "vi": "FPT Corporation",
+        "en": "FPT Corporation"
+      },
+      "claims": [
+        {
+          "claim_id": "company_profile",
+          "facts": {
+            "vi": "FPT là tập đoàn công nghệ tại Việt Nam, cung cấp dịch vụ và giải pháp về chuyển đổi số, tư vấn, công nghệ và viễn thông.",
+            "en": "FPT is a technology corporation in Vietnam providing digital transformation, consulting, technology, and telecommunications services and solutions."
+          },
+          "source_ids": [
+            "fpt_official_about"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "source_id": "fpt_official_about",
+          "name": "FPT official About Us",
+          "url": "https://fpt.com/en/about-us",
+          "verified_at": "2026-10-18",
+          "basis": "official_public"
+        }
+      ]
+    },
+    {
+      "entity_id": "chatvrm_retail_ai_project",
+      "entity_type": "project",
+      "aliases": [
+        "chatvrm",
+        "đồ án chatvrm",
+        "đồ án fpt",
+        "dự án fpt",
+        "fpt chatvrm",
+        "chatvrm fpt",
+        "chatvrm fpt project",
+        "development of ai agents to support retail store chains in vietnam"
+      ],
+      "display_name": {
+        "vi": "Đồ án ChatVRM hỗ trợ chuỗi bán lẻ",
+        "en": "Retail AI Agents project"
+      },
+      "claims": [
+        {
+          "claim_id": "project_title",
+          "facts": {
+            "vi": "Theo thông tin nhóm cung cấp, tên đồ án là “Development of AI agents to support retail store chains in Vietnam”.",
+            "en": "According to the team-provided context, the project is titled “Development of AI agents to support retail store chains in Vietnam”."
+          },
+          "source_ids": [
+            "team_provided_project_context"
+          ]
+        },
+        {
+          "claim_id": "team_responsibilities",
+          "facts": {
+            "vi": "Theo thông tin nhóm cung cấp: Chinh phụ trách agent cho người mua, Quân phụ trách agent cho chủ cửa hàng, Long phụ trách frontend và hỗ trợ.",
+            "en": "According to the team-provided context: Chinh owns the buyer agent, Quân the store-owner agent, and Long the frontend and support work."
+          },
+          "source_ids": [
+            "team_provided_project_context"
+          ]
+        },
+        {
+          "claim_id": "fpt_context_and_relationship_limit",
+          "facts": {
+            "vi": "Theo thông tin nhóm cung cấp, đây là đồ án trong bối cảnh FPT; hiện chưa có nguồn xác nhận quan hệ tài trợ, sở hữu hoặc hợp tác chính thức giữa FPT và dự án.",
+            "en": "According to the team-provided context, this is an FPT-context project; no source currently verifies an official sponsorship, ownership, or business partnership between FPT and the project."
+          },
+          "source_ids": [
+            "team_provided_project_context"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "source_id": "team_provided_project_context",
+          "name": "User-provided project context",
+          "url": null,
+          "verified_at": null,
+          "basis": "user_provided"
+        }
+      ]
+    }
+  ]
+}
