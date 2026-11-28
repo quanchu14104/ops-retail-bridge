@@ -1,14 +1,17 @@
-name: Retail backend quality
+name: Retail-AI backend quality
 
+# Retail-AI nằm ở thư mục Retail-AI-/ của repo bridge: chỉ chạy khi phần đó (hoặc chính workflow này) đổi.
 on:
   push:
-    branches:
-      - main
-      - codex/retail-text-quality-v4-20261019
+    branches: [main]
+    paths:
+      - Retail-AI-/**
+      - .github/workflows/retail-ai-backend-quality.yml
   pull_request:
-    branches:
-      - main
-      - codex/retail-text-quality-v4-20261019
+    branches: [main]
+    paths:
+      - Retail-AI-/**
+      - .github/workflows/retail-ai-backend-quality.yml
   workflow_dispatch:
 
 permissions:
@@ -18,6 +21,9 @@ jobs:
   backend-quality:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: Retail-AI-
     env:
       CATALOG_REPOSITORY: demo
       GROQ_API_KEY: ""
@@ -28,6 +34,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
+          working-directory: Retail-AI-
+          cache-dependency-glob: Retail-AI-/uv.lock
       - name: Install locked dependencies
         run: uv sync --frozen
       - name: Lint backend, tests, and evaluations
