@@ -130,14 +130,14 @@ def test_sync_loop_keeps_a_fixed_cadence(monkeypatch, env):
     assert slept == [90.0, 115.0]  # 120 trừ thời gian chạy, không phải 120 cố định
 
 
-def test_default_paths_point_at_sibling_repos(tmp_path):
-    from bridge.config import ROOT, WORKSPACE, Config
+def test_default_paths_point_inside_the_repo(tmp_path):
+    from bridge.config import ROOT, Config
 
     cfg = Config.load(env={}, env_file=tmp_path / "missing.env")
-    assert WORKSPACE == ROOT.parent
-    assert cfg.winmart_catalog_path == WORKSPACE / "Retail-AI-" / "data" / "winmart_products.json"
-    frn = WORKSPACE / "ops_chest" / "backend" / "app" / "sim" / "data" / "frn" / "stores_daily.csv.gz"
+    assert cfg.winmart_catalog_path == ROOT / "Retail-AI-" / "data" / "winmart_products.json"
+    frn = ROOT / "ops_chest" / "backend" / "app" / "sim" / "data" / "frn" / "stores_daily.csv.gz"
     assert cfg.frn_data_path == frn
+    assert cfg.winmart_catalog_path.exists() and cfg.frn_data_path.exists()
     assert cfg.ops_feed_path == ROOT / "out" / "ops_feed.json"
     custom = Config.load(env={"FRN_DATA_PATH": "D:/x/frn.csv.gz"}, env_file=tmp_path / "m")
     assert custom.frn_data_path.as_posix() == "D:/x/frn.csv.gz"

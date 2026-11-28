@@ -1,6 +1,6 @@
 # Bridge Ops Chest → Retail-AI (giai đoạn 1, demo)
 
-Cầu nối **một chiều** giữa hai sub-project độc lập:
+**Toàn bộ dự án nằm trong repo này.** Cầu nối **một chiều** giữa hai sub-project, mỗi cái một thư mục con:
 
 - **Ops Chest** (`ops_chest/`): agent quản lý kho theo lô và HSD. Dữ liệu thật FreshRetailNet-50K, điểm bán 18,
   164 mặt hàng tươi.
@@ -24,34 +24,39 @@ Ops Chest REST (tài khoản nhân viên, chỉ xem)  ▼
 
 ## Dựng trên máy mới
 
-Ba repo phải nằm **cạnh nhau trong cùng một thư mục cha** (gọi là `WORKSPACE`, đặt ở đâu cũng được). Bridge tự tìm
-hai repo kia theo vị trí tương đối, không cần ổ `Q:`.
+Một repo duy nhất, clone về đặt ở đâu cũng được (không cần ổ `Q:`):
 
 ```
-WORKSPACE\
-├─ ops_chest\     github.com/quanchu14104/ops_chest          (công khai)
-├─ Retail-AI-\    github.com/chinhdz102/Retail-AI-           (công khai)
-└─ bridge\        github.com/quanchu14104/ops-retail-bridge  (công khai)
+bridge\                github.com/quanchu14104/ops-retail-bridge  (công khai)
+├─ ops_chest\          Ops Chest: backend FastAPI + frontend Vite (Store Manager)
+├─ Retail-AI-\         Retail-AI: backend + apps\kiosk-airi (người mua)
+├─ src\bridge\         code cầu nối (crosswalk, overrides, sync)
+├─ contract\ data\ demo\ docs\ scripts\ tests\
+└─ .claude\launch.json 4 dịch vụ cho Claude Code
 ```
+
+Hai repo cũ `quanchu14104/ops_chest` và `chinhdz102/Retail-AI-` **không còn là nơi phát triển**: mọi thay đổi
+commit vào `ops_chest/` và `Retail-AI-/` trong repo này. `ops_chest/` giữ nguyên lịch sử commit cũ
+(`git log -- ops_chest`).
 
 **Cần cài trước:** Git, [uv](https://docs.astral.sh/uv/) (`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`),
-Node.js LTS, Docker Desktop (cho Postgres của Retail-AI và Mailpit). Máy đang có bản Retail-AI cũ thì **xoá thư mục
-cũ** và clone lại theo các bước dưới.
+Node.js LTS, Docker Desktop (cho Postgres của Retail-AI và Mailpit).
 
 ```powershell
-mkdir WORKSPACE
-cd WORKSPACE
-git clone https://github.com/quanchu14104/ops_chest.git
-git clone https://github.com/chinhdz102/Retail-AI-.git
 git clone https://github.com/quanchu14104/ops-retail-bridge.git bridge
-.\bridge\scripts\setup.ps1
+cd bridge
+.\scripts\setup.ps1
 ```
 
-`setup.ps1` chạy lại bao nhiêu lần cũng được. Nó kiểm tra 3 repo và công cụ, chạy `uv sync`/`npm ci`, tạo các file
+Máy đã có bố cục cũ (3 repo cạnh nhau): chỉ cần `git pull` trong `bridge` rồi chạy lại `.\scripts\setup.ps1`. Script
+tự sửa `bridge\.env` cũ (đang trỏ `../Retail-AI-`, `../ops_chest`) sang thư mục trong repo. File `.env` chứa khoá thì
+chép tay từ thư mục cũ sang `ops_chest\.env` và `Retail-AI-\.env`.
+
+`setup.ps1` chạy lại bao nhiêu lần cũng được. Nó kiểm tra thư mục con và công cụ, chạy `uv sync`/`npm ci`, tạo các file
 `.env` từ `.env.example`, kiểm tra crosswalk, sinh `out/ops_catalog_overrides.json`, seed DB demo của Ops Chest
-(tên và giá Thanh Lam Mart), bật Postgres của Retail-AI rồi nạp catalog Thanh Lam Mart (lệnh `import_winmart.py` giữ tên lịch sử), bật Mailpit, và ghi
-`WORKSPACE\.claude\launch.json` cho Claude Code. Thêm `-ResetDemo` để seed lại DB demo, `-SkipDocker` khi chưa có
-Docker, `-SkipInstall` để bỏ qua bước cài thư viện.
+(tên và giá Thanh Lam Mart), bật Postgres của Retail-AI rồi nạp catalog Thanh Lam Mart (lệnh `import_winmart.py` giữ
+tên lịch sử) và bật Mailpit. Thêm `-ResetDemo` để seed lại DB demo, `-SkipDocker` khi chưa có Docker, `-SkipInstall`
+để bỏ qua bước cài thư viện.
 
 **Khoá API: mỗi người tự điền khoá của mình**, không gửi file `.env` cho nhau, không commit khoá:
 - `ops_chest\.env`: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` cho trợ lý chat của Ops Chest (ví dụ Groq:
@@ -64,7 +69,7 @@ hàng mới về, thông tin cửa hàng).
 **Chạy demo:**
 
 ```powershell
-.\bridge\scripts\start-demo.ps1
+.\scripts\start-demo.ps1
 ```
 
 Script mở 5 cửa sổ PowerShell: Ops Chest API, Ops Chest UI, Retail-AI API, kiosk và bridge sync (2 phút một lần),
@@ -76,8 +81,8 @@ Script mở 5 cửa sổ PowerShell: Ops Chest API, Ops Chest UI, Retail-AI API,
 | Kiosk (người mua) | http://127.0.0.1:5190 | |
 | Mailpit (email đặt hàng) | http://localhost:8025 | |
 
-Dùng Claude Code thì mở thư mục `WORKSPACE`: 4 dịch vụ có sẵn trong `.claude\launch.json` với tên `ops-chest-api`,
-`ops-chest-ui`, `retail-ai-api`, `retail-kiosk` (bản mẫu: [`demo/launch.json`](demo/launch.json)).
+Dùng Claude Code thì mở thư mục `bridge`: 4 dịch vụ có sẵn trong [`.claude/launch.json`](.claude/launch.json) với
+tên `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`.
 
 ## ⚠️ Các giả định demo
 
@@ -118,7 +123,7 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 
 | Dịch vụ | Cổng |
 |---|---|
-| Ops Chest API (`ops_chest`, nhánh `main`, SQLite) | 8000 |
+| Ops Chest API (`ops_chest/`, SQLite) | 8000 |
 | Ops Chest UI | 5173 |
 | Mailpit | 8025 / 1025 |
 | Postgres của Retail-AI (Docker) | 5432 |
@@ -128,25 +133,24 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 **Không chạy docker compose đầy đủ của Ops Chest cùng lúc**: Postgres của nó cũng giành cổng 5432. Chỉ bật
 riêng Mailpit: `docker compose up -d mailpit` trong `ops_chest\` (`setup.ps1` và `start-demo.ps1` đã làm việc này).
 
-Cấu hình chạy cho cả 4 dịch vụ nằm ở `WORKSPACE\.claude\launch.json`, chép từ [`demo/launch.json`](demo/launch.json)
+Cấu hình chạy cho cả 4 dịch vụ nằm ở [`.claude/launch.json`](.claude/launch.json)
 (tên: `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`). Biến môi trường cho demo nằm ngoài hai
-repo con, không chứa secret:
+thư mục con, không chứa secret:
 [`demo/ops-chest.env`](demo/ops-chest.env) cho Ops Chest và [`demo/retail-ai.env`](demo/retail-ai.env) cho
 Retail-AI API và kiosk.
 
 ## Thứ tự khởi động (chạy tay, từng bước)
 
 `setup.ps1` và `start-demo.ps1` làm đúng các bước này. Mọi lệnh Python chạy qua `uv run`. Các lệnh dưới đây chạy từ
-thư mục `WORKSPACE`.
+thư mục `bridge`.
 
 ```powershell
 # 0. Bridge
-cd bridge; Copy-Item .env.example .env; uv sync
+Copy-Item .env.example .env; uv sync
 
 # 1. Crosswalk (đã commit sẵn; chỉ build lại khi catalog Thanh Lam Mart hoặc FRN đổi)
 uv run bridge crosswalk check
 uv run bridge overrides                # → out/ops_catalog_overrides.json
-cd ..
 
 # 2. Postgres + catalog của Retail-AI (bảng products là đích khoá ngoại của inventory_receipts)
 cd Retail-AI-; docker compose up -d postgres; uv run python scripts/import_winmart.py --apply; cd ..
@@ -154,13 +158,12 @@ cd Retail-AI-; docker compose up -d postgres; uv run python scripts/import_winma
 # 3. Mailpit (chỉ service này của Ops Chest)
 cd ops_chest; docker compose up -d mailpit; cd ..
 
-# 4. Seed Ops Chest kèm overrides: nạp bridge\demo\ops-chest.env vào môi trường của tiến trình rồi seed
+# 4. Seed Ops Chest kèm overrides: nạp demo\ops-chest.env vào môi trường của tiến trình rồi seed
 cd ops_chest\backend; uv run python -m app.sim.seed --reset; cd ..\..
 
 # 5. Chạy Ops Chest API/UI, Retail-AI API, kiosk theo bảng cổng (launch.json hoặc start-demo.ps1)
 
 # 6. Sync liên tục
-cd bridge
 uv run bridge crosswalk check --ops    # đối chiếu 164 SKU với /api/products
 uv run bridge sync --every 120         # hoặc --once
 ```
@@ -171,7 +174,7 @@ của Retail-AI đọc `Retail-AI-/.env`. Nếu để `CATALOG_REPOSITORY=snapsh
 
 - `Retail-AI-/.env` và `apps/kiosk-airi/.env` giữ giá trị mặc định như `.env.example` (chỉ chứa secret của
   máy, nếu có).
-- Retail-AI API nhận `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=../bridge/out/ops_feed.json` (tính từ `Retail-AI-/`),
+- Retail-AI API nhận `CATALOG_REPOSITORY=snapshot`, `OPS_FEED_PATH=../out/ops_feed.json` (tính từ `Retail-AI-/`, tức `bridge/out/ops_feed.json`),
   `CORS_ORIGINS=http://127.0.0.1:5190,http://localhost:5190` từ khối `env` của `retail-ai-api` trong `launch.json`
   (biến môi trường của tiến trình được pydantic-settings ưu tiên hơn `.env`).
 - Kiosk nhận `VITE_API_BASE_URL=http://127.0.0.1:8020` từ khối `env` của `retail-kiosk`. Vite có đọc `VITE_*` từ
