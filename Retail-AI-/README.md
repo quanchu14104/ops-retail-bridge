@@ -2,6 +2,13 @@
 
 Grounded embodied AI retail assistant described in the V4 architecture plan.
 
+> **Location in the project:** Retail-AI lives in the `Retail-AI-/` folder of the
+> [ops-retail-bridge](../README.md) repository, next to Ops Chest (`ops_chest/`) and the bridge code. The
+> standalone `chinhdz102/Retail-AI-` repository is no longer where development happens. To run the kiosk
+> **with live Ops Chest data** (stock, near-expiry markdowns, new arrivals), use `scripts\setup.ps1` and
+> `scripts\start-demo.ps1` from the repository root: the API then runs on port 8020 and the kiosk on 5190, because
+> Ops Chest already uses 8000 and 5173. The commands below run Retail-AI on its own, from `Retail-AI-/`.
+
 ## Current milestone
 
 The vertical slice is in place:
@@ -12,15 +19,15 @@ The vertical slice is in place:
 - shared Pydantic wire enums/contracts;
 - `uv` dependency manifest;
 - PostgreSQL + pgvector and Redis Compose definition;
-- One-screen Vue kiosk with local `sky.glb`, hands-free conversation, and selectable
-  Vietnamese, English or Chinese speech/chat.
+- One-screen Vue kiosk with the Mai video avatar (`apps/kiosk-airi/public/avatars/mai-clip-v4-*.mp4`),
+  hands-free conversation, and selectable Vietnamese, English or Chinese speech/chat.
 
 English is supported across the chat interface, Groq Whisper transcription, catalog
 intent routing and speech synthesis. English category and product terms such as `milk`,
 `coffee`, `snacks` and `instant noodles` are mapped to the Vietnamese Thanh Lam Mart taxonomy
 when needed; product facts still come from the active catalog. Prices are in VND. The
 catalog does not contain loyalty rules, return policies, store hours, sales rankings,
-taste ratings or interaction analytics. Sky states that those facts are unverified and
+taste ratings or interaction analytics. Mai states that those facts are unverified and
 suggests asking store staff instead of guessing.
 
 For local demonstrations, `DEMO_SALES_ENABLED=true` with `APP_ENV=development` enables
@@ -30,9 +37,8 @@ production. Run `uv run python -m scripts.evaluate_consultation_coverage` to che
 query patterns across every catalog hierarchy path and multi-turn department changes.
 
 The new Vietnamese consultation policy is experimental and disabled by default.
-Its live review still finds unsuitable meal baskets and unsupported product benefits;
-see [the 35-question review](docs/reports/customer_consultation_35_review_20261101.md)
-and [research notes](docs/reports/customer_consultation_research_20261101.md).
+Its live review still finds unsuitable meal baskets and unsupported product benefits
+(the 35-question review and research notes from 01/11/2026 are not included in this repository).
 To try it locally, set `CUSTOMER_CONSULTATION_ENABLED=true` in the backend environment
 with `APP_ENV=development`, then restart Uvicorn. It requires a model key and remains
 disabled in production even if the flag is set. Existing checkout, pending selections
@@ -49,11 +55,15 @@ test-suite success does not establish conversational quality.
 
 ```powershell
 uv sync --all-groups
-Copy-Item .env.example .env
-# Open .env and set GROQ_API_KEY. Azure Speech is optional but recommended for free cloud TTS.
+# No .env.example is committed yet: create .env yourself and set GROQ_API_KEY.
+# Azure Speech is optional but recommended for free cloud TTS. Defaults live in backend/config.py.
+Set-Content .env 'GROQ_API_KEY=replace-with-your-key'
 uv run pytest -q
 uv run ruff check .
 ```
+
+The Azure Speech SDK (`azure-cognitiveservices-speech`) is not a declared dependency. Without it, sessions still
+start and report `streaming_stt_available=false`; install it separately for streaming STT.
 
 `GROQ_API_KEY` stays on the FastAPI process. Do not put it in `apps/kiosk-airi/.env`, a
 `VITE_*` variable, or any browser extension bundle. The browser only calls the backend.
@@ -88,10 +98,10 @@ Whisper outputs are rejected so silence does not become a customer message.
 Cloud TTS streams through a short-lived, one-use URL;
 see [the voice pipeline notes](docs/voice-pipeline.md).
 If the browser blocks autoplay, click \`Bật âm thanh\` once; the same gesture unlocks the
-audio element and resumes the pending reply. The supplied \`sky.glb\` includes
-its own \`talk\` animation, which the kiosk uses directly while Mai is speaking. If the API
-runs on another origin, copy
-`apps/kiosk-airi/.env.example` to `apps/kiosk-airi/.env` and set `VITE_API_BASE_URL`.
+audio element and resumes the pending reply. While Mai is speaking, the kiosk plays the
+speaking clip with its viseme track (see [the kiosk README](apps/kiosk-airi/README.md)). If the API
+runs on another origin, create `apps/kiosk-airi/.env` with `VITE_API_BASE_URL=<api origin>`
+(the bridge demo sets this through the process environment instead).
 
 Start infrastructure when Docker Desktop is installed:
 
@@ -114,8 +124,8 @@ Then open `http://127.0.0.1:8000/health` or `http://127.0.0.1:8000/docs`.
 - [Architecture](docs/architecture.md)
 - [Tool contracts](docs/tool_contracts.md)
 - [Database ERD](docs/database_erd.md)
-- [Implementation plan](docs/superpowers/plans/2026-08-31-architecture-contract-and-bootstrap.md)
-- [Groq + Vietnamese kiosk plan](docs/superpowers/plans/2026-08-31-groq-vietnamese-kiosk.md)
+- [Implementation plan](https://github.com/chinhdz102/Retail-AI-/blob/main/docs/superpowers/plans/2026-08-31-architecture-contract-and-bootstrap.md) (in the former standalone repository)
+- [Groq + Vietnamese kiosk plan](https://github.com/chinhdz102/Retail-AI-/blob/main/docs/superpowers/plans/2026-08-31-groq-vietnamese-kiosk.md) (in the former standalone repository)
 
 The architecture document defines the target system. Current runtime status and its
 limits are recorded in [`docs/reports/retail-ai-optimization-report.md`](docs/reports/retail-ai-optimization-report.md).
