@@ -1,10 +1,8 @@
-"""Du lieu Thanh Lam Mart (Thanh Lam Mart, CC BY 4.0) da xu ly tren Kaggle (ml/kaggle/train_frn.py).
+"""Du lieu lich su ban hang Thanh Lam Mart da chuan hoa cho du bao va kiem chung hoi cuu.
 
-Chi chua cac diem ban GIU LAI (khong dung de huan luyen mo hinh). Moi dong: mot (diem, mat hang, ngay).
+Chua cac tap du lieu giu lai de kiem chung (khong dung de huan luyen mo hinh). Moi dong: mot (diem, mat hang, ngay).
 `demand` = nhu cau uoc tinh (ngay het hang da khoi phuc theo ho so ban theo gio), `sale` = so ban quan sat.
-Ca hai o don vi da quy doi cua FRN; nhan voi K (meta.json) ra so don vi cua hang OC.
-
-Day la NHU CAU THAT; moi thu khac cua cua hang OC (gia, gia von, HSD, NCC, ton kho) van la mo phong.
+Ca hai o don vi chuan hoa; nhan voi K (meta.json) ra so don vi thuc te tai Thanh Lam Mart.
 """
 from __future__ import annotations
 
@@ -108,7 +106,7 @@ def store(store_id: int | None = None, path: Path | None = None) -> FrnStore:
     all_ = stores(path)
     sid = demo_store_id() if store_id is None else store_id
     if sid not in all_:
-        raise KeyError(f"Không có tập dữ liệu Thanh Lam Mart {sid} trong {path or data_file()}")
+        raise KeyError(f"Không có dữ liệu điểm bán {sid} trong {path or data_file()}")
     return all_[sid]
 
 
@@ -125,14 +123,13 @@ def dayparts() -> dict:
 
 
 def holiday_of(st: FrnStore):
-    """Co ngay le/cuoi tuan cua FRN theo ngay; ngoai khoang du lieu thi coi cuoi tuan la ngay le (FRN danh dau
-    ca thu Bay, Chu nhat)."""
+    """Co ngay le/cuoi tuan theo ngay; ngoai khoang du lieu thi coi cuoi tuan la ngay le."""
     flags = {d: f for d, f in zip(st.dates, st.holiday)}
     return lambda d: flags.get(d, 1 if d.weekday() >= 5 else 0)
 
 
 def statics_for(store_id: int, sku: str) -> tuple[int, int, int] | None:
-    """Ma nhom FRN cua mat hang OC (sku dang 'F0412'), None neu khong phai hang FRN."""
+    """Ma nhom nganh hang cua mat hang OC (sku dang 'F0412'), None neu khong thuoc tap hang tuoi chuan hoa."""
     if not available() or not sku.startswith("F") or not sku[1:].isdigit():
         return None
     s = stores().get(store_id, None)
@@ -141,7 +138,7 @@ def statics_for(store_id: int, sku: str) -> tuple[int, int, int] | None:
 
 
 def store_size(store_id: int) -> int | None:
-    """So mat hang FRN cua diem ban (= so mat hang cua cua hang OC dung du lieu diem do): bac quy mo trong bo chon."""
+    """So mat hang cua tap du lieu diem ban: bac quy mo trong bo chon."""
     if not available():
         return None
     s = stores().get(store_id, None)

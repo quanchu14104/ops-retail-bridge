@@ -281,19 +281,18 @@ FRN_BACKTEST_FILE = _APP_DIR / "sim" / "data" / "frn" / "backtest.json"
 
 @router.get("/reports/backtest/frn")
 def backtest_frn(user: User = Depends(current_user)):
-    """Backtest A / B-EWMA / B-ML tren nhu cau that cua cac diem FRN giu lai (tinh san, chay mat nhieu phut)."""
+    """Kiem chung A / B-EWMA / B-ML tren du lieu lich su Thanh Lam Mart."""
     if not FRN_BACKTEST_FILE.exists():
-        raise HTTPException(404, "Chưa có kết quả backtest trên dữ liệu Thanh Lam Mart. Chạy: python -m app.sim.backtest --frn")
+        raise HTTPException(404, "Chưa có kết quả kiểm chứng A/B. Chạy: python -m app.sim.backtest --frn")
     return json.loads(FRN_BACKTEST_FILE.read_text(encoding="utf-8"))
 _FRN_REPORT_KEYS = ("recovery_check", "eval_week_heldout", "rolling_heldout_bt", "gate", "importance_q50", "elasticity")
 
 
 @router.get("/reports/ml/frn")
 def frn_model_report(user: User = Depends(current_user)):
-    """Ket qua mo hinh LightGBM tren Thanh Lam Mart (tinh san tren Kaggle + backtest). Bo `log`."""
+    """Ket qua mo hinh LightGBM tren du lieu Thanh Lam Mart. Bo `log`."""
     if not FRN_REPORT_FILE.exists():
-        raise HTTPException(404, "Chưa có kết quả mô hình dự báo. Đặt report.json vào backend/app/sim/data/frn/ "
-                                 "(sinh từ bước kiểm chứng Thanh Lam Mart) và meta.json vào backend/app/ml/artifacts/.")
+        raise HTTPException(404, "Chưa có kết quả mô hình dự báo. Đặt report.json và meta.json vào thư mục cấu hình.")
     report = json.loads(FRN_REPORT_FILE.read_text(encoding="utf-8"))
     meta = json.loads(FRN_META_FILE.read_text(encoding="utf-8")) if FRN_META_FILE.exists() else None
     if meta is not None:

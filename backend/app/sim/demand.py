@@ -131,7 +131,7 @@ class FrnRangeError(ValueError):
 
 
 class FrnDemand(DemandSource):
-    """Nhu cau THAT cua mot diem ban Thanh Lam Mart (da khoi phuc ngay het hang), quy ra don vi bang K."""
+    """Nhu cau lich su cua bo du lieu Thanh Lam Mart (da khoi phuc ngay het hang), quy ra don vi bang K."""
 
     name = "frn"
 
@@ -142,7 +142,7 @@ class FrnDemand(DemandSource):
     def _value(self, p: ProductSpec, d: date) -> float:
         i = self.store.day_index(d)
         if i is None:
-            raise FrnRangeError(f"Hết dữ liệu Thanh Lam Mart: chỉ có nhu cầu từ {self.store.dates[0]} đến {self.store.dates[-1]}.")
+            raise FrnRangeError(f"Hết dữ liệu lịch sử Thanh Lam Mart: chỉ có nhu cầu từ {self.store.dates[0]} đến {self.store.dates[-1]}.")
         return self.store.series[p.frn_id].demand[i] * self.k
 
     def need(self, p: ProductSpec, d: date) -> int:

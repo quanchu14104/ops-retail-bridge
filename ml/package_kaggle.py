@@ -1,8 +1,8 @@
-"""Gom ma can chay tren Kaggle vao ml/dist/ (thu muc phang) de tai len dataset `ops-chest-ml-code`.
+"""Gom ma huan luyen doc lap vao ml/dist/ (thu muc phang).
 
     python ml/package_kaggle.py
 
-train_frn.py tu dung lai goi app.engines tu cac file phang nay, nen Kaggle (luc huan luyen) va OC (luc chay that)
+train_frn.py tu dung lai goi app.engines tu cac file phang nay, nen moi truong huan luyen va OC (luc van hanh)
 dung cung mot file ml_features.py.
 """
 from __future__ import annotations

@@ -13,8 +13,8 @@ ELASTICITY_SOURCE = {"FRESH": "giả định", "SHORT": "giả định", "LONG":
 
 
 def _calibrate_from_frn() -> None:
-    """Hang tuoi: thay gia dinh 3,0 bang uoc luong tren Thanh Lam Mart (diem huan luyen, ngay con hang du gio,
-    dang 'ban tang ~ 1 + e x muc giam'). FRN la giam gia khuyen mai, khong phai giam vi can han: chi la xap xi."""
+    """Hang tuoi: thay gia dinh 3,0 bang uoc luong tren du lieu lich su Thanh Lam Mart (ngay con hang du gio,
+    dang 'ban tang ~ 1 + e x muc giam'). Lich su khuyen mai khong phai giam vi can han: chi la xap xi."""
     import json
     from pathlib import Path
 
@@ -31,7 +31,7 @@ def _calibrate_from_frn() -> None:
         return
     if e and e > 0:
         ELASTICITY["FRESH"] = round(float(e), 2)
-        ELASTICITY_SOURCE["FRESH"] = "ước lượng trên Thanh Lam Mart"
+        ELASTICITY_SOURCE["FRESH"] = "ước lượng trên dữ liệu lịch sử Thanh Lam Mart"
 
 
 _calibrate_from_frn()

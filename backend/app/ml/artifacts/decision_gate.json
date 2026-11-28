@@ -13,8 +13,8 @@
     "lon": "> 30 mặt hàng"
   },
   "demo_store_size": 164,
-  "selected_by": "Lãi trong kiểm chứng Thanh Lam Mart (python -m app.sim.backtest --frn), không theo sai số dự báo",
-  "data": "50 tập kiểm chứng giữ lại, so sánh từ ngày sau T0 = 2024-05-26",
+  "selected_by": "Lãi gộp trong kiểm chứng hồi cứu Thanh Lam Mart, không theo sai số dự báo",
+  "data": "50 tập kiểm chứng giữ lại (Thanh Lam Mart), so sánh từ ngày sau T0 = 2024-05-26",
   "note": "Bộ chọn học bằng mô hình backtest bt_q* (chỉ thấy dữ liệu đến T0) rồi áp cho mô hình chạy thật q* (học thêm đến ngày 89). Học trên cả các điểm; kết quả ngoài mẫu của cách chọn này nằm trong backtest.json (b_gate, kiểm chéo 2 lần theo điểm bán).",
   "objective": 0.38984,
   "groups": {

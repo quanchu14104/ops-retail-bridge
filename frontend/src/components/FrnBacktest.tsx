@@ -86,10 +86,10 @@ export default function FrnBacktest({ d }: { d: FrnBt }) {
 
   return (
     <>
-      <h2>Kiểm chứng A/B trên nhu cầu thật của {num(nStores)} tập dữ liệu Thanh Lam Mart</h2>
+      <h2>Kiểm chứng hồi cứu A/B trên dữ liệu Thanh Lam Mart ({num(nStores)} tập kiểm chứng)</h2>
       <p className="small secondary">
-        Nhu cầu thật của các tập kiểm chứng giữ lại (không dùng để huấn luyện), từ ngày sau {dateVi(d.t0_date)}; giá, giá vốn, HSD, nhà cung cấp và phản ứng
-        của khách với giảm giá vẫn là giả định. Nguồn: {d.source}. Mỗi điểm chạy mọi chính sách trên cùng chuỗi nhu cầu; số dưới đây là trung vị qua các điểm.
+        Dữ liệu bán hàng lịch sử giữ lại (không dùng khi huấn luyện), từ ngày sau {dateVi(d.t0_date)}; nguồn: {d.source}.
+        Mỗi tập chạy mọi chính sách trên cùng chuỗi nhu cầu; số liệu dưới đây là trung vị.
       </p>
 
       <div className="grid kpis" style={{ margin: "12px 0" }}>
@@ -132,7 +132,7 @@ export default function FrnBacktest({ d }: { d: FrnBt }) {
       {hasGate && (
         <div className="small secondary" style={{ marginTop: 8 }}>
           <b>Bộ chọn theo lãi, chọn ngoài mẫu (kiểm chéo 2 lần).</b> Chia {num(d.stores)} điểm thành 2 nửa cân theo quy mô. Bộ chọn của mỗi nửa
-          (biến thể ML và các nhóm hàng × quy mô điểm được dùng LightGBM) chỉ học từ lãi theo mặt hàng ở nửa kia, rồi chạy mô phỏng thật trên nửa này.
+          (biến thể ML và các nhóm hàng × quy mô tập được dùng LightGBM) chỉ học từ lãi theo mặt hàng ở nửa kia, rồi chạy kiểm chứng thực tế trên nửa này.
           {d.gates && Object.entries(d.gates).map(([k, g]) => (
             <div key={k}>· Nửa {k.replace("fold", "")}: {gateText(g)}</div>
           ))}

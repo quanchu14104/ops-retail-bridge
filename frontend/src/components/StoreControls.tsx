@@ -114,7 +114,7 @@ export function FastForward() {
   const r = run.data;
   return (
     <section className="settings-section">
-      <CardTitle title="Tua nhanh (demo)" info="Giả lập hàng về và khách mua trong những ngày tới. Không tự duyệt, đặt hàng hay ghi hủy: đề xuất không ai duyệt sẽ hết hiệu lực và thấy được hậu quả trên kệ." />
+      <CardTitle title="Tua ngày nghiệp vụ" info="Tiến nhanh ngày nghiệp vụ theo dữ liệu lịch sử Thanh Lam Mart để kiểm tra hàng về và bán ra. Không tự duyệt, đặt hàng hay ghi hủy: đề xuất không ai duyệt sẽ hết hiệu lực." />
       <div className="row">
         {[1, 3, 7].map((d) => <button key={d} disabled={run.isPending} onClick={() => run.mutate(d)}>+{d} ngày</button>)}
         <Switch checked={realize} onChange={setRealize} label="Giả thuyết xảy ra đúng" />

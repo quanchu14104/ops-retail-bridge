@@ -1,11 +1,10 @@
-"""Dong goi phan mo phong cua OC (engines + sim + ml + du lieu FRN + mo hinh) thanh zip de chay backtest A/B tren Kaggle.
+"""Dong goi phan kiem chung cua OC (engines + sim + ml + du lieu Thanh Lam Mart + mo hinh) thanh zip de chay kiem chung A/B doc lap.
 
     python ml/package_backtest.py      -> ml/dist_bt/ops_chest_app.zip
 
-Tren Kaggle (dataset `ops-chest-app`, Kaggle tu giai nen zip):
+Chay doc lap tu file zip:
     pip install -q pydantic-settings
-    cp -r <input>/app /kaggle/working/ && cd /kaggle/working
-    python -m app.sim.backtest --frn --out /kaggle/working/backtest.json
+    python -m app.sim.backtest --frn --out backtest.json
 Backtest khong dung DB/FastAPI: chi can numpy, lightgbm, pydantic-settings.
 """
 from __future__ import annotations

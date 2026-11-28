@@ -108,8 +108,8 @@ def _apply_hypotheses(fc: Forecast, active: list[DemandHypothesis]) -> None:
 
 
 def _frn_context(db: Session, product: Product):
-    """Ma nhom FRN, lich ngay le va so mat hang FRN cua diem ban (bac quy mo trong bo chon du bao);
-    (None, None, None) neu cua hang khong chay du lieu FRN."""
+    """Ma nhom nganh hang, lich ngay le va so mat hang cua tap du lieu Thanh Lam Mart (bac quy mo trong bo chon du bao);
+    (None, None, None) neu chua nap tap du lieu nay."""
     row = db.get(AppMeta, "frn_store")
     if row is None:
         return None, None, None

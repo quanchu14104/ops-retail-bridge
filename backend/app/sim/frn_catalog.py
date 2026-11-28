@@ -1,9 +1,4 @@
-"""Danh muc cua cua hang OC dung tu MOT diem ban Thanh Lam Mart.
-
-Nhu cau la that (FRN). Moi thu FRN KHONG co duoc tao theo quy tac co dinh tu ma so, va la GIA DINH:
-ten hang (FRN chi co ma so), gia ban, gia von, HSD, quy cach, nha cung cap. Ten de trung tinh ("Mat hang 412 ·
-nhom 3"), khong gan ten loai hang cu the vi FRN khong cho biet ma nhom nao la rau, thit hay hai san.
-"""
+"""Danh muc nen cua hang tuoi Thanh Lam Mart va seam ghi de ten/gia chi tiet tu CATALOG_OVERRIDES_PATH."""
 from __future__ import annotations
 
 import json
@@ -13,7 +8,7 @@ from pathlib import Path
 from app.sim.catalog import ALL_DAYS, ProductSpec, SupplierSpec
 from app.sim.frn import FrnStore
 
-# Ten NCC mau, trung tinh (khong noi loai hang). Mot NCC cho moi nhom quan ly (management_group) cua FRN.
+# Danh sach nha cung cap theo tung nhom quan ly hang tuoi.
 SUPPLIER_NAMES = [
     "Công ty Thực phẩm Tươi An Phú", "Thực phẩm Tươi Bình Minh", "Tươi Sạch Cát Tường", "Phân phối Tươi Đông Á",
     "Thực phẩm Hòa Bình", "Tươi Ngon Phương Nam", "Nông sản Tân Phát", "Thực phẩm Tươi Gia Khang",
@@ -93,8 +88,8 @@ def apply_catalog_overrides(suppliers: list[SupplierSpec], products: list[Produc
 
 
 def frn_category_policy(category: str) -> dict:
-    """Cau hinh nhom hang: khung gio ban LAY TU FRN (cac diem huan luyen, chi ngay con hang du gio); gio giam gia
-    ngay sau khung ban dinh. Tran giam gia 50% van la cau hinh demo (doi chieu Nghi dinh 81/2018/ND-CP)."""
+    """Cau hinh nhom hang: khung gio ban đo tu du lieu lich su Thanh Lam Mart; gio giam gia
+    ngay sau khung ban dinh. Tran giam gia 50% la cau hinh cua cua hang (doi chieu Nghi dinh 81/2018/ND-CP)."""
     from app.engines.disposition import DEFAULT_DAYPART_SHARES, peak_end_hour, share_after
     from app.sim.frn import dayparts
 

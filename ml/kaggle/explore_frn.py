@@ -1,8 +1,8 @@
-"""Khao sat Thanh Lam Mart (chay tren Kaggle). In ra mot JSON tom tat va ghi /kaggle/working/frn_explore.json.
+"""Khao sat bo du lieu lich su ban hang Thanh Lam Mart. In ra mot JSON tom tat va ghi frn_explore.json.
 
     python explore_frn.py [--data-dir DIR]
 
-Neu khong co --data-dir, tai 2 file parquet tu Hugging Face (can bat Internet cho notebook).
+Doc 2 file parquet tu --data-dir hoac THANH_LAM_DATA_URL.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-HF = ""
+HF = os.environ.get("THANH_LAM_DATA_URL", "")
 
 
 def fetch(data_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:

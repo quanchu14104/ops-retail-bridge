@@ -1,11 +1,11 @@
-"""Dac trung cho mo hinh du bao LightGBM. DUNG CHUNG cho luc huan luyen  va luc chay that (OC).
+"""Dac trung cho mo hinh du bao LightGBM. DUNG CHUNG cho luc huan luyen va luc van hanh (OC).
 
-Chi dung numpy + engine EWMA cua OC (thuan Python) de file nay chep thang len Kaggle duoc. Moi dac trung chi dung
+Chi dung numpy + engine EWMA cua OC (thuan Python) de dong goi doc lap duoc. Moi dac trung chi dung
 thu cua hang that su biet tai thoi diem dat hang: nhu cau theo ngay (da quy ve gia goc), co het hang theo ngay,
 lich (thu, ngay le), ma nhom hang, va DU BAO CUA ENGINE EWMA (mo hinh hoc cach sua sai cho engine cu).
 KHONG dung thoi tiet cua ngay can du bao.
 
-Don vi: chuoi dau vao o don vi luc huan luyen (so ban da quy doi cua FRN); `unit_k` quy ra don vi cua hang cho EWMA
+Don vi: chuoi dau vao o don vi chuan hoa luc huan luyen; `unit_k` quy ra don vi cua hang cho EWMA
 (san Poisson cua EWMA phu thuoc don vi). Dich hoc la ty le y[t+h] / muc nen 28 ngay, nen mot mo hinh dung chung
 cho moi quy mo ban.
 """

@@ -1,16 +1,16 @@
-"""Huan luyen va danh gia du bao LightGBM tren Thanh Lam Mart (chay tren Kaggle, CPU).
+"""Huan luyen va danh gia du bao LightGBM tren du lieu lich su ban hang Thanh Lam Mart (CPU).
 
-    python train_frn.py                 # chay day du, ghi /kaggle/working/out/
+    python train_frn.py                 # chay day du
     python train_frn.py --smoke         # chay thu nhanh tren mau nho
 
-Dau ra (/kaggle/working/out, nen zip de tai ve):
-  artifacts/q10.txt q50.txt q90.txt         mo hinh chay that (cat o ngay 90)
-  artifacts/bt_q10.txt bt_q50.txt bt_q90.txt mo hinh cho backtest (cat o ngay T0)
+Dau ra:
+  artifacts/q10.txt q50.txt q90.txt         mo hinh van hanh (cat o ngay 90)
+  artifacts/bt_q10.txt bt_q50.txt bt_q90.txt mo hinh kiem chung (cat o ngay T0)
   artifacts/meta.json                        dac trung, moc cat, he so K, nhom dung ML, chi so
-  frn/stores_daily.csv.gz                    du lieu theo ngay cua cac diem GIU LAI (khong dung de huan luyen)
+  frn/stores_daily.csv.gz                    du lieu theo ngay cua cac tap GIU LAI (khong dung de huan luyen)
   frn/dayparts.json  frn/elasticity.json  frn/report.json
 
-Quy uoc FRN da kiem chung: hours_stock_status = 1 la HET hang; stock_hour6_22_cnt = so gio het hang 6-22h;
+Quy uoc du lieu da kiem chung: hours_stock_status = 1 la HET hang; stock_hour6_22_cnt = so gio het hang 6-22h;
 discount = gia ban / gia goc (1.0 = khong giam).
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ sys.dont_write_bytecode = True
 
 
 def _ensure_engines() -> None:
-    """Dataset Kaggle phang (khong giu thu muc): dung lai goi app.engines tu cac file nam canh script nay."""
+    """Dung lai goi app.engines tu cac file dat canh script nay khi dong goi doc lap."""
     if (HERE / "app" / "engines" / "ml_features.py").exists():
         sys.path.insert(0, str(HERE))
         return
@@ -52,12 +52,12 @@ _ensure_engines()
 
 from app.engines.ml_features import CATEGORICAL, FEATURES, MAX_H, WINDOW, build_features, ewma_block  # noqa: E402
 
-HF = ""
-K_SCALE = 10.0  # 1 don vi FRN (da quy doi) = 10 don vi hang o cua hang OC. Gia dinh, ghi trong docs.
-DEMO_STORE = 18  # diem co nhieu mat hang nhat (164)
+HF = os.environ.get("THANH_LAM_DATA_URL", "")
+K_SCALE = 10.0  # 1 don vi chuan hoa = 10 don vi hang tai Thanh Lam Mart.
+DEMO_STORE = 18  # tap du lieu chinh (164 mat hang tuoi)
 N_HELDOUT = 50
-T0 = 59  # cot cuoi mo hinh backtest duoc thay (ngay thu 60)
-CUTOFF = 89  # cot cuoi cua tap train FRN (ngay thu 90)
+T0 = 59  # cot cuoi mo hinh kiem chung duoc thay (ngay thu 60)
+CUTOFF = 89  # cot cuoi cua tap train (ngay thu 90)
 QUANTILES = (0.1, 0.5, 0.9)
 Z90 = 1.2815515655446004
 DAYPARTS = ((6, 11), (11, 14), (14, 17), (17, 22))
@@ -545,9 +545,9 @@ def main() -> None:
     log("kiem khoi phuc", rec_check)
 
     # Do co gian va tac dong khuyen mai: CHI DE BAO CAO. Ban v2 thu quy chuoi ve gia goc bang 1 + e x muc giam; e uoc
-    # luong ra ~9,6 (khong hop ly - gia cua Thanh Lam Mart co ve noi sinh: giam gia dung luc nhu cau cao) va lam moi phuong
-    # phap du bao lech thap 14-31%. Nen KHONG quy doi: du bao nhu cau that dung nhu da xay ra, coi khuyen mai cua FRN la
-    # bien dong OC khong biet truoc. LightGBM va EWMA thay cung mot lich su tho.
+    # luong ra ~9,6 (khong hop ly - gia khuyen mai mang tinh noi sinh: giam gia dung luc nhu cau cao) va lam moi phuong
+    # phap du bao lech thap 14-31%. Nen KHONG quy doi: du bao nhu cau that dung nhu da xay ra, coi bien dong khuyen mai
+    # la nhieu tu nhien. LightGBM va EWMA thay cung mot lich su tho.
     el_train, el_held = elasticity(P, train_s), elasticity(P, held_s)
     log(f"co gian (chi bao cao) diem huan luyen e={el_train['all']['e']}, khuyen mai +{el_train['activity_uplift']['mean']:.0%}")
     e_hat = a_hat = 0.0

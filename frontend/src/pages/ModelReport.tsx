@@ -13,35 +13,35 @@ type SensRow = {
 };
 type Sens = { start: string; days: number; rows: SensRow[] };
 
-// Báo cáo kỹ thuật (người làm dữ liệu / đánh giá dự án): phân nhóm ABC-XYZ, độ chính xác dự báo LightGBM, kiểm chứng A/B.
+// Báo cáo kỹ thuật (người làm dữ liệu / đánh giá dự án): phân nhóm ABC-XYZ, độ chính xác dự báo LightGBM, kiểm chứng hồi cứu A/B.
 // Không nằm trong menu của Store Manager; mở từ menu tài khoản.
 export default function ModelReport() {
   const abc = useQuery({ queryKey: ["chart-abc"], queryFn: () => api<ChartSpec>(`/charts?metric=abc_xyz`) });
   const bt = useMutation({ mutationFn: (d: number) => api<BT>(`/reports/backtest?days=${d}`) });
   const frnBt = useQuery({ queryKey: ["bt-frn"], queryFn: () => api<FrnBt>("/reports/backtest/frn"), retry: false });
-  // Bang do nhay cu chi can khi chua co kiểm chứng Thanh Lam Mart
+  // Bảng độ nhạy phụ chỉ cần khi chưa có báo cáo kiểm chứng A/B
   const sens = useQuery({ enabled: frnBt.isError, queryKey: ["bt-sensitivity"], queryFn: () => api<Sens>("/reports/backtest/sensitivity"), retry: false });
 
   return (
     <>
       <PageHeader title="Báo cáo mô hình"
-        desc="Phần kỹ thuật cho người làm dữ liệu và đánh giá dự án: phân nhóm ABC-XYZ, độ chính xác dự báo, mô phỏng so sánh cách đặt hàng. Không cần cho việc vận hành hằng ngày." />
-      {abc.data && <div className="mb-4"><ChartView spec={abc.data} /></div>}
+        desc="Phần kỹ thuật cho người làm dữ liệu và đánh giá dự án: phân nhóm ABC-XYZ, độ chính xác dự báo, đánh giá so sánh cách đặt hàng. Không cần cho việc vận hành hằng ngày." />
       <FrnModelReport />
+      {abc.data && <div className="mb-4"><ChartView spec={abc.data} /></div>}
 
       {frnBt.data ? (
         <div className="card mt-3"><FrnBacktest d={frnBt.data} /></div>
       ) : frnBt.isPending ? (
-        <div className="card mt-3"><p className="muted">Đang tải kết quả mô phỏng…</p></div>
+        <div className="card mt-3"><p className="muted">Đang tải kết quả kiểm chứng…</p></div>
       ) : (
         <div className="card mt-3">
-          <h2>Kiểm chứng A/B (dữ liệu kiểm thử)</h2>
+          <h2>Kiểm chứng A/B (chạy trực tiếp)</h2>
           {!(frnBt.error instanceof ApiError && frnBt.error.status === 404) && (
-            <div className="alert error mb-3">Không tải được backtest trên dữ liệu Thanh Lam Mart: {(frnBt.error as Error).message}</div>
+            <div className="alert error mb-3">Không tải được kết quả kiểm chứng A/B: {(frnBt.error as Error).message}</div>
           )}
           <p className="small secondary">
-            Chạy lại cùng cửa hàng với <b>cùng nhu cầu khách</b> (tất định) bằng 2 chính sách đặt hàng. A: mức tồn theo trung bình 4 tuần, cuối ngày giảm 30% hàng hết hạn hôm nay.
-            B: dự báo + newsvendor/order-up-to có sàn mức phục vụ (kéo khách 95%, nhóm A 90%) + trần HSD và sức chứa + giảm giá giờ vàng theo khung bán của nhóm hàng/trả NCC (coi như SM duyệt hết). Trong mô phỏng, khách chỉ phản ứng với giảm giá bằng một nửa mức engine giả định. Mất khoảng 10-30 giây.
+            Chạy lại cùng cửa hàng với <b>cùng chuỗi nhu cầu lịch sử</b> bằng 2 chính sách đặt hàng. A: mức tồn theo trung bình 4 tuần, cuối ngày giảm 30% hàng hết hạn hôm nay.
+            B: dự báo + newsvendor/order-up-to có sàn mức phục vụ (kéo khách 95%, nhóm A 90%) + trần HSD và sức chứa + giảm giá giờ vàng theo khung bán của nhóm hàng/trả NCC (coi như SM duyệt hết). Trong kiểm chứng, khách phản ứng với giảm giá bằng một nửa mức engine giả định. Mất khoảng 10-30 giây.
           </p>
           <div className="row">
             {[30, 60, 90].map((d) => <button key={d} disabled={bt.isPending} onClick={() => bt.mutate(d)}>Chạy {d} ngày</button>)}

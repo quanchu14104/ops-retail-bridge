@@ -2602,7 +2602,7 @@
     {
       "key": "reference",
       "label": "Tham chiếu",
-      "note": "Khách phản ứng với giảm giá bằng 50% mức engine giả định (FRN không đo được độ co giãn đáng tin)",
+      "note": "Khách phản ứng với giảm giá bằng 50% mức engine ước lượng (giá khuyến mãi nội sinh)",
       "stores": 20,
       "gain": 0.0546,
       "waste_a": 0.0525,
@@ -2668,7 +2668,7 @@
     {
       "key": "daypart_flat",
       "label": "Giờ giảm giá cố định 18h",
-      "note": "Không dùng khung giờ bán học từ dữ liệu lịch sử",
+      "note": "Không dùng khung giờ bán đo từ dữ liệu lịch sử",
       "stores": 20,
       "gain": 0.0546,
       "waste_a": 0.0525,

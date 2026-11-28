@@ -153,7 +153,7 @@ const NAV: { section: string; items: [string, string][]; lookup?: boolean }[] = 
 ];
 // Điện thoại: Trợ lý và Duyệt ở thanh đáy, trang tra cứu trong "Thêm"
 const TABBAR: [string, string][] = [["/", "Trợ lý"], ["/approvals", "Duyệt"]];
-// /model: báo cáo kỹ thuật (mô hình, mô phỏng), không nằm trong menu; mở từ menu tài khoản
+// /model: báo cáo kỹ thuật (mô hình, kiểm chứng A/B), không nằm trong menu; mở từ menu tài khoản
 const PAGE_TITLE: Record<string, string> = { ...Object.fromEntries(NAV.flatMap((g) => g.items)), "/model": "Báo cáo mô hình" };
 
 function NavIcon({ to }: { to: keyof typeof ICON }) {

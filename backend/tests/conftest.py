@@ -6,7 +6,7 @@ _tmp = Path(tempfile.mkdtemp(prefix="opschest_test_"))
 os.environ["DATABASE_URL"] = f"sqlite:///{(_tmp / 'test.db').as_posix()}"
 os.environ["SIM_TODAY"] = "2026-11-07"  # Thu 7 -> NCC01, NCC02 (hang ngay) den lich dat
 os.environ["ENABLE_SCHEDULER"] = "false"
-# Bo test quy tac nghiep vu chay tren bo du lieu kiem thu: giu gia dinh co gian 3,0 va engine EWMA
+# Bo test quy tac nghiep vu giu gia dinh co gian 3,0 va engine EWMA
 os.environ["ELASTICITY_FROM_FRN"] = "false"
 os.environ["FORECAST_ENGINE"] = "ewma"
 os.environ["PDF_OUTPUT_DIR"] = str(_tmp / "pdf")

@@ -1,4 +1,4 @@
-"""Danh muc hang & nha cung cap GIA LAP (ten thuong hieu mau)."""
+"""Danh muc hang & nha cung cap GIA LAP (ten thuong hieu hu cau)."""
 from __future__ import annotations
 
 import random
@@ -44,7 +44,7 @@ class ProductSpec:
     substitutes: list[str] = field(default_factory=list)
     max_stock_qty: int | None = None  # suc chua ke/tu
     min_display_qty: int = 0  # ton trung bay toi thieu (hang ben)
-    frn_id: int | None = None  # ma mat hang FRN (nhu cau lay tu Thanh Lam Mart)
+    frn_id: int | None = None  # ma mat hang trong chuoi lich su Thanh Lam Mart
 
 
 ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]

@@ -42,12 +42,12 @@ def _chunks(rows: list[dict], n: int = 5000):
 
 
 def seed(days: int | None = None, seed_value: int = 7, reset: bool = False, source: str = "frn") -> dict:
-    """source='frn': nhu cau THAT cua mot diem ban Thanh Lam Mart, van hanh (lo, don, so sach) mo phong bang chinh
-    sach 'kinh nghiem'; dong ho dat o ngay ngay sau moc cat cua FRN. source='synthetic': bo du lieu kiem thu (bo test
-    quy tac nghiep vu can Tet, hang dai ngay, lich nghi NCC)."""
+    """source='frn': du lieu lich su Thanh Lam Mart (164 mat hang tuoi, 90 ngay), van hanh (lo, don, so sach)
+    khoi tao theo chinh sach kinh nghiem; dong ho dat o ngay sau moc cat. source='synthetic': bo du lieu kiem thu
+    quy tac nghiep vu (can Tet, hang dai ngay, lich nghi NCC)."""
     t0 = time.perf_counter()
     if source == "frn" and not frn.available():
-        print("Chưa có dữ liệu Thanh Lam Mart (app/sim/data/frn/stores_daily.csv.gz), dùng dữ liệu kiểm thử.")
+        print("Chưa có dữ liệu lịch sử Thanh Lam Mart (app/sim/data/frn/stores_daily.csv.gz), chuyển sang bộ kiểm thử.")
         source = "synthetic"
     if reset:
         reset_db()
@@ -162,9 +162,9 @@ def seed(days: int | None = None, seed_value: int = 7, reset: bool = False, sour
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=None, help="Mặc định: FRN 90 ngày, giả lập 365 ngày")
+    ap.add_argument("--days", type=int, default=None, help="Mặc định: dữ liệu Thanh Lam Mart 90 ngày, kiểm thử 365 ngày")
     ap.add_argument("--source", choices=["frn", "synthetic"], default="frn",
-                    help="frn: nhu cầu thật Thanh Lam Mart (mặc định); synthetic: bộ dữ liệu kiểm thử")
+                    help="frn: dữ liệu lịch sử Thanh Lam Mart (mặc định); synthetic: bộ dữ liệu kiểm thử quy tắc")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--reset", action="store_true", help="Xóa toàn bộ bảng rồi seed lại")
     args = ap.parse_args()

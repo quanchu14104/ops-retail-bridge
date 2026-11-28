@@ -36,7 +36,7 @@ const METHODS: [string, string][] = [
 const GROUP_ORDER = ["ban_it|deu", "ban_it|lat_nhat", "ban_vua|deu", "ban_vua|lat_nhat", "ban_chay|deu", "ban_chay|lat_nhat"];
 const VOLUME: Record<string, string> = { ban_it: "Bán ít", ban_vua: "Bán vừa", ban_chay: "Bán chạy" };
 const PATTERN: Record<string, string> = { deu: "bán đều", lat_nhat: "lắt nhắt" };
-const SOURCE = "Thanh Lam Mart (Thanh Lam Mart, CC BY 4.0) — kho giao hàng online, không phải cửa hàng tiện lợi";
+const SOURCE = "Bộ dữ liệu lịch sử bán hàng Thanh Lam Mart (164 mặt hàng tươi)";
 
 const groupLabel = (g: string) => {
   const [v, p] = g.split("|");
@@ -70,8 +70,7 @@ export default function FrnModelReport() {
       {q.isPending && <p className="muted">Đang tải…</p>}
       {q.error && (q.error instanceof ApiError && q.error.status === 404 ? (
         <p className="muted">
-          Chưa có kết quả mô hình. Huấn luyện trên môi trường huấn luyện, đặt <code>meta.json</code> vào <code>backend/app/ml/artifacts/</code> và
-          chạy kiểm chứng Thanh Lam Mart để sinh <code>backend/app/sim/data/frn/report.json</code>, rồi tải lại trang.
+          Chưa có kết quả đánh giá mô hình. Vui lòng tạo báo cáo đánh giá và tải lại trang.
         </p>
       ) : <div className="alert error">{(q.error as Error).message}</div>)}
       {q.data && <Body d={q.data} board={board} setBoard={setBoard} mode={mode} setMode={setMode} />}
@@ -88,10 +87,10 @@ function Body({ d, board, setBoard, mode, setMode }: {
     <>
       {m && (
         <p className="small secondary">
-          Mô hình chạy thật học trên {dateVi(m.dates[0])} – {dateVi(m.cutoff_date)} và được chấm trên tuần sau đó
-          (đến {dateVi(m.dates[1])}); bảng "Cuốn chiếu" dùng mô hình backtest chỉ học đến {dateVi(m.t0_date)}.
-          Mọi con số dưới đây chấm trên <b>{m.n_heldout_stores} điểm bán giữ lại</b>, không dùng khi huấn luyện.
-          {" "}{m.features.length} đặc trưng; nhu cầu FRN nhân hệ số K = {num(m.k_scale, 2)} để ra đơn vị hàng của cửa hàng Thanh Lam Mart (điểm bán #{m.demo_store}).
+          Mô hình vận hành học trên {dateVi(m.dates[0])} – {dateVi(m.cutoff_date)} và được chấm trên tuần sau đó
+          (đến {dateVi(m.dates[1])}); bảng "Cuốn chiếu" dùng mô hình kiểm chứng chỉ học đến {dateVi(m.t0_date)}.
+          Mọi con số dưới đây chấm trên <b>{m.n_heldout_stores} tập kiểm chứng giữ lại</b>, không dùng khi huấn luyện.
+          {" "}{m.features.length} đặc trưng; lượng bán chuẩn hóa nhân hệ số quy đổi đơn vị K = {num(m.k_scale, 2)} (tập dữ liệu chính Thanh Lam Mart #{m.demo_store}).
         </p>
       )}
 
@@ -174,9 +173,9 @@ function GroupTable({ data, mode, gate }: { data: Board; mode: Mode; gate: Recor
     <div className="table-wrap" style={{ marginTop: 16 }}>
       <h3>Theo nhóm hàng: LightGBM hay engine cũ</h3>
       <p className="small secondary" style={{ marginTop: -4 }}>
-        Cột "Theo sai số" là bộ chọn cũ: nhóm nào LightGBM sai ít hơn EWMA trên tuần eval. Số liệu theo đúng giai đoạn và cách chấm đang chọn ở trên.
-        App hiện <b>không</b> dùng cột này mà chọn theo lãi trong backtest (decision_gate.json, xem mục Backtest A/B bên dưới): ở điểm bán lớn như
-        cửa hàng demo, mọi mặt hàng dùng dự báo LightGBM nhưng tồn an toàn theo σ của EWMA; ở điểm bán nhỏ, hàng bán chạy và bán ít giữ EWMA.
+        Cột "Theo sai số" là bộ chọn cũ: nhóm nào LightGBM sai ít hơn EWMA trên tuần đánh giá. Số liệu theo đúng giai đoạn và cách chấm đang chọn ở trên.
+        App hiện <b>không</b> dùng cột này mà chọn theo lãi trong kiểm chứng hồi cứu (decision_gate.json, xem mục Kiểm chứng A/B bên dưới): tại
+        Thanh Lam Mart, các mặt hàng chủ lực và bán vừa dùng dự báo LightGBM nhưng tồn an toàn theo σ của EWMA; ở tập quy mô nhỏ, hàng bán chạy và bán ít giữ EWMA.
       </p>
       <table>
         <thead><tr>
@@ -240,9 +239,9 @@ function Elasticity({ e }: { e: NonNullable<FrnReport["elasticity"]> }) {
       <h3>Độ co giãn theo giảm giá (ước lượng)</h3>
       <p className="small secondary">Theo dạng OC dùng: bán tăng ≈ 1 + e × mức giảm (giảm 10% giá thì bán tăng e × 10%). Ước lượng trên những ngày giảm giá không kèm quảng bá, so với ngày bán giá gốc cùng thứ.</p>
       <p className="small" style={{ marginTop: 4 }}>
-        <strong>Không dùng trong OC.</strong> e ≈ 9 nghĩa là giảm 10% giá mà bán tăng ~90%: không hợp lý. Giá của Thanh Lam Mart có vẻ
-        nội sinh (giảm giá đúng lúc nhu cầu cao), nên so ngày giảm với ngày không giảm không đo được tác động của giá. Engine giữ
-        giả định 3,0; muốn đo đúng phải thử nghiệm giá.
+        <strong>Không dùng trong OC.</strong> e ≈ 9 nghĩa là giảm 10% giá mà bán tăng ~90%: không hợp lý. Giá khuyến mãi trong lịch sử bán hàng mang tính
+        nội sinh (thường giảm giá vào lúc nhu cầu cao), nên so ngày giảm với ngày không giảm không đo được tác động thuần của giá. Engine giữ
+        giả định bảo thủ 3,0; muốn đo đúng phải thử nghiệm giá có kiểm soát.
       </p>
       <table>
         <thead><tr><th>Tập điểm bán</th><th className="num">e</th><th className="num">Khoảng tin cậy 90%</th><th className="num">Số dòng</th></tr></thead>
@@ -259,7 +258,7 @@ function Elasticity({ e }: { e: NonNullable<FrnReport["elasticity"]> }) {
           {consistent
             ? "Hai tập điểm bán cho cùng một con số, nhưng ổn định không có nghĩa là đúng: cùng một cách đặt giá thì cùng một sai lệch."
             : "Ước lượng trên điểm huấn luyện nằm ngoài khoảng tin cậy của điểm giữ lại: độ co giãn không ổn định giữa các điểm bán, không nên dùng một con số chung."}
-          {" "}Đây là kho online của Thanh Lam Mart; khách cửa hàng tiện lợi có thể phản ứng với giảm giá khác.
+          {" "}Khi vận hành trực tiếp tại cửa hàng cần thử nghiệm mức giảm giá thực tế để hiệu chỉnh tham số này.
         </p>
       )}
       {groups.length > 0 && (

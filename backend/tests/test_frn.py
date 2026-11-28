@@ -1,6 +1,6 @@
-"""Thanh Lam Mart trong OC: doc du lieu, danh muc, nguon nhu cau, bo chon du bao, dac trung dung chung.
+"""Du lieu lich su Thanh Lam Mart trong OC: doc du lieu, danh muc, nguon nhu cau, bo chon du bao, dac trung dung chung.
 
-Du lieu trong test la file FRN NHO tu tao (cung dinh dang stores_daily.csv.gz), khong can file that, khong ghi DB.
+Du lieu trong test la file CSV.GZ nho tu tao (cung dinh dang stores_daily.csv.gz), khong can file day du, khong ghi DB.
 """
 import csv
 import gzip
@@ -101,7 +101,7 @@ END = date(2024, 5, 31)
 
 def test_features_shape_and_scale_free():
     Y, S, wd, hol = _panel()
-    # Cung mot cua hang: Y o don vi FRN (K=10) va Y*10 o don vi cua hang -> EWMA giong nhau, moi dac trung giong nhau
+    # Cung mot cua hang: Y o don vi chuan hoa (K=10) va Y*10 o don vi cua hang -> EWMA giong nhau, moi dac trung giong nhau
     X, level = build_features(Y, S, 39, range(1, MAX_H + 1), wd, hol, end=END, unit_k=10)
     assert X.shape == (4 * MAX_H, len(FEATURES))
     X10, level10 = build_features(Y * 10, S, 39, range(1, MAX_H + 1), wd, hol, end=END, unit_k=1)
@@ -299,7 +299,7 @@ def test_broken_gate_file_falls_back_to_meta(tmp_path):
 
 def test_demo_store_size_is_its_frn_sku_count():
     if not frn.available():
-        pytest.skip("Chưa có dữ liệu Thanh Lam Mart")
+        pytest.skip("Chưa có dữ liệu lịch sử Thanh Lam Mart")
     frn._all.cache_clear()
     from app.ml.forecaster import store_tier
     assert frn.store_size(frn.demo_store_id()) == len(frn.store().series) == 164

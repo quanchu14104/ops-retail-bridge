@@ -44,14 +44,14 @@ class Settings(BaseSettings):
     # Gio dong cua: danh sach rut ke chay sau gio nay (cua hang khong mo 24 gio)
     closing_hour: int = 22
 
-    # Nut tua nhanh ngay cho demo. Tat khi chay voi du lieu that.
+    # Nut tua nhanh ngay nghiep vu cho trinh dien. Tat khi van hanh thuc te.
     enable_sim_controls: bool = True
 
-    # Du bao: "auto" = LightGBM (hoc tren Thanh Lam Mart) cho hang tuoi co du lieu FRN o nhom no thang engine cu,
+    # Du bao: "auto" = LightGBM (huan luyen tren du lieu lich su Thanh Lam Mart) cho hang tuoi o nhom thang engine cu,
     # con lai EWMA; "ewma" = luon dung engine EWMA cu.
     forecast_engine: str = "auto"
-    # Do co gian khi giam gia cua hang tuoi lay tu uoc luong tren FRN. MAC DINH TAT: uoc luong tren FRN ra ~5-10
-    # (khong hop ly, gia cua Thanh Lam Mart noi sinh), xem docs/du-bao-ml.md. Bat chi de thu nghiem.
+    # Do co gian khi giam gia cua hang tuoi uoc luong tu lich su. MAC DINH TAT: gia khuyen mai noi sinh (~5-10),
+    # xem docs/du-bao-ml.md. Bat chi de thu nghiem.
     elasticity_from_frn: bool = False
 
     smtp_host: str = "localhost"
@@ -59,9 +59,9 @@ class Settings(BaseSettings):
     smtp_from: str = "dathang@opschest-demo.test"
 
     store_name: str = "Thanh Lam Mart"
-    store_address: str = "123 Nguyễn Văn Cừ, Q.5, TP.HCM"
-    store_phone: str = "028 0000 0000"
-    # File JSON ghi de ten/gia hang va ten/email NCC luc seed FRN (vd bridge sinh). De trong = khong ghi de.
+    store_address: str = "14 Bà Triệu"
+    store_phone: str = "0987654321"
+    # File JSON ghi de ten/gia hang va ten/email NCC Thanh Lam Mart luc khoi tao (vd bridge sinh). De trong = khong ghi de.
     catalog_overrides_path: str | None = None
 
     # Ngay nghiep vu. De trong = ngay that (Asia/Ho_Chi_Minh). Dat co dinh de demo on dinh.

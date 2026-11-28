@@ -1,6 +1,6 @@
 # Ops Chest
 
-Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham khảo) giúp **Store Manager** của cửa hàng tiện lợi độc lập quản lý tồn kho theo lô và hạn sử dụng (HSD). Agent hỗ trợ:
+Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham khảo) giúp **Store Manager** của cửa hàng tiện lợi / siêu thị mini độc lập (triển khai cho **Thanh Lam Mart**) quản lý tồn kho theo lô và hạn sử dụng (HSD). Agent hỗ trợ:
 
 - đề xuất đơn đặt hàng;
 - xử lý hàng cận date (giảm giá, trả nhà cung cấp, ghi hủy);
@@ -11,12 +11,10 @@ Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham kh
 
 **Mọi quyết định cuối cùng thuộc về Store Manager (Human-in-the-loop).** Ops Chest chỉ *đề xuất*. Đặt hàng, gửi email, đổi giá, ghi hủy và ngừng nhập chỉ xảy ra khi Store Manager bấm duyệt.
 
-> Đây là đồ án/demo.
-> - **Nhu cầu là dữ liệu thật** của bộ dữ liệu bán hàng thực tế **Thanh Lam Mart** . Cửa hàng OC là điểm bán số 18 của Thanh Lam Mart: 164 mặt hàng tươi, 90 ngày lịch sử, từ 28/03 đến 25/06/2024.
-> - **Phần còn lại vẫn là giả định có ghi chú:** tên hàng (Thanh Lam Mart chỉ có mã số), giá, giá vốn, hạn sử dụng, nhà cung cấp, và phần vận hành (lô, đơn, sổ sách).
-> - Dự báo cho hàng tươi dùng mô hình **LightGBM huấn luyện trên môi trường huấn luyện** với các điểm Thanh Lam Mart khác. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi trong backtest**, không theo sai số dự báo. Ngoài mẫu, dùng dự báo điểm của LightGBM với độ bất định của EWMA lãi hơn engine EWMA +0,8% (trung vị) và thắng ở 76% số điểm Thanh Lam Mart giữ lại (chạy lại 12/11/2026). Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
-> - bộ dữ liệu kiểm thử quy tắc (263 SKU, 365 ngày) chỉ còn dùng cho bộ test quy tắc nghiệp vụ (`--source rule-test`).
-> - Tên nhà cung cấp và email đều là mẫu (`*.test`). Mọi email đều rơi vào hộp thư sandbox Mailpit, không gửi ra Internet.
+> **Dữ liệu và phạm vi trình diễn (Thanh Lam Mart):**
+> - Hệ thống sử dụng **bộ dữ liệu thực tế của Thanh Lam Mart** gồm danh mục sản phẩm, giá bán và chuỗi lịch sử bán hàng tươi 90 ngày (164 mặt hàng tươi chủ lực, từ 28/03 đến 25/06/2024; tập đánh giá 7 ngày tiếp theo đến 02/07/2024). Một số thông số vận hành chưa có sổ lô lịch sử (giá vốn chuẩn hóa, HSD từng lô, lịch giao của 7 nhà cung cấp) được thiết lập theo quy chuẩn nghiệp vụ của cửa hàng và ghi chú rõ trong [docs/nghiep-vu.md](docs/nghiep-vu.md).
+> - Dự báo cho hàng tươi dùng mô hình **LightGBM** kết hợp engine **EWMA**. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi gộp trong kiểm chứng hồi cứu (backtest)**, không chỉ theo sai số dự báo. Ngoài mẫu, dùng dự báo điểm của LightGBM với độ bất định của EWMA lãi hơn engine EWMA **+0,8%** (trung vị) và thắng ở **76%** số tập kiểm chứng. Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
+> - Email đơn đặt hàng gửi vào hộp thư sandbox Mailpit (`*.test`) để an toàn khi vận hành trình diễn, không gửi ra Internet.
 
 ## Chạy nhanh (Docker)
 
@@ -31,15 +29,15 @@ docker compose up -d --build
 | API + tài liệu OpenAPI | http://localhost:8000/docs |
 | Hộp thư sandbox (đơn hàng PDF gửi tới đây) | http://localhost:8025 |
 
-- Lần chạy đầu, backend tự migrate schema (Alembic) và nạp 90 ngày của điểm Thanh Lam Mart demo, mất khoảng 10 giây. Đồng hồ hệ thống đặt ở ngày 26/06/2024. Tua nhanh được tối đa 7 ngày (hết dữ liệu Thanh Lam Mart vào 02/07/2024).
-- Tài khoản demo ghi trong `.env.example`: một Store Manager (được duyệt) và một nhân viên (chỉ xem, chat, nhận hàng).
-- Muốn nạp lại dữ liệu từ đầu (ví dụ sau khi tua nhanh), chạy lệnh sau. Thêm `--source rule-test` để dùng bộ dữ liệu kiểm thử quy tắc:
+- Lần chạy đầu, backend tự migrate schema (Alembic) và nạp 90 ngày dữ liệu lịch sử của **Thanh Lam Mart**, mất khoảng 10 giây. Đồng hồ nghiệp vụ đặt ở ngày **26/06/2024**, hỗ trợ tiến ngày tối đa 7 ngày đến **02/07/2024** theo chuỗi dữ liệu đánh giá.
+- Tài khoản đăng nhập mẫu ghi trong `.env.example`: một Store Manager (được duyệt) và một nhân viên (chỉ xem, chat, nhận hàng).
+- Muốn nạp lại dữ liệu từ đầu (ví dụ sau khi tiến ngày), chạy lệnh sau:
 
   ```bash
   docker compose exec backend python -m app.sim.seed --reset
   ```
 
-- **Ghi đè danh mục lúc seed (tùy chọn, mặc định tắt):** đặt `CATALOG_OVERRIDES_PATH` trỏ tới file JSON `{"products": {sku: {name, unit_price}}, "suppliers": {code: {name, email}}}`. Lúc seed Thanh Lam Mart, hàng được đổi tên và giá bán (giá vốn tính lại theo đúng tỷ lệ giá vốn/giá bán cũ), NCC được đổi tên và email, trước khi sinh 90 ngày lịch sử nên lịch sử dùng giá mới. Không đổi nhóm hàng, lead time, lịch giao, đơn tối thiểu hay thỏa thuận trả hàng. Dùng cho bản demo nối Ops Chest với kiosk Retail-AI (thư mục `bridge/` ở cấp workspace).
+- **Ánh xạ đầy đủ danh mục Thanh Lam Mart (`CATALOG_OVERRIDES_PATH`, tùy chọn):** đặt `CATALOG_OVERRIDES_PATH` trỏ tới file JSON `{"products": {sku: {name, unit_price}}, "suppliers": {code: {name, email}}}` để áp dụng tên hàng, giá bán thực tế đầy đủ của **Thanh Lam Mart** (giá vốn tính lại theo đúng tỷ lệ giá vốn/giá bán) và thông tin NCC trước khi nạp 90 ngày lịch sử. Không đổi nhóm hàng, lead time, lịch giao, đơn tối thiểu hay thỏa thuận trả hàng. Dùng khi chạy đồng bộ Ops Chest với kiosk Retail-AI (thư mục `bridge/` ở cấp workspace).
 
 ## Chạy không cần Docker (backend)
 
@@ -48,7 +46,7 @@ cd backend
 uv sync
 uv run python -m app.sim.seed --reset      # SQLite ./ops_chest.db, dữ liệu Thanh Lam Mart
 uv run uvicorn app.api.main:app --reload
-uv run pytest -q                            # 279 test: engine, HITL, quy tắc nghiệp vụ, API, widget, lệnh chat, bản tin, backtest, Thanh Lam Mart
+uv run pytest -q                            # 279 test: engine, HITL, quy tắc nghiệp vụ, API, widget, lệnh chat, bản tin, kiểm chứng A/B
 ```
 
 Frontend chạy bằng `cd frontend && npm install && npm run dev` (Node 20+). Email cần một SMTP ở `localhost:1025`, ví dụ chạy riêng Mailpit:
@@ -70,8 +68,8 @@ FastAPI
  ├─ proposals/  builders (tạo PENDING) · service (duyệt/sửa/từ chối) · executor (thực thi sau khi duyệt)
  ├─ notify/     email SMTP + PDF đơn hàng (reportlab, font tiếng Việt)
  ├─ jobs/       06:30 quét sáng (đơn hàng, cận date, quá hạn), 17:00 giờ vàng
- ├─ ml/         mô hình LightGBM (Thanh Lam Mart) + bộ dự báo; huấn luyện ở ml/môi trường huấn luyện/train_frn.py (chạy trên môi trường huấn luyện)
- └─ sim/        nguồn nhu cầu Thanh Lam Mart / kiểm thử + seed + backtest A/B nhiều điểm bán + tua nhanh demo
+ ├─ ml/         mô hình LightGBM dự báo nhu cầu hàng tươi Thanh Lam Mart + bộ dự báo
+ └─ sim/        nạp dữ liệu lịch sử Thanh Lam Mart + kiểm chứng hồi cứu A/B + tua ngày nghiệp vụ
 PostgreSQL (SQLite khi dev/test) · Alembic · Mailpit
 ```
 
@@ -130,7 +128,7 @@ Bộ eval hiện có 37 câu hỏi tiếng Việt (`app/agent/evals.py`) và ch�
 
 ### Giao diện chat-first
 
-- **Menu:** nhóm "Làm việc" chỉ có **Trợ lý** (trang chủ). **Hộp duyệt** là ngăn kéo bên phải (không còn trang riêng, không nằm ở thanh bên): tab Chờ duyệt / Lịch sử, chip lọc theo loại; nút Hộp duyệt ở thanh trên, ô "Duyệt" ở thanh đáy điện thoại, ô "Chờ duyệt" trong menu Công việc và dòng bản tin đều mở ngăn này, địa chỉ cũ `/approvals` cũng vậy. Các trang dữ liệu (Hàng cận date, Đặt & nhận hàng, Kiểm kê, Phân tích, Hàng hóa & NCC, Nhật ký) nằm trong nhóm **"Tra cứu"** thu gọn, để tra cứu và làm đường dự phòng. Không còn trang Tổng quan riêng (chỉ lặp lại thông tin trang khác): bản tin đầu ngày đóng vai trò đó; độ tin đề xuất, giả thuyết nhu cầu và học từ cách sửa đơn nằm cuối trang Phân tích. Menu tài khoản có **Cài đặt** (giao diện, trợ lý, báo cáo mô hình, **Tua nhanh (demo)**); báo cáo kỹ thuật về mô hình ở trang riêng `/model`. Trên điện thoại có thanh tab ở đáy (Trợ lý, Duyệt, Thêm).
+- **Menu:** nhóm "Làm việc" chỉ có **Trợ lý** (trang chủ). **Hộp duyệt** là ngăn kéo bên phải (không còn trang riêng, không nằm ở thanh bên): tab Chờ duyệt / Lịch sử, chip lọc theo loại; nút Hộp duyệt ở thanh trên, ô "Duyệt" ở thanh đáy điện thoại, ô "Chờ duyệt" trong menu Công việc và dòng bản tin đều mở ngăn này, địa chỉ cũ `/approvals` cũng vậy. Các trang dữ liệu (Hàng cận date, Đặt & nhận hàng, Kiểm kê, Phân tích, Hàng hóa & NCC, Nhật ký) nằm trong nhóm **"Tra cứu"** thu gọn, để tra cứu và làm đường dự phòng. Không còn trang Tổng quan riêng (chỉ lặp lại thông tin trang khác): bản tin đầu ngày đóng vai trò đó; độ tin đề xuất, giả thuyết nhu cầu và học từ cách sửa đơn nằm cuối trang Phân tích. Menu tài khoản có **Cài đặt** (giao diện, trợ lý, báo cáo mô hình, **Tua ngày nghiệp vụ**); báo cáo kỹ thuật về mô hình ở trang riêng `/model`. Trên điện thoại có thanh tab ở đáy (Trợ lý, Duyệt, Thêm).
 - **Trang Trợ lý:** bản tin đầu ngày (dựng từ dữ liệu thật, **không qua LLM**) chia ba nhóm "Cần quyết", "Cần để ý", "Việc trong ngày", rồi đến khung chat. Bản tin theo vai trò: nhân viên thấy mục đề xuất chờ duyệt ở dạng thông tin ("chờ Store Manager duyệt"), không phải việc cần làm. Nhiều NCC đến lịch đặt thì gộp thành một dòng, tên từng NCC xem ở ô thông tin. Giá vốn rủi ro của lô cận date chỉ cộng đúng các lô được đếm.
 - **Menu "Công việc"** cạnh ô chat: lưới nút to (Chờ duyệt, Cận date, Rút kệ, Kiểm date, Kiểm kê, Nhận hàng, Trả NCC, Hàng hết, KPI; Store Manager có thêm Quét đề xuất), kèm số đếm từ bản tin. Bấm một việc, hoặc bấm một dòng bản tin, mở việc đó trong **popup**, không qua LLM.
 - **Thẻ việc sống trong chat:** các tool `open_approval_inbox`, `open_expiring_panel`, `open_purchase_orders`, `open_supplier_returns` phát thẻ `panel` (`app/agent/widgets.py`). Thẻ tự tải số liệu hiện tại và có nút thao tác thật (duyệt, giảm giá/trả NCC/ghi hủy theo lô chọn, nhận hàng, huỷ đơn), đi qua REST có kiểm quyền. Prompt yêu cầu agent mở đúng thẻ khi người dùng muốn làm việc, rồi trả lời tối đa 2 câu.
@@ -141,12 +139,12 @@ Bộ eval hiện có 37 câu hỏi tiếng Việt (`app/agent/evals.py`) và ch�
 - **Hàng đang hết:** `search_products` với `out_of_stock=true` liệt kê mặt hàng hết hàng, bán chạy 28 ngày qua lên trước, nên "món nào đang hết" ra tên hàng, không chỉ con số.
 - **Nhận hàng:** `open_receive_form` chỉ hiện form trong chat; việc ghi vẫn đi qua `POST /api/purchase-orders/{id}/receive` do người dùng bấm.
 - **Điều khiển cảm ứng:** nút +/−, thanh trượt mức giảm giá, chip, công tắc, ô ngày dd/mm/yyyy; chữ phụ chuyển vào ô thông tin (i). Nhật ký hiện dạng dễ đọc, danh mục hàng có bộ lọc, KPI chia nhóm, bảng xếp chồng trên điện thoại.
-- **Khi LLM lỗi:** bản tin, menu Công việc và gợi ý nhanh gọi `GET /api/chat/quick/{khóa}` (chạy thẳng tool đọc, không ghi gì) hoặc tự tải thẻ việc, nên app vẫn dùng được và demo không phụ thuộc LLM.
+- **Khi LLM lỗi:** bản tin, menu Công việc và gợi ý nhanh gọi `GET /api/chat/quick/{khóa}` (chạy thẳng tool đọc, không ghi gì) hoặc tự tải thẻ việc, nên app vẫn dùng được và trình diễn không phụ thuộc hoàn toàn vào LLM.
 
 ## Tài liệu
 
-- [docs/nghiep-vu.md](docs/nghiep-vu.md): các quyết định nghiệp vụ, giả định, KPI và kết quả kiểm chứng.
-- [docs/demo.md](docs/demo.md): kịch bản demo khoảng 12 phút.
-- [docs/du-bao-ml.md](docs/du-bao-ml.md): dữ liệu Thanh Lam Mart, mô hình LightGBM, bộ chọn theo lãi và backtest A/B nhiều điểm bán.
+- [docs/nghiep-vu.md](docs/nghiep-vu.md): các quyết định nghiệp vụ, cấu hình vận hành, KPI và tóm tắt kết quả kiểm chứng.
+- [docs/demo.md](docs/demo.md): kịch bản trình diễn khoảng 12 phút tại Thanh Lam Mart.
+- [docs/du-bao-ml.md](docs/du-bao-ml.md): dữ liệu lịch sử Thanh Lam Mart, mô hình LightGBM, bộ chọn theo lãi và kiểm chứng hồi cứu A/B.
 - [docs/plan-sua-nghiep-vu.md](docs/plan-sua-nghiep-vu.md): kế hoạch sửa nghiệp vụ N1–N15 (10/11/2026) và trạng thái triển khai.
 - [docs/eval/](docs/eval/): kết quả eval agent theo từng model.

@@ -1,4 +1,4 @@
-"""Tham so cua 'bo kiem chung hoi cuu': khach hang THAT phan ung the nao.
+"""Tham so cua 'the gioi gia lap': khach hang THAT phan ung the nao.
 
 Tach rieng khoi engine co chu y. Engine (disposition.ELASTICITY) la dieu Ops Chest GIA DINH; WorldParams
 la dieu xay ra trong mo phong. Neu hai ben dung chung mot hang so thi backtest tu chung minh chinh no:
@@ -57,9 +57,9 @@ PESSIMISTIC_WORLD = OPTIMISTIC_WORLD.scaled(0.25)
 
 
 def frn_world(store_id: int | None = None) -> WorldParams:
-    """The gioi cho cua hang chay nhu cau Thanh Lam Mart: nhu cau THAT (FRN), khung gio ban cua chinh diem do (FRN).
-    Phan ung cua khach voi giam gia cua OC van la tham chieu cu (50% muc engine gia dinh): FRN khong cho uoc luong
-    duoc do co gian dang tin (gia noi sinh, xem docs/du-bao-ml.md), nen khong dung so do."""
+    """Tham so kiem chung cho du lieu lich su Thanh Lam Mart: khung gio ban do tu du lieu cua chinh diem do.
+    Phan ung cua khach voi giam gia giu muc tham chieu 50% muc engine gia dinh: lich su khuyen mai noi sinh
+    (xem docs/du-bao-ml.md), nen khong dung uoc luong truc tiep."""
     from app.sim import frn
     from app.sim.frn_catalog import category_name
 

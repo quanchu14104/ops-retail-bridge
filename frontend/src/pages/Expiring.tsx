@@ -20,7 +20,7 @@ export default function Expiring() {
     <>
       <PageHeader
         title="Hàng cận date"
-        desc="Dự kiến hủy tính bằng mô phỏng bán FEFO theo dự báo nhu cầu. Phương án xếp theo tiền thu hồi kỳ vọng."
+        desc="Dự kiến hủy tính theo bán FEFO dựa trên dự báo nhu cầu. Phương án xếp theo tiền thu hồi kỳ vọng."
       />
       <div className="row mb-4">
         <Segmented<Tab> label="Phần việc" value={tab} onChange={setTab} options={[

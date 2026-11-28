@@ -87,8 +87,8 @@ class OpsChestPolicy(Policy):
                  approval_rate: float = 1.0, service_floors: bool = True, floors: dict | None = None,
                  dayparts: bool = True, ml_model: str | None = None, gate: dict | None = None):
         self.dispose = dispose
-        # Du bao: None = engine EWMA; "" / "bt_" = bo chon LightGBM/EWMA voi mo hinh chay that / mo hinh backtest
-        # (mo hinh backtest chi thay du lieu truoc ky so sanh). Chi ap cho mat hang co nhu cau FRN.
+        # Du bao: None = engine EWMA; "" / "bt_" = bo chon LightGBM/EWMA voi mo hinh van hanh / mo hinh kiem chung
+        # (mo hinh kiem chung chi thay du lieu truoc ky so sanh). Chi ap cho mat hang co chuoi lich su chuan hoa.
         self.ml_model = ml_model
         # Bo chon tam (backtest truyen vao, khong doc decision_gate.json): nhom dung ML va bien the sigma
         # (sym / split / ewma_sigma). None = de forecaster tu doc file / meta.json.

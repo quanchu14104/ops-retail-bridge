@@ -1,9 +1,9 @@
-"""Du bao bang LightGBM da huan luyen tren Thanh Lam Mart (ml/kaggle/train_frn.py), chay trong OC.
+"""Du bao bang LightGBM da huan luyen tren du lieu lich su Thanh Lam Mart, chay trong OC.
 
 Tra ve dung kieu `Forecast` cua engine EWMA, nen dat hang, can date, de xuat... khong phai sua gi.
-Dac trung tinh bang `app.engines.ml_features` - CUNG file da dung luc huan luyen tren Kaggle.
+Dac trung tinh bang `app.engines.ml_features` - CUNG file da dung luc huan luyen.
 
-Don vi: OC tinh theo don vi hang; mo hinh hoc tren so ban da quy doi cua FRN. Chia cho K truoc khi tinh dac
+Don vi: OC tinh theo don vi hang; mo hinh hoc tren so ban da chuan hoa. Chia cho K truoc khi tinh dac
 trung, nhan K vao ket qua.
 """
 from __future__ import annotations

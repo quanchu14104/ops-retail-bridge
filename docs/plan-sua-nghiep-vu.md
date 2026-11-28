@@ -17,14 +17,14 @@ Mặc định đã dùng cho các câu hỏi ở mục 8 (chờ xác nhận): (1
 | N6 | Xong (đợt 2) | Sàn 95/90/50% trong config, dùng cả ở engine DB và bộ kiểm chứng hồi cứu. Backtest đo thêm hết hàng của hàng kéo khách, nhóm A và "cả nhóm tươi trống". Thêm dòng "B không có sàn" và "sàn nhóm A 80%". |
 | N9 | Xong (đợt 2) | `max_stock_qty`, `min_display_qty`; demo: tủ kem 36 đơn vị, hàng bền trưng bày tối thiểu 2–3. |
 | N7 | Xong (đợt 2) | `delivery_weekdays`, bảng `supplier_closures`; demo seed lịch nghỉ Tết cho 8 đại lý. Baseline A trong backtest không tính trước kỳ nghỉ (giống cửa hàng làm tay). |
-| N8 | Xong (đợt 2) | Phương án bù đơn/hoãn trong payload, duyệt đơn dưới mức cần `min_order_ack`. bộ kiểm chứng hồi cứu vẫn bỏ qua đơn tối thiểu. |
+| N8 | Xong (đợt 2) | Phương án bù đơn/hoãn trong payload, duyệt đơn dưới mức cần `min_order_ack`. Bộ kiểm chứng hồi cứu vẫn bỏ qua đơn tối thiểu. |
 | N15 | Xong (đợt 2) | Dòng SM tự thêm được áp chiết khấu của thỏa thuận. |
 | N5 | Xong (đợt 3) | Bảng `supplier_returns`, lô `RETURN_PENDING` tách từ lô gốc, `return_mode` CREDIT/EXCHANGE (demo: NCC sữa đổi hàng). Xác nhận/lấy hàng/từ chối/đã nhận tiền là thao tác của SM qua REST, không qua đề xuất. Bộ backtest vẫn ghi tiền hoàn ngay (ghi trong giới hạn). |
 | N13 | Xong (đợt 3) | `inventory_snapshots` (job sáng, tua nhanh, seed), hao hụt trừ vào lợi nhuận gộp, GMROI, điểm NCC, hủy theo lý do. |
 | N12 | Xong (đợt 3) | `listed_date`, nhãn hàng mới, kế hoạch xả tồn trên thẻ ngừng nhập. Luồng SKU tham chiếu để ở P2. |
 | N14 | Xong (đợt 3) | `last_counted_date` (ghi ở endpoint đếm, không ở builder), lịch A/B/C 7/14/30 ngày, phát hiện tồn ảo. |
 | N11 | Xong (đợt 3) | Bảng `category_policies` (`markdown_allowed`, `max_markdown_pct`); chặn ở engine, sửa tay, sửa qua chat và lúc thực thi. Không ghi khẳng định pháp lý; docs ghi cần đối chiếu Nghị định 81/2018/NĐ-CP. |
-| N10 | Xong (đợt 3) | Tỷ trọng theo khung giờ trong `category_policies`, giờ giảm sau khung đỉnh (cơm 14h, bánh mì 11h, nhóm khác 18h). bộ kiểm chứng hồi cứu có bảng khung giờ "thật" lệch nhẹ; thêm dòng độ nhạy "giờ giảm giá cố định 18h". |
+| N10 | Xong (đợt 3) | Tỷ trọng theo khung giờ trong `category_policies`, giờ giảm sau khung đỉnh (cơm 14h, bánh mì 11h, nhóm khác 18h). Bộ kiểm chứng hồi cứu có bảng khung giờ thực nghiệm lệch nhẹ; thêm dòng độ nhạy "giờ giảm giá cố định 18h". |
 
 Các mục P2 ở mục 5 được ghi vào "Ngoài phạm vi" của `docs/nghiep-vu.md`, không làm.
 
@@ -186,7 +186,7 @@ Công sức: S dưới nửa ngày, M một đến hai ngày, L từ ba ngày.
 **Sửa.** Builder tính sẵn hai phương án để SM chọn:
 
 - **Bù đơn:** kéo sớm các SKU hàng bền nhóm A/B có số ngày tồn thấp nhất cho tới khi đủ mức tối thiểu, không vượt trần HSD và sức chứa (N9).
-- **Hoãn:** nếu tính toán hồi cứu cho thấy không SKU nào hết hàng trước lần giao kế tiếp.
+- **Hoãn:** nếu tính toán dự báo cho thấy không SKU nào hết hàng trước lần giao kế tiếp.
 
 Duyệt đơn dưới mức tối thiểu cần tick "đã thỏa thuận với NCC".
 
@@ -202,7 +202,7 @@ Duyệt đơn dưới mức tối thiểu cần tick "đã thỏa thuận với 
 
 **Vì sao cần.** Cơm hộp bán chủ yếu buổi trưa. Giảm giá sau 18h ở cửa hàng khu văn phòng là giảm cho không ai mua. Bánh mì thì đỉnh buổi sáng.
 
-**Sửa.** Bảng tỷ trọng bán theo khung giờ cho từng nhóm (sáng, trưa, chiều, tối): demo thì seed, có POS thật thì học. Giờ giảm giá đặt sau khung đỉnh của nhóm. `EVENING_SHARE` thay bằng "tỷ trọng nhu cầu còn lại sau giờ giảm". bộ kiểm chứng hồi cứu (`sim/world.py`, `sim/store_sim.py`) phải đổi cùng lúc và tạo lại bảng độ nhạy.
+**Sửa.** Bảng tỷ trọng bán theo khung giờ cho từng nhóm (sáng, trưa, chiều, tối): cấu hình nền thì nạp sẵn, có POS thật thì học. Giờ giảm giá đặt sau khung đỉnh của nhóm. `EVENING_SHARE` thay bằng "tỷ trọng nhu cầu còn lại sau giờ giảm". Bộ kiểm chứng hồi cứu (`sim/world.py`, `sim/store_sim.py`) phải đổi cùng lúc và tạo lại bảng độ nhạy.
 
 Mục này tốn công nhất trong P1. Nếu không kịp, ghi vào giới hạn của đồ án.
 
@@ -240,7 +240,7 @@ Mục này tốn công nhất trong P1. Nếu không kịp, ghi vào giới hạ
 
 **Hiện trạng.** Kiểm kê là thao tác tự phát theo nhóm hàng, không có lịch.
 
-**Sửa.** Lịch đếm theo ABC (A mỗi tuần, B hai tuần, C mỗi tháng), hiện trong bản tin. Thêm quy tắc phát hiện **tồn ảo**: SKU bán đều mà nhiều ngày liền doanh số bằng 0 trong khi sổ còn tồn thì đưa vào phiếu đếm. Trường hợp này kệ đã trống mà sổ chưa biết. Dự báo sẽ giảm dần và SKU không được đặt lại. Lưu ý thêm: cờ hết hàng trong `DailySales` hiện lấy từ nhu cầu hụt mà chỉ bộ kiểm chứng hồi cứu biết (`sim/advance.py`, `stockout = lost > 0`). Cửa hàng thật chỉ suy được cờ này từ sổ tồn bằng 0, nên khi sổ sai thì bước hiệu chỉnh nhu cầu bị chặn cũng không chạy.
+**Sửa.** Lịch đếm theo ABC (A mỗi tuần, B hai tuần, C mỗi tháng), hiện trong bản tin. Thêm quy tắc phát hiện **tồn ảo**: SKU bán đều mà nhiều ngày liền doanh số bằng 0 trong khi sổ còn tồn thì đưa vào phiếu đếm. Trường hợp này kệ đã trống mà sổ chưa biết. Dự báo sẽ giảm dần và SKU không được đặt lại. Lưu ý thêm: cờ hết hàng trong `DailySales` hiện lấy từ nhu cầu hụt mà dữ liệu kiểm chứng biết (`sim/advance.py`, `stockout = lost > 0`). Cửa hàng thật chỉ suy được cờ này từ sổ tồn bằng 0, nên khi sổ sai thì bước hiệu chỉnh nhu cầu bị chặn cũng không chạy.
 
 ### N15. Lỗi nhỏ
 

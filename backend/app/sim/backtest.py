@@ -169,12 +169,12 @@ def run_sensitivity(start: date = SENSITIVITY_START, days: int = SENSITIVITY_DAY
     return {"start": start.isoformat(), "days": days, "rows": rows}
 
 
-# ------------------------------------------------------------------ Thanh Lam Mart: nhieu diem ban, nhu cau that
+# ------------------------------------------------------------------ Du lieu Thanh Lam Mart: nhieu tap kiem chung
 FRN_FILE = Path(__file__).parent / "data" / "frn" / "backtest.json"
 
 
 def frn_base(store_id: int, t0: int) -> tuple[StoreSim, list]:
-    """Cua hang chay nhu cau that cua diem FRN `store_id`; khoi dong ngay 0..t0 bang chinh sach 'kinh nghiem'."""
+    """Tap du lieu lich su cua diem `store_id`; khoi dong ngay 0..t0 bang chinh sach 'kinh nghiem'."""
     from app.sim import frn
     from app.sim.demand import FrnDemand
     from app.sim.frn_catalog import build_frn_catalog
@@ -203,15 +203,15 @@ def _run(base: StoreSim, start: date, days: int, policy: Policy, class_a: set[st
 
 
 FRN_SCENARIOS = {
-    # key: (nhan, ghi chu, ham tao chinh sach B tu bo chon, he so phan ung cua khach so voi uoc luong FRN).
-    # Moi kich ban dung bo chon B-gate cua diem do (hoc tren nua diem ban con lai: ngoai mau).
-    "reference": ("Tham chiếu", "Khách phản ứng với giảm giá bằng 50% mức engine giả định (FRN không đo được độ co giãn đáng tin)", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 1.0),
+    # key: (nhan, ghi chu, ham tao chinh sach B tu bo chon, he so phan ung cua khach).
+    # Moi kich ban dung bo chon B-gate cua tap do (hoc tren nua con lai: ngoai mau).
+    "reference": ("Tham chiếu", "Khách phản ứng với giảm giá bằng 50% mức engine ước lượng (giá khuyến mãi nội sinh)", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 1.0),
     "world_50": ("Khách phản ứng bằng nửa tham chiếu", "25% mức engine giả định: giảm giá kém tác dụng hơn", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.5),
     "world_25": ("Khách phản ứng bằng 1/4 tham chiếu", "12,5% mức engine giả định: engine đánh giá quá cao giảm giá", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.25),
     "approve_80": ("Store Manager duyệt 80%", "Đơn không được duyệt thì SM tự đặt theo kinh nghiệm", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, approval_rate=0.8), 1.0),
     "approve_60": ("Store Manager duyệt 60%", "Đơn không được duyệt thì SM tự đặt theo kinh nghiệm", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, approval_rate=0.6), 1.0),
     "no_floor": ("B không có sàn mức phục vụ", "Newsvendor được để thiếu hàng", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, service_floors=False), 1.0),
-    "daypart_flat": ("Giờ giảm giá cố định 18h", "Không dùng khung giờ bán học từ dữ liệu lịch sử", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, dayparts=False), 1.0),
+    "daypart_flat": ("Giờ giảm giá cố định 18h", "Không dùng khung giờ bán đo từ dữ liệu lịch sử", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, dayparts=False), 1.0),
     "order_only": ("B chỉ đặt hàng", "Tắt giảm giá và trả NCC: đo riêng phần đặt hàng", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, dispose=False), 1.0),
 }
 
@@ -233,11 +233,11 @@ def _summary(values: list[float]) -> dict:
 
 
 # ---------------------------------------------------------------- bo chon theo LAI (decision gate)
-# Bien the B tren moi diem FRN. "Tat ca" = LightGBM o moi mat hang du lich su (khong loc nhom): dung de do lai
+# Bien the B tren moi tap kiem chung. "Tat ca" = LightGBM o moi mat hang du lich su (khong loc nhom): dung de do lai
 # theo nhom. b_ml giu nguyen nghia cu (nhom trong meta.json, chon theo sai so du bao) de so voi lan chay truoc.
 # Bien the ung vien cho bo chon: sigma doi xung (cu) / phan phoi lech q10-q50-q90 / du bao LightGBM + sigma EWMA
 GATE_VARIANTS = ("sym", "split", "ewma_sigma")
-GATE_SIZE_CUTS = (None, 30, 50, 75)  # bac quy mo diem ban (so mat hang FRN): khong chia / <=cut va >cut
+GATE_SIZE_CUTS = (None, 30, 50, 75)  # bac quy mo danh muc (so mat hang): khong chia / <=cut va >cut
 ML_ALL = {"sym": "b_ml_all", "split": "b_ml_split", "ewma_sigma": "b_ml_mid_ewma_sigma"}
 B_VARIANTS = ("b_ewma", "b_ml", "b_ml_all", "b_ml_split", "b_ml_mid_ewma_sigma", "b_gate")
 
@@ -396,11 +396,11 @@ def _app_gate_file(gate: dict, t0_date: str | None, n_stores: int, size_of_demo:
         "tiers": ({"nho": f"<= {gate['size_cut']} mặt hàng", "lon": f"> {gate['size_cut']} mặt hàng"}
                   if gate["size_cut"] is not None else None),
         "demo_store_size": size_of_demo,
-        "selected_by": "Lãi trong kiểm chứng Thanh Lam Mart (python -m app.sim.backtest --frn), không theo sai số dự báo",
-        "data": f"{n_stores} tập kiểm chứng giữ lại, so sánh từ ngày sau T0 = {t0_date}",
-        "note": ("Bộ chọn học bằng mô hình backtest bt_q* (chỉ thấy dữ liệu đến T0) rồi áp cho mô hình chạy thật "
-                 "q* (học thêm đến ngày 89). Học trên cả các điểm; kết quả ngoài mẫu của cách chọn này nằm trong "
-                 "backtest.json (b_gate, kiểm chéo 2 lần theo điểm bán)."),
+        "selected_by": "Lãi gộp trong kiểm chứng hồi cứu Thanh Lam Mart, không theo sai số dự báo",
+        "data": f"{n_stores} tập kiểm chứng giữ lại (Thanh Lam Mart), so sánh từ ngày sau T0 = {t0_date}",
+        "note": ("Bộ chọn học bằng mô hình kiểm chứng bt_q* (chỉ thấy dữ liệu đến T0) rồi áp cho mô hình vận hành "
+                 "q* (học thêm đến ngày 89). Học trên cả các tập; kết quả ngoài mẫu của cách chọn này nằm trong "
+                 "backtest.json (b_gate, kiểm chéo 2 lần)."),
         "objective": gate["objective"],
         "groups": gate["groups"],
         "candidates": gate["candidates"],
@@ -409,7 +409,7 @@ def _app_gate_file(gate: dict, t0_date: str | None, n_stores: int, size_of_demo:
 
 def run_frn(store_ids: list[int] | None = None, scenarios: list[str] | None = None, scenario_stores: int = 20,
             log=print, workers: int = 1, fold_seed: int = 0) -> dict:
-    """So A (kinh nghiem + gio vang) voi cac bien the B tren tung diem FRN giu lai, cung nhu cau that:
+    """So A (kinh nghiem + gio vang) voi cac bien the B tren tung tap giu lai cua du lieu Thanh Lam Mart:
       - b_ewma: OC voi engine EWMA; b_ml: bo chon cu (nhom trong meta.json, chon theo sai so du bao);
       - b_ml_all / b_ml_split: LightGBM o moi mat hang du lich su, sigma doi xung / phan phoi lech q10-q50-q90;
       - b_ml_mid_ewma_sigma: du bao diem LightGBM + do lech chuan EWMA (bien the "ewma_sigma");
@@ -540,13 +540,13 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--sensitivity", action="store_true", help=f"Chạy các kịch bản và ghi vào {SENSITIVITY_FILE.name}")
-    ap.add_argument("--frn", action="store_true", help=f"A/B trên các tập kiểm chứng giữ lại, ghi vào {FRN_FILE.name}")
-    ap.add_argument("--stores", type=int, default=None, help="--frn: chỉ chạy N điểm đầu")
-    ap.add_argument("--scenario-stores", type=int, default=20, help="--frn: số điểm chạy các kịch bản độ nhạy")
-    ap.add_argument("--out", type=Path, default=None, help="--frn: ghi kết quả vào file khác")
-    ap.add_argument("--workers", type=int, default=None, help="--frn: số tiến trình chạy song song (mặc định: số lõi - 2)")
+    ap.add_argument("--frn", action="store_true", help=f"Kiểm chứng A/B trên các tập giữ lại, ghi vào {FRN_FILE.name}")
+    ap.add_argument("--stores", type=int, default=None, help="chỉ chạy N tập đầu")
+    ap.add_argument("--scenario-stores", type=int, default=20, help="số tập chạy các kịch bản độ nhạy")
+    ap.add_argument("--out", type=Path, default=None, help="ghi kết quả vào file khác")
+    ap.add_argument("--workers", type=int, default=None, help="số tiến trình chạy song song (mặc định: số lõi - 2)")
     ap.add_argument("--gate-out", type=Path, default=None,
-                    help=f"--frn: nơi ghi bộ chọn cho app (mặc định ml/artifacts/decision_gate.json; '-' = không ghi)")
+                    help="nơi ghi bộ chọn cho app (mặc định ml/artifacts/decision_gate.json; '-' = không ghi)")
     args = ap.parse_args()
     if args.frn:
         from app.sim import frn

@@ -149,7 +149,7 @@ def simulate_day(db: Session, d: date, specs: dict, realize_hypotheses: bool, so
 
 
 def demand_setup(db: Session) -> tuple[dict, DemandSource, WorldParams]:
-    """Nguon nhu cau theo du lieu da seed: FRN (nhu cau that cua diem ban da chon) hoac bo du lieu kiem thu."""
+    """Nguon nhu cau theo du lieu da seed: du lieu lich su Thanh Lam Mart hoac bo kiem thu nghiep vu."""
     row = db.get(AppMeta, "data_source")
     if row and row.value == "frn":
         from app.sim import frn
@@ -180,7 +180,7 @@ def advance(db: Session, days: int, actor: str, realize_hypotheses: bool = True)
         last = source.store.dates[-1]
         if start + timedelta(days=days - 1) > last:
             left = (last - start).days + 1
-            raise FrnRangeError(f"Hết dữ liệu Thanh Lam Mart sau {last.strftime('%d/%m/%Y')}: chỉ còn tua được {max(0, left)} ngày.")
+            raise FrnRangeError(f"Hết dữ liệu lịch sử Thanh Lam Mart sau {last.strftime('%d/%m/%Y')}: chỉ còn tua được {max(0, left)} ngày.")
     log, expired, evaluated = [], 0, []
     for k in range(days):
         d = start + timedelta(days=k)
