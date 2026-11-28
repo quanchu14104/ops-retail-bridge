@@ -29,7 +29,7 @@ addopts = "-ra"
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = [".venv", "uv.lock", "out", "Retail-AI-"]
+extend-exclude = [".venv", "uv.lock", "out", "Retail-AI-", "ops_chest"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
