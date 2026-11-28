@@ -366,7 +366,12 @@ def _verify_session_token(
 def _is_streaming_stt_available() -> bool:
     if os.getenv("VERCEL"):
         return False
-    return importlib.util.find_spec("azure.cognitiveservices.speech") is not None
+    # find_spec of a dotted name imports the parent package first: without the
+    # optional Azure Speech SDK it raises instead of returning None.
+    try:
+        return importlib.util.find_spec("azure.cognitiveservices.speech") is not None
+    except ModuleNotFoundError:
+        return False
 
 
 speech_ticket_store = SpeechTicketStore(signing_key_provider=_serverless_hmac_secret)
