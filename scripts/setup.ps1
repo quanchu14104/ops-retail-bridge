@@ -3,10 +3,10 @@
   Dung moi truong demo Ops Chest -> Retail-AI tren mot may moi.
 
 .DESCRIPTION
-  Can 3 repo nam canh nhau trong cung mot thu muc cha (WORKSPACE):
-      WORKSPACE\ops_chest    (github.com/quanchu14104/ops_chest)
-      WORKSPACE\Retail-AI-   (github.com/chinhdz102/Retail-AI-)
-      WORKSPACE\bridge       (github.com/quanchu14104/ops-retail-bridge)
+  Toan bo du an nam trong MOT repo (github.com/quanchu14104/ops-retail-bridge):
+      bridge\ops_chest     Ops Chest (Store Manager)
+      bridge\Retail-AI-    Retail-AI (kiosk nguoi mua)
+      bridge\src           code cau noi
   Script chay lai nhieu lan van an toan: buoc nao da xong thi bo qua.
   Khong bao gio ghi khoa API vao dau ca; file .env tao tu .env.example de trong khoa.
 
@@ -16,32 +16,27 @@
   Bo qua uv sync / npm install.
 .PARAMETER SkipDocker
   Bo qua Postgres cua Retail-AI va Mailpit (khi chua cai hoac chua bat Docker Desktop).
-.PARAMETER OverwriteLaunch
-  Ghi de WORKSPACE\.claude\launch.json bang ban mau trong bridge\demo\launch.json.
 
 .EXAMPLE
-  .\bridge\scripts\setup.ps1
+  .\scripts\setup.ps1   (chay trong thu muc bridge)
 #>
-param([switch]$ResetDemo, [switch]$SkipInstall, [switch]$SkipDocker, [switch]$OverwriteLaunch)
+param([switch]$ResetDemo, [switch]$SkipInstall, [switch]$SkipDocker)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_common.ps1')
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = 'utf-8'
 
-Write-Host "WORKSPACE: $Workspace"
+Write-Host "BRIDGE: $Bridge"
 
-# ---- 1. Ba repo ----
-Write-Step 'Kiem tra 3 repo'
+# ---- 1. Hai thu muc con trong repo ----
+Write-Step 'Kiem tra ops_chest va Retail-AI- trong repo'
 $missing = @()
-foreach ($repo in @(
-        @{ Dir = $OpsChest; Marker = '.git'; Url = 'https://github.com/quanchu14104/ops_chest.git'; Name = 'ops_chest' },
-        @{ Dir = $RetailAI; Marker = 'pyproject.toml'; Url = 'https://github.com/chinhdz102/Retail-AI-.git'; Name = 'Retail-AI-' })) {
-    if ((Test-Path (Join-Path $repo.Dir '.git')) -or (Test-Path (Join-Path $repo.Dir $repo.Marker))) { Write-Ok $repo.Name } else { $missing += $repo }
+foreach ($marker in @((Join-Path $OpsChest 'backend\pyproject.toml'), (Join-Path $RetailAI 'pyproject.toml'))) {
+    if (Test-Path $marker) { Write-Ok $marker } else { $missing += $marker }
 }
 if ($missing.Count -gt 0) {
-    Write-Warn 'Thieu repo. Chay trong thu muc WORKSPACE roi chay lai script:'
-    foreach ($repo in $missing) { Write-Host "    git clone $($repo.Url) $($repo.Name)" }
+    Write-Warn "Thieu: $($missing -join ', '). Clone lai: git clone https://github.com/quanchu14104/ops-retail-bridge.git bridge"
     exit 1
 }
 
@@ -75,28 +70,30 @@ if (-not $SkipInstall) {
 Write-Step 'Tao file .env tu .env.example (neu chua co)'
 foreach ($dir in @($Bridge, $OpsChest, $RetailAI, $Kiosk)) {
     $target = Join-Path $dir '.env'
+    $example = Join-Path $dir '.env.example'
     if (Test-Path $target) { Write-Ok "$target da co, giu nguyen" }
-    else { Copy-Item (Join-Path $dir '.env.example') $target; Write-Ok "tao $target" }
+    elseif (Test-Path $example) { Copy-Item $example $target; Write-Ok "tao $target" }
+    else { Write-Warn "Khong co $example : bo qua (dich vu dung gia tri mac dinh)" }
 }
-$opsEnv = Read-EnvFile (Join-Path $OpsChest '.env')
-$retailEnv = Read-EnvFile (Join-Path $RetailAI '.env')
+# bridge\.env tao tu ban cu (3 repo nam canh nhau) con tro ra ../Retail-AI- va ../ops_chest: doi sang thu muc trong repo
+$bridgeEnv = Join-Path $Bridge '.env'
+$envText = [System.IO.File]::ReadAllText($bridgeEnv, [System.Text.Encoding]::UTF8)
+$fixed = $envText -replace '(?m)^(\s*(WINMART_CATALOG_PATH|FRN_DATA_PATH)\s*=\s*)\.\./(Retail-AI-|ops_chest)/', '$1$3/'
+if ($fixed -ne $envText) {
+    [System.IO.File]::WriteAllText($bridgeEnv, $fixed, (New-Object System.Text.UTF8Encoding $false))
+    Write-Ok "sua $bridgeEnv : WINMART_CATALOG_PATH / FRN_DATA_PATH tro vao thu muc trong repo"
+}
+function Read-EnvIfAny([string]$Path) { if (Test-Path $Path) { return Read-EnvFile $Path } else { return @{} } }
+$opsEnv = Read-EnvIfAny (Join-Path $OpsChest '.env')
+$retailEnv = Read-EnvIfAny (Join-Path $RetailAI '.env')
 $needKeys = @()
 if (-not $opsEnv['LLM_API_KEY'] -or $opsEnv['LLM_API_KEY'].StartsWith('replace')) { $needKeys += 'ops_chest\.env : LLM_BASE_URL, LLM_API_KEY, LLM_MODEL (tro ly chat cua Ops Chest)' }
 if (-not $retailEnv['GROQ_API_KEY'] -or $retailEnv['GROQ_API_KEY'].StartsWith('replace')) { $needKeys += 'Retail-AI-\.env : GROQ_API_KEY (tro chuyen tu do tren kiosk)' }
 
 # ---- 5. Bridge: crosswalk va overrides ----
 Write-Step 'Bridge: kiem tra crosswalk va sinh overrides'
-$prevCatalogPath = $env:WINMART_CATALOG_PATH
-if (($RetailAI -eq $EmbeddedRetailAI) -and -not $prevCatalogPath) {
-    $env:WINMART_CATALOG_PATH = Join-Path $RetailAI 'data\winmart_products.json'
-}
-try {
-    Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
-    Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
-} finally {
-    if ($null -eq $prevCatalogPath) { Remove-Item env:WINMART_CATALOG_PATH -ErrorAction SilentlyContinue }
-    else { $env:WINMART_CATALOG_PATH = $prevCatalogPath }
-}
+Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
+Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
 
 # ---- 6. Seed DB demo cua Ops Chest (ten/gia Thanh Lam Mart) ----
 $db = Join-Path $OpsChest 'backend\ops_chest.db'
@@ -134,16 +131,7 @@ if ($hasDocker) {
     Invoke-In $OpsChest 'docker' @('compose', 'up', '-d', 'mailpit')
 }
 
-# ---- 8. Cau hinh chay cho Claude Code (tuy chon) ----
-$launchDir = Join-Path $Workspace '.claude'
-$launch = Join-Path $launchDir 'launch.json'
-if ((Test-Path $launch) -and -not $OverwriteLaunch) {
-    Write-Step "$launch da co, giu nguyen (them -OverwriteLaunch de ghi de)"
-} else {
-    New-Item -ItemType Directory -Force $launchDir | Out-Null
-    Copy-Item (Join-Path $Bridge 'demo\launch.json') $launch -Force
-    Write-Step "Ghi $launch (4 dich vu cho Claude Code)"
-}
+# Cau hinh chay cho Claude Code da commit san o bridge\.claude\launch.json: mo thu muc bridge la dung duoc.
 
 # ---- Tong ket ----
 Write-Step 'Xong'
@@ -153,9 +141,9 @@ if ($needKeys.Count -gt 0) {
     Write-Host '    Khong co khoa thi demo van chay: Ops Chest khong chat duoc, kiosk chi tra loi cac cau co dinh.'
 }
 if (-not $hasDocker) {
-    Write-Warn 'Chua chay buoc Docker. Bat Docker Desktop roi chay lai: .\bridge\scripts\setup.ps1 -SkipInstall'
+    Write-Warn 'Chua chay buoc Docker. Bat Docker Desktop roi chay lai: .\scripts\setup.ps1 -SkipInstall'
     Write-Host '    Thieu Postgres thi kiosk khong tra loi duoc khuyen mai, hang moi ve; thieu Mailpit thi duyet don dat hang bao loi gui email.'
 }
 Write-Host ''
-Write-Host 'Chay demo:  .\bridge\scripts\start-demo.ps1'
+Write-Host 'Chay demo:  .\scripts\start-demo.ps1'
 Write-Host 'Tai khoan Ops Chest: quanly / quanly123 (Store Manager), nhanvien / nhanvien123 (nhan vien)'

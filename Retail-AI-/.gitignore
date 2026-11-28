@@ -28,4 +28,5 @@ apps/kiosk-airi/public/vad/
 apps/kiosk-airi/public/catalog-index.json
 .vercel
 .env*
+!.env.example
 .cache/
