@@ -1,0 +1,550 @@
+"""Tao de xuat (Proposal PENDING). KHONG co tac dung phu nao ngoai ghi ban ghi de xuat."""
+from __future__ import annotations
+
+import copy
+from datetime import date, datetime, time, timedelta
+
+from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import Session, joinedload
+
+from app import audit
+from app.fmt import dmy, vnd
+from app.clock import now, today
+from app.models import Lot, Product, Proposal, Supplier
+from app.services import inventory, replenish, reports
+
+
+def _now() -> datetime:
+    return now().replace(tzinfo=None)
+
+
+def _end_of(d) -> datetime:
+    return datetime.combine(d, time(23, 59, 59))
+
+
+def _still_open():
+    """De xuat con duyet (hoac thu lai) duoc: PENDING/FAILED chua qua han chot."""
+    return and_(Proposal.status.in_(["PENDING", "FAILED"]),
+                or_(Proposal.expires_at.is_(None), Proposal.expires_at >= _now()))
+
+
+SCAN_ACTOR = "job"  # quet tu dong (job 06:30/17:00 va nut "Quet lai"), khac voi SM yeu cau qua chat
+
+
+def _existing(db: Session, key: str, include_rejected: bool = False) -> Proposal | None:
+    """De xuat cung khoa con hieu luc. include_rejected: quet tu dong khong tao lai viec SM vua tu choi (khoa co ngay,
+    nen chi chan trong ngay do); SM chu dong yeu cau lai qua chat thi van tao moi."""
+    done = ["APPROVED", "EXECUTED"] + (["REJECTED"] if include_rejected else [])
+    return db.scalar(select(Proposal).where(Proposal.dedupe_key == key,
+                                            or_(Proposal.status.in_(done), _still_open())))
+
+
+def _open_by_lot(db: Session, type: str) -> dict[int, Proposal]:
+    """Lo dang nam trong de xuat con mo. Khoa dedupe co ngay nen khong chan duoc de xuat lap lai qua cac ngay."""
+    out: dict[int, Proposal] = {}
+    for p in db.scalars(select(Proposal).where(Proposal.type == type, _still_open())):
+        for it in p.payload["items"]:
+            if int(it["qty"]) > 0 or it.get("close_lot"):
+                out[it["lot_id"]] = p
+    return out
+
+
+def _create(db: Session, *, type: str, title: str, rationale: str, payload: dict, evidence: dict,
+            est_value: int | None, created_by: str, dedupe_key: str | None = None,
+            expires_at: datetime | None = None, chat_session_id: int | None = None) -> tuple[Proposal, bool]:
+    if dedupe_key:
+        ex = _existing(db, dedupe_key, include_rejected=created_by == SCAN_ACTOR)
+        if ex:
+            return ex, False
+    p = Proposal(type=type, status="PENDING", title=title, rationale=rationale, evidence=evidence,
+                 payload=payload, original_payload=copy.deepcopy(payload), est_value=est_value,
+                 created_by=created_by, chat_session_id=chat_session_id, created_at=_now(),
+                 expires_at=expires_at, dedupe_key=dedupe_key)
+    db.add(p)
+    db.flush()
+    audit.log(db, created_by, "PROPOSAL_CREATED", "proposal", p.id, {"type": type, "title": title})
+    return p, True
+
+
+def purchase_order(db: Session, supplier: Supplier, created_by: str, chat_session_id: int | None = None
+                   ) -> tuple[Proposal | None, bool, dict]:
+    sug = replenish.suggest_po(db, supplier)
+    if not sug["lines"]:
+        return None, False, sug
+    t = today()
+    top = sorted(sug["lines"], key=lambda l: -l["line_value"])[:5]
+    capped = [l["sku"] for l in sug["lines"] if l["explain"]["capped_by_shelf_life"]]
+    rationale = (
+        f"Đơn cho {supplier.name}: {len(sug['lines'])} mặt hàng, tổng {vnd(sug['total_value'])}, giao ngày "
+        f"{dmy(sug['expected_date'])}. Số lượng = dự báo nhu cầu trong {sug['review_period_days']} ngày phủ "
+        f"+ tồn an toàn − tồn còn hạn khi hàng về − hàng đang về."
+    )
+    if capped:
+        rationale += f" {len(capped)} mặt hàng bị chặn theo hạn sử dụng (không đặt quá lượng bán kịp trước HSD)."
+    floored = [l["sku"] for l in sug["lines"] if l["explain"].get("service_floor", 0) >= 0.9]
+    if floored:
+        rationale += f" {len(floored)} mặt hàng chủ lực/kéo khách được giữ mức phục vụ tối thiểu 90–95%."
+    mo = sug.get("min_order")
+    if mo:
+        tu = mo["top_up"]
+        rationale += (f" Đơn thiếu {vnd(mo['shortfall'])} so với mức tối thiểu: phương án bù đơn thêm {len(tu['lines'])} "
+                      f"mặt hàng bền ({vnd(tu['added_value'])})"
+                      f"{'' if tu['reaches_min'] else ', vẫn chưa đủ mức'}; "
+                      + ("hoãn được vì không mặt hàng nào hết trước lần giao sau." if mo["defer"]["feasible"]
+                         else f"không nên hoãn ({len(mo['defer']['at_risk'])} mặt hàng sẽ hết trước lần giao sau)."))
+    payload = {k: sug[k] for k in ("supplier_id", "supplier_code", "supplier_name", "supplier_email", "order_date",
+                                   "expected_date", "lines", "total_value", "min_order_value")}
+    payload["note"] = ""
+    if mo:
+        payload["min_order"] = mo
+        payload["min_order_ack"] = False
+    return (*_create(
+        db, type="PURCHASE_ORDER", title=f"Đặt hàng {supplier.name} ({len(sug['lines'])} mặt hàng)",
+        rationale=rationale, payload=payload,
+        evidence={"warnings": sug["warnings"], "top_lines": [
+            {"sku": l["sku"], "name": l["name"], "qty": l["qty"], "on_hand": l["on_hand"],
+             "forecast_cover": l["forecast_cover"], "mode": l["explain"]["mode"],
+             "service_level": l["explain"]["service_level"]} for l in top],
+            "capped_by_shelf_life": capped, "lead_time_days": sug["lead_time_days"],
+            "review_period_days": sug["review_period_days"]},
+        est_value=sug["total_value"], created_by=created_by, chat_session_id=chat_session_id,
+        dedupe_key=f"PO:{supplier.code}:{t.isoformat()}", expires_at=_end_of(t),
+    ), sug)
+
+
+def _lot_items(db: Session, lot_ids: list[int] | None, days: int, action: str) -> list[dict]:
+    """Lay cac lo co phuong an tot nhat = action (MARKDOWN/RETURN) tu bao cao can date."""
+    rep = inventory.expiring_lots(db, days=days)
+    out = []
+    for it in rep["lots"]:
+        if lot_ids is not None and it["lot_id"] not in lot_ids:
+            continue
+        if it["status"] != "AT_RISK" or not it["options"]:
+            continue
+        opt = next((o for o in it["options"] if o["action"] == action and o["feasible"]), None)
+        if opt is None:
+            continue
+        if lot_ids is None and it["options"][0]["action"] != action:
+            continue  # tu dong: chi lay khi day la phuong an tot nhat
+        out.append({**it, "option": opt})
+    return out
+
+
+def _markdown_taken(db: Session, with_rejected_today: bool) -> dict[int, Proposal]:
+    """Lo dang nam trong de xuat giam gia con mo (va, voi quet tu dong, lo SM da tu choi giam trong hom nay).
+    Khoa dedupe gom ca tap lo, nen job sang va job 17h ra hai tap khac nhau van trung lo neu khong chan theo lo."""
+    cond = _still_open()
+    if with_rejected_today:
+        cond = or_(cond, and_(Proposal.status == "REJECTED", Proposal.created_at >= datetime.combine(today(), time())))
+    out: dict[int, Proposal] = {}
+    for p in db.scalars(select(Proposal).where(Proposal.type == "MARKDOWN", cond).order_by(Proposal.id)):
+        for it in p.payload["items"]:
+            if it.get("include") is not False:
+                out.setdefault(it["lot_id"], p)
+    return out
+
+
+def markdown(db: Session, created_by: str, lot_ids: list[int] | None = None, days: int = 3,
+             evening_only: bool = False, chat_session_id: int | None = None) -> tuple[Proposal | None, bool]:
+    items = _lot_items(db, lot_ids, days, "MARKDOWN")
+    if evening_only:
+        items = [i for i in items if i["days_left"] <= 0]
+    taken = _markdown_taken(db, with_rejected_today=created_by == SCAN_ACTOR)
+    fresh = [i for i in items if i["lot_id"] not in taken]
+    if items and not fresh:  # moi lo da co de xuat: tra ve de xuat dang mo (neu co) thay vi tao trung
+        ex = next((taken[i["lot_id"]] for i in items if taken[i["lot_id"]].status != "REJECTED"), None)
+        return ex, False
+    items = fresh
+    if not items:
+        return None, False
+    t = today()
+    payload_items = [{
+        "lot_id": i["lot_id"], "sku": i["sku"], "name": i["name"], "qty": i["qty"],
+        "expiry_date": i["expiry_date"], "days_left": i["days_left"], "unit_price": i["unit_price"],
+        "markdown_pct": i["option"]["markdown_pct"], "timing": i["option"]["timing"],
+        "category": i["category"], "max_markdown_pct": i["max_markdown_pct"], "markdown_hour": i["markdown_hour"],
+        "expected_waste_if_keep": i["expected_waste"], "est_gain": i["option"]["delta_vs_keep"],
+    } for i in items]
+    gain = sum(i["est_gain"] for i in payload_items)
+    evening = all(i["timing"] == "EVENING" for i in payload_items)
+    title = f"{'Giảm giá giờ vàng' if evening else 'Giảm giá hàng cận date'}: {len(items)} lô"
+    rationale = (
+        f"{len(items)} lô dự kiến không bán hết trước HSD (theo dự báo nhu cầu, bán FEFO). Giảm giá dự kiến "
+        f"thu về thêm khoảng {vnd(gain)} so với để hủy. Mức giảm chọn theo giá trị thu hồi kỳ vọng."
+    )
+    key = f"MD:{t.isoformat()}:{','.join(str(i['lot_id']) for i in payload_items)}"
+    return _create(db, type="MARKDOWN", title=title, rationale=rationale, payload={"items": payload_items},
+                   evidence={"options_by_lot": {i["lot_id"]: i["options"] for i in items}}, est_value=int(gain),
+                   created_by=created_by, dedupe_key=key, expires_at=_end_of(t), chat_session_id=chat_session_id)
+
+
+def supplier_return(db: Session, created_by: str, lot_ids: list[int] | None = None, days: int = 60,
+                    chat_session_id: int | None = None) -> list[tuple[Proposal, bool]]:
+    items = _lot_items(db, lot_ids, days, "RETURN")
+    open_by_lot = _open_by_lot(db, "RETURN")
+    already = {open_by_lot[i["lot_id"]].id: open_by_lot[i["lot_id"]] for i in items if i["lot_id"] in open_by_lot}
+    by_sup: dict[str, list] = {}
+    for i in items:
+        if i["lot_id"] not in open_by_lot:
+            by_sup.setdefault(i["supplier"], []).append(i)
+    out: list[tuple[Proposal, bool]] = [(p, False) for p in already.values()]
+    t = today()
+    for sup_name, its in by_sup.items():
+        sup = db.scalar(select(Supplier).options(joinedload(Supplier.agreements)).where(Supplier.name == sup_name))
+        agr = sup.agreement_on(t)  # _lot_items chi giu lo co phuong an tra kha thi, tuc thoa thuan con hieu luc
+        payload_items = [{"lot_id": i["lot_id"], "sku": i["sku"], "name": i["name"],
+                          "qty": int(round(i["option"]["units_returned"])), "lot_qty": i["qty"],
+                          "expiry_date": i["expiry_date"], "unit_cost": i["unit_cost"]} for i in its]
+        credit = int(sum(x["qty"] * x["unit_cost"] * agr.return_credit_pct for x in payload_items))
+        last_day = (min(date.fromisoformat(i["expiry_date"]) for i in its)
+                    - timedelta(days=agr.return_min_days_before_expiry))
+        key = f"RT:{sup.code}:{t.isoformat()}:{','.join(str(i['lot_id']) for i in payload_items)}"
+        out.append(_create(
+            db, type="RETURN", title=f"Trả hàng cận date cho {sup.name} ({len(its)} lô)",
+            rationale=(f"Thỏa thuận với {sup.name} cho phép trả hàng còn ≥ {agr.return_min_days_before_expiry} ngày "
+                       f"trước HSD, " + (f"hoàn {agr.return_credit_pct:.0%} giá vốn. " if agr.return_mode == "CREDIT"
+                                         else "đổi hàng mới (đổi date). ")
+                       + f"Trả phần dự kiến không bán kịp, giá trị khoảng {vnd(credit)} thay vì hủy. Duyệt thì hàng được "
+                       "tách khỏi kệ chờ NCC lấy; tiền hoặc hàng đổi chỉ ghi nhận khi NCC thực lấy hàng."),
+            payload={"supplier_id": sup.id, "supplier_name": sup.name, "supplier_email": sup.email,
+                     "credit_pct": agr.return_credit_pct, "return_mode": agr.return_mode, "items": payload_items,
+                     "est_credit": credit},
+            evidence={"agreement": {"return_min_days_before_expiry": agr.return_min_days_before_expiry,
+                                    "return_credit_pct": agr.return_credit_pct}},
+            est_value=credit, created_by=created_by, dedupe_key=key, expires_at=_end_of(max(t, last_day)),
+            chat_session_id=chat_session_id,
+        ))
+    return out
+
+
+def dispose_expired(db: Session, created_by: str, chat_session_id: int | None = None) -> tuple[Proposal | None, bool]:
+    """Ghi huy lo qua ngay ban cuoi. Lo da rut ke (PULLED) dung so THUC go; lo chua rut dung so tren so.
+
+    Moi dong o day DONG HAN lo khi duyet: phan so tren so khong tim thay ghi thanh hao hut (ADJUST),
+    thay vi de lai tren so nhu hang qua han va bi de xuat lai mai.
+    """
+    from app.services.shelf import _due_lots, pulled_awaiting
+
+    t = today()
+    pulled = pulled_awaiting(db)
+    overdue = _due_lots(db, t - timedelta(days=1))  # qua ngay ban cuoi ma chua ai xac nhan go
+    lots = pulled + overdue
+    if not lots:
+        return None, False
+    open_by_lot = _open_by_lot(db, "DISPOSE")
+    fresh = [l for l in lots if l.id not in open_by_lot]
+    if not fresh:
+        return open_by_lot[lots[0].id], False
+    items = []
+    for l in fresh:
+        is_pulled = l.status == "PULLED"
+        items.append({"lot_id": l.id, "sku": l.product.sku, "name": l.product.name,
+                      "qty": l.pulled_qty if is_pulled else l.qty_remaining, "book_qty": l.qty_remaining,
+                      "expiry_date": l.expiry_date.isoformat(), "unit_cost": l.unit_cost, "reason": "EXPIRED",
+                      "close_lot": True, "pulled": is_pulled})
+    value = sum(i["qty"] * i["unit_cost"] for i in items)
+    shrink = sum((i["book_qty"] - i["qty"]) * i["unit_cost"] for i in items)
+    n_pulled = sum(1 for i in items if i["pulled"])
+    rationale = f"{len(items)} lô đã quá ngày bán cuối (giá vốn hủy {vnd(value)}). "
+    if n_pulled:
+        rationale += f"{n_pulled} lô đã được nhân viên gỡ khỏi kệ; số hủy lấy theo số thực gỡ. "
+    if n_pulled < len(items):
+        rationale += f"{len(items) - n_pulled} lô chưa có xác nhận gỡ kệ: cần gỡ ngay, số hủy đang lấy theo sổ. "
+    if shrink:
+        rationale += f"Phần chênh với sổ ({vnd(shrink)}) được ghi là hao hụt. "
+    rationale += "Duyệt thì lô được đóng hẳn trên sổ. Agent không tự ghi hủy."
+    warnings = [f"{len(items) - n_pulled} lô quá hạn chưa được xác nhận gỡ khỏi kệ."] if n_pulled < len(items) else []
+    key = f"DS:{t.isoformat()}:{','.join(str(i['lot_id']) for i in items)}"
+    return _create(
+        db, type="DISPOSE", title=f"Ghi nhận hủy {len(items)} lô quá hạn",
+        rationale=rationale, payload={"items": items, "total_cost": value, "shrink_cost": shrink},
+        evidence={"warnings": warnings}, est_value=-(value + shrink), created_by=created_by,
+        dedupe_key=key, chat_session_id=chat_session_id)
+
+
+def write_off(db: Session, items: list[dict], created_by: str, note: str | None = None,
+              chat_session_id: int | None = None) -> Proposal:
+    """Bao huy hang khong phai vi het han (vo, hong do tu mat, loi NCC...). items: [{lot_id, qty, reason}].
+
+    Chi tao de xuat; ton kho va chi phi huy chi doi khi Store Manager duyet.
+    """
+    from app.models.inventory import WASTE_REASONS
+
+    if not items:
+        raise ValueError("Chưa có lô nào được báo hủy.")
+    out = []
+    for it in items:
+        reason = str(it.get("reason") or "").upper()
+        if reason not in WASTE_REASONS or reason == "EXPIRED":
+            raise ValueError(f"Lý do hủy không hợp lệ: {it.get('reason')}. Hàng hết hạn đi theo danh sách rút kệ.")
+        q = int(it["qty"])
+        lot = db.get(Lot, int(it["lot_id"]))
+        if not lot or lot.status != "ACTIVE" or lot.qty_remaining <= 0:
+            raise ValueError(f"Lô {it['lot_id']} không còn hàng trên kệ.")
+        if not 0 < q <= lot.qty_remaining:
+            raise ValueError(f"Số lượng hủy của lô {lot.id} phải từ 1 đến {lot.qty_remaining}.")
+        out.append({"lot_id": lot.id, "sku": lot.product.sku, "name": lot.product.name, "qty": q,
+                    "expiry_date": lot.expiry_date.isoformat(), "unit_cost": lot.unit_cost, "reason": reason,
+                    "reason_label": WASTE_REASONS[reason]})
+    value = sum(i["qty"] * i["unit_cost"] for i in out)
+    labels = sorted({i["reason_label"] for i in out})
+    note_txt = f"Ghi chú: {note.strip()}. " if note and note.strip() else ""
+    prop, _ = _create(
+        db, type="DISPOSE", title=f"Báo hủy {len(out)} lô: {', '.join(labels).lower()}",
+        rationale=(f"Nhân viên báo hủy {sum(i['qty'] for i in out)} đơn vị ({vnd(value)} giá vốn), lý do: "
+                   f"{', '.join(labels).lower()}. {note_txt}Duyệt thì trừ tồn và ghi chi phí hủy theo đúng lý do."),
+        payload={"items": out, "total_cost": value, "note": note or ""}, evidence={}, est_value=-value,
+        created_by=created_by, expires_at=_end_of(today() + timedelta(days=2)), chat_session_id=chat_session_id)
+    return prop
+
+
+def delist(db: Session, sku: str, created_by: str, chat_session_id: int | None = None) -> tuple[Proposal | None, bool, str]:
+    p = db.scalar(select(Product).where(Product.sku == sku.upper()))
+    if not p:
+        return None, False, f"Không tìm thấy SKU {sku}"
+    if p.status != "ACTIVE":
+        return None, False, f"{sku} đã ngừng nhập"
+    cands = {c["sku"]: c for c in reports.delist_report(db, limit=500)}
+    c = cands.get(p.sku)
+    if c is None:
+        return None, False, (f"{p.sku} không nằm trong danh sách ứng viên ngừng nhập "
+                             "(hàng bán chậm và không đều, hủy nhiều hoặc lỗ, không phải hàng kéo khách).")
+    plan = sell_down_plan(db, p)
+    rationale = " ".join(c["reasons"]) + " Hàng còn tồn vẫn bán tiếp đến hết, chỉ dừng đặt mới."
+    rationale += (f" Còn {plan['on_hand']} đơn vị, dự kiến bán hết sau khoảng {plan['days_to_sell_out']} ngày"
+                  if plan["days_to_sell_out"] is not None else f" Còn {plan['on_hand']} đơn vị, gần như không bán được")
+    rationale += f"; {len(plan['open_pos'])} đơn đang về ({plan['open_po_qty']} đơn vị)." if plan["open_pos"] else "."
+    if plan["units_at_risk"] >= 1:
+        rationale += (f" Khoảng {plan['units_at_risk']:g} đơn vị không bán kịp trước HSD: nên xả hàng (đề xuất giảm giá "
+                      "các lô này) và cân nhắc huỷ đơn đang về.")
+    prop, created = _create(
+        db, type="DELIST", title=f"Ngừng nhập {p.name} ({p.sku})",
+        rationale=rationale,
+        payload={"product_id": p.id, "sku": p.sku, "name": p.name}, evidence={**c, "sell_down": plan},
+        est_value=int(c["margin_90d"]), created_by=created_by, dedupe_key=f"DL:{p.sku}",
+        chat_session_id=chat_session_id)
+    return prop, created, ""
+
+
+def sell_down_plan(db: Session, p: Product) -> dict:
+    """Ke hoach ban het khi ngung nhap: ton con lai, don dang ve, so ngay du kien ban het, phan khong ban kip HSD."""
+    from app.engines.expiry import LotInput, project_lots
+    from app.services.history import forecast_for
+
+    t = today()
+    lots = inventory.active_lots(db, [p.id]).get(p.id, [])
+    incoming = inventory.on_order(db).get(p.id, [])
+    on_hand = sum(l.qty_remaining for l in lots)
+    open_qty = sum(q for q, _ in incoming)
+    fc = forecast_for(db, p, horizon=120, start=t)
+    daily = sum(fc.daily[:28]) / 28 if fc.daily else 0.0
+    total = on_hand + open_qty
+    days = int(round(total / daily)) if daily > 0.05 else None
+    risks = project_lots([LotInput(l.id, l.qty_remaining, l.sell_by) for l in lots if l.sell_by >= t], fc.daily, t)
+    at_risk = [r for r in risks if r.expected_waste >= 1]
+    return {"on_hand": on_hand, "open_po_qty": open_qty, "days_to_sell_out": days, "avg_daily_forecast": round(daily, 2),
+            "open_pos": [{"code": po.code, "qty": q, "expected_date": po.expected_date.isoformat()} for q, po in incoming],
+            "units_at_risk": round(sum(r.expected_waste for r in at_risk), 1),
+            "clearance_lot_ids": [r.lot_id for r in at_risk]}
+
+
+def demand_hypothesis(db: Session, created_by: str, factor: float, start: date, end: date, reason: str,
+                      category: str | None = None, sku: str | None = None,
+                      chat_session_id: int | None = None) -> tuple[Proposal, bool]:
+    """De xuat ghi nhan gia thuyet cua SM. Chua co tac dung voi du bao cho den khi duoc duyet."""
+    from app.services import hypotheses as H
+
+    products, cat, code = H.matching_products(db, category, sku)
+    H.validate(db, float(factor), start, end, reason, cat, code)
+    pv = H.preview(db, products, float(factor), start, end)
+    scope = cat or f"{products[0].name} ({code})"
+    rationale = (
+        f"Giả thuyết của Store Manager: {reason.strip()}. Nhu cầu {scope} nhân ×{factor:g} từ {dmy(start)} đến {dmy(end)}. "
+        f"Dự báo của {pv['sku_count']} mặt hàng trong khoảng này đổi từ {pv['baseline_total']:g} thành "
+        f"{pv['adjusted_total']:g} đơn vị. Sau khi kết thúc, hệ thống đối chiếu với lượng bán thực tế để chấm đúng/sai."
+    )
+    return _create(
+        db, type="DEMAND_HYPOTHESIS", title=f"Giả thuyết nhu cầu: {scope} ×{factor:g}", rationale=rationale,
+        payload={"category": cat, "sku": code, "scope": scope, "factor": float(factor), "start_date": start.isoformat(),
+                 "end_date": end.isoformat(), "reason": reason.strip(), **pv},
+        evidence={}, est_value=None, created_by=created_by, chat_session_id=chat_session_id,
+        dedupe_key=f"HY:{cat or code}:{start.isoformat()}:{end.isoformat()}:{factor:g}", expires_at=_end_of(today()))
+
+
+def order_adjustment(db: Session, category: str, created_by: str, chat_session_id: int | None = None
+                     ) -> tuple[Proposal | None, bool, str]:
+    """Chi tao khi lich su sua cua SM du manh (engine edit_learning): khong cho LLM tu dat he so."""
+    from app.services.learning import patterns
+
+    found_all = patterns(db)
+    wanted = category.strip().lower()
+    matches = ([p for p in found_all if p["category"].lower() == wanted]
+               or [p for p in found_all if wanted in p["category"].lower()])
+    if len(matches) > 1:
+        return None, False, f"'{category}' khớp nhiều nhóm: {', '.join(p['category'] for p in matches)}. Hãy nêu rõ một nhóm."
+    found = matches[0] if matches else None
+    if not found:
+        return None, False, (f"Chưa đủ dấu hiệu để điều chỉnh nhóm '{category}': cần ít nhất 5 lần sửa trên 3 đơn, "
+                             "cùng chiều, và lệch từ 15% trở lên.")
+    key = f"OA:{found['category']}:{found['factor']:g}"
+    recent = db.scalar(select(Proposal).where(Proposal.dedupe_key == key, Proposal.status == "REJECTED",
+                                              Proposal.created_at >= _now() - timedelta(days=30)))
+    if recent:
+        return None, False, f"Đề xuất tương tự #{recent.id} đã bị từ chối trong 30 ngày qua."
+    pct_change = abs(found["factor"] - 1)
+    verb = "giảm" if found["factor"] < 1 else "tăng"
+    rationale = (
+        f"Trong {found['proposals']} đơn gần đây, anh/chị đã sửa {found['edits']} dòng nhóm {found['category']}, "
+        f"thường {verb} khoảng {pct_change:.0%} so với đề xuất. Nếu duyệt, số lượng đề xuất của nhóm này sẽ nhân "
+        f"×{found['factor']:g}. Có thể tắt bất cứ lúc nào."
+    )
+    prop, created = _create(
+        db, type="ORDER_ADJUST", title=f"Điều chỉnh số lượng đặt nhóm {found['category']} ×{found['factor']:g}",
+        rationale=rationale, payload={**found, "reason": rationale}, evidence=found, est_value=None,
+        created_by=created_by, dedupe_key=key, chat_session_id=chat_session_id)
+    return prop, created, ""
+
+
+def stock_adjust(db: Session, counted: dict[str, int], created_by: str, note: str | None = None,
+                 chat_session_id: int | None = None) -> tuple[Proposal | None, int]:
+    """Tra ve (de xuat, so dong da dem). Khong lech thi khong tao de xuat."""
+    from app.services import stockcount as SC
+
+    items = SC.diffs(db, counted)
+    if not items:
+        return None, len(counted)
+    net = sum(i["value"] for i in items)
+    short = sum(1 for i in items if i["diff"] < 0)
+    large = [i for i in items if SC.is_large_gap(i["system_qty"], i["diff"])]
+    warnings = ([f"Lệch lớn ở {', '.join(i['name'] for i in large[:5])}: nên đếm lại trước khi duyệt."] if large else [])
+    prop, _ = _create(
+        db, type="STOCK_ADJUST", title=f"Điều chỉnh tồn theo kiểm kê: {len(items)} mặt hàng",
+        rationale=(f"Đếm {len(counted)} mặt hàng, {len(items)} mặt hàng lệch so với sổ ({short} thiếu, {len(items) - short} dư). "
+                   f"Giá trị lệch ròng {vnd(net)}. Duyệt thì tồn kho được sửa theo số đếm và ghi nhận hao hụt."),
+        payload={"items": items, "counted_lines": len(counted), "note": note or ""}, evidence={"warnings": warnings},
+        est_value=net, created_by=created_by, expires_at=_end_of(today()), chat_session_id=chat_session_id)
+    return prop, len(counted)
+
+
+def date_check(db: Session, lines: list[dict], created_by: str, note: str | None = None,
+               chat_session_id: int | None = None) -> tuple[Proposal | None, int]:
+    """Kiem date: tra ve (de xuat, so SKU da dem). Lech theo tung HSD -> STOCK_ADJUST cap lo cho SM duyet."""
+    from app.services import datecheck as DC
+
+    items = DC.diffs(db, lines)
+    n_skus = len({str(l["sku"]).upper() for l in lines})
+    if not items:
+        return None, n_skus
+    t = today()
+    net = sum(i["value"] for i in items)
+    expired = [i for i in items if i["diff"] > 0 and date.fromisoformat(i["expiry_date"]) < t]
+    found = [i for i in items if i["new_date"]]
+    warnings = []
+    if expired:
+        warnings.append(f"Tìm thấy hàng đã quá HSD trên kệ: {', '.join(i['name'] for i in expired[:5])}. "
+                        "Gỡ khỏi kệ ngay; sau khi duyệt các lô này vào danh sách rút kệ.")
+    if found:
+        warnings.append(f"{len(found)} HSD có trên kệ nhưng sổ không có (thường do khách lấy lô mới trước).")
+    moved = sum(1 for i in items if i["diff"] != 0)
+    prop, _ = _create(
+        db, type="STOCK_ADJUST", title=f"Kiểm date: sửa sổ theo lô cho {len({i['sku'] for i in items})} mặt hàng",
+        rationale=(f"Đếm theo HSD {n_skus} mặt hàng, {moved} dòng HSD lệch với sổ. Giá trị lệch ròng {vnd(net)} "
+                   "(lệch giữa các lô cùng mặt hàng không làm đổi tổng tồn). Duyệt thì sổ ghi đúng số của từng HSD, "
+                   "để cảnh báo cận date và đề xuất giảm giá dựa trên lô thật trên kệ."),
+        payload={"mode": "LOT", "items": items, "counted_skus": n_skus, "note": note or ""},
+        evidence={"warnings": warnings}, est_value=net, created_by=created_by, expires_at=_end_of(t),
+        chat_session_id=chat_session_id)
+    return prop, n_skus
+
+
+class ReviseError(Exception):
+    """Yeu cau sua khong hop le (de xuat khong PENDING, SKU khong co trong don, muc giam sai...)."""
+
+
+def revise(db: Session, proposal_id: int, created_by: str, sku_qty: dict[str, int] | None = None,
+           markdown_pct: float | None = None, chat_session_id: int | None = None,
+           sku_add: dict[str, int] | None = None) -> Proposal:
+    """Tao de xuat MOI (PENDING) thay cho de xuat PENDING cu, ban cu chuyen SUPERSEDED (khong duyet duoc nua).
+
+    Chi doc/ghi ban ghi de xuat: khong duyet, khong thuc thi. Ban moi van phai qua Store Manager duyet.
+    """
+    old = db.get(Proposal, proposal_id)
+    if not old:
+        raise ReviseError(f"Không tìm thấy đề xuất #{proposal_id}")
+    if old.status != "PENDING":
+        raise ReviseError(f"Đề xuất #{old.id} đang ở trạng thái {old.status}, chỉ sửa được đề xuất đang chờ duyệt.")
+    if old.expires_at and _now() > old.expires_at:
+        raise ReviseError(f"Đề xuất #{old.id} đã quá hạn chốt, hãy tạo đề xuất mới.")
+    payload = copy.deepcopy(old.payload)
+    changes: list[str] = []
+    structured: list[dict] = []  # cung dang voi sm_edits khi SM sua tay, de hoc thoi quen sua
+    est_value = old.est_value
+    if old.type == "PURCHASE_ORDER":
+        by_sku = {l["sku"].upper(): l for l in payload["lines"]}
+        # "Đặt thêm 50": cộng vào số đang có trong đơn (món chưa có thì thêm dòng 50), không bắt agent tự tính tổng
+        sku_qty = dict(sku_qty or {})
+        for sku, add in (sku_add or {}).items():
+            if int(add) <= 0:
+                raise ReviseError("Số lượng đặt thêm phải lớn hơn 0")
+            current = by_sku[sku.upper()]["qty"] if sku.upper() in by_sku else 0
+            sku_qty[sku] = int(sku_qty.get(sku, current)) + int(add)
+        if not sku_qty:
+            raise ReviseError("Cần nêu số lượng mới theo SKU cho đơn đặt hàng.")
+        for sku, qty in sku_qty.items():
+            qty = int(qty)
+            if qty < 0:
+                raise ReviseError("Số lượng không được âm")
+            line = by_sku.get(sku.upper())
+            if line is None:
+                # "Đặt thêm 50 cà rốt" khi món chưa có trong đơn: thêm dòng, như SM tự thêm trong Hộp duyệt
+                prod = db.scalar(select(Product).where(Product.sku == sku.upper()))
+                if prod is None or prod.supplier_id != payload.get("supplier_id"):
+                    raise ReviseError(f"{sku} không có trong đơn #{old.id} và không thuộc nhà cung cấp của đơn này")
+                if qty == 0:
+                    continue
+                agr = prod.supplier.agreement_on(today())
+                unit_cost = int(round(prod.unit_cost * (1 - (agr.discount_pct if agr else 0.0))))
+                payload["lines"].append({"product_id": prod.id, "sku": prod.sku, "name": prod.name, "qty": qty,
+                                         "suggested_qty": 0, "pack_size": prod.pack_size, "unit_cost": unit_cost,
+                                         "line_value": qty * unit_cost, "added_in_chat": True})
+                changes.append(f"{prod.sku}: thêm {qty}")
+                structured.append({"field": f"lines[{prod.sku}]", "from": None, "to": qty})
+                continue
+            if qty != line["qty"]:
+                changes.append(f"{line['sku']}: {line['qty']} → {qty}")
+                structured.append({"field": f"lines[{line['sku']}].qty", "from": line["qty"], "to": qty})
+                line["qty"] = qty
+                line["line_value"] = qty * line["unit_cost"]
+        payload["total_value"] = sum(int(l["qty"]) * int(l["unit_cost"]) for l in payload["lines"])
+        est_value = payload["total_value"]
+    elif old.type == "MARKDOWN":
+        if markdown_pct is None:
+            raise ReviseError("Cần nêu mức giảm giá mới (vd 0.3 = 30%).")
+        if not 0 < float(markdown_pct) < 0.95:
+            raise ReviseError("Mức giảm giá phải trong khoảng 0–95%")
+        for it in payload["items"]:
+            cap = it.get("max_markdown_pct")
+            if cap is not None and float(markdown_pct) > cap + 1e-9:
+                raise ReviseError(f"Mức giảm {float(markdown_pct):.0%} vượt trần {cap:.0%} của nhóm {it.get('category', '')}.")
+        for it in payload["items"]:
+            if it.get("markdown_pct") != float(markdown_pct):
+                changes.append(f"{it['sku']}#{it['lot_id']}: {it['markdown_pct']:.0%} → {float(markdown_pct):.0%}")
+                it["markdown_pct"] = float(markdown_pct)
+    else:
+        raise ReviseError("Loại đề xuất này không sửa được, chỉ đặt hàng và giảm giá.")
+    if not changes:
+        raise ReviseError("Thay đổi yêu cầu trùng với đề xuất hiện tại, không có gì để sửa.")
+    old.status = "SUPERSEDED"
+    old.decision_note = f"Được thay bằng bản sửa theo yêu cầu trong chat ({'; '.join(changes)})"
+    audit.log(db, created_by, "PROPOSAL_SUPERSEDED", "proposal", old.id, {"changes": changes})
+    rationale = f"{old.rationale} [Bản sửa của #{old.id}: {'; '.join(changes)}.]"
+    if old.type == "MARKDOWN":
+        rationale += " Mức thu thêm ước tính chưa tính lại theo mức giảm mới."
+    new, _ = _create(db, type=old.type, title=old.title, rationale=rationale, payload=payload,
+                     evidence={**old.evidence, "revised_from": old.id}, est_value=est_value,
+                     created_by=created_by, dedupe_key=old.dedupe_key, expires_at=old.expires_at,
+                     chat_session_id=chat_session_id or old.chat_session_id)
+    if structured:
+        new.sm_edits = (old.sm_edits or []) + [{"by": "chat", "at": _now().isoformat(), "changes": structured}]
+    audit.log(db, created_by, "PROPOSAL_REVISED", "proposal", new.id, {"from": old.id, "changes": changes})
+    return new
