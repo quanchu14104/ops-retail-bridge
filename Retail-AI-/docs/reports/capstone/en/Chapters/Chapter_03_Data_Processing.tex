@@ -1,0 +1,161 @@
+\chapter{Data Description and Exploratory Data Analysis}
+
+This chapter documents all datasets and the shared cross-agent SKU mapping, presents quantitative Exploratory Data Analysis (EDA) for both the retail catalog and FreshRetailNet-50K, explains the mathematical impact of $K=10$ demand scaling, and formalizes our anti-leakage Train/Validation/Test splitting protocol.
+
+\section{Dataset Description and Shared Cross-Agent Mapping}
+
+Three core data assets are cryptographically synchronized via SHA-256 hashes across \texttt{Retail-AI-}, \texttt{ops\_chest}, and \texttt{ops-retail-bridge} (Table~\ref{tab:dataset_stats}).
+
+\begin{enumerate}
+    \item \textbf{Retail Product Catalog, Knowledge Store \& Synchronized Sales (\texttt{Retail-AI-}):} The 15 September 2026 Thanh Lam Mart catalog snapshot (JSON/CSV, SHA-256 \code{3ab0666cb1b2efdc...})~\cite{thanh_lam_catalog} holds \textbf{3,099 raw SKUs} across 699 raw brands (697 valid brands after quarantine), 74 leaf categories, and 346 hierarchical paths. Filtering 18 price-inconsistent rows (\code{sale_price_vnd > price_vnd}) yields \textbf{3,081 validated SKUs} (580 active discounts, 9 snapshot zero-stock items). Multi-source enrichment (JSON knowledge store) provides clean attributes for \textbf{2,205/3,099 SKUs (71.15\%)}, including 1,366 retailer ingredient records combined with 20 manufacturer declarations for \textbf{1,374 verified ingredient SKUs}. For 30-day sales velocity, live production runs directly on \code{data/synced_sales_30d.json} (\texttt{2026-10} period, covering all \textbf{3,099 SKUs} and \textbf{269,936 total units}: \textbf{164 fresh SKUs} synchronized from FreshRetailNet-50K Store~18 totaling 60,871 units, median 238/SKU, plus \textbf{2,935 monthly catalog SKUs} totaling 209,065 units, median 53/SKU), while \code{data/demo_sales.sqlite3} (\texttt{SIMULATED}) is retained strictly as an isolated unit-testing fixture.
+    \item \textbf{FreshRetailNet-50K Real Perishable Demand (\texttt{ops\_chest}):} Drawn from the public \emph{FreshRetailNet-50K} dataset (CC BY 4.0)~\cite{freshretailnet50k}, the full panel spans \textbf{4,850,000 daily rows} (50,000 SKU-store series $\times$ 97 days, 28 March--2 July 2024) across \textbf{898 stores} with hourly stockout indicators. Stores are strictly partitioned into \textbf{848 training stores} (47,325 series) and \textbf{50 held-out test stores} (2,675 series, 259,475 rows). Demo Store~18 (164 active fresh SKUs) serves as the interactive operational branch.
+    \item \textbf{Shared 164-SKU Crosswalk (\texttt{ops-retail-bridge}):} Because FreshRetailNet-50K anonymizes product identities and prices, \texttt{ops-retail-bridge}~\cite{ops_retail_bridge_repo} constructs \code{data/bridge/crosswalk.csv} mapping \textbf{164/164 fresh SKUs} (\code{F0004}--\code{F0793}) of Store~18 to 164 valid \code{product_id} entries in the Thanh Lam Mart catalog (0 name diffs, 0 list-price diffs, 0 references to quarantined SKUs), paired with \code{ops_catalog_overrides.json} (164 SKUs, 7 simulated suppliers) to synchronize dynamic perishable lots across both agents.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Summary of datasets, shared mappings, and evaluation corpora}
+\label{tab:dataset_stats}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.1cm} L{3.8cm} Y}
+\toprule
+\textbf{Dataset / Corpus} & \textbf{Module} & \textbf{Scale \& Structure} & \textbf{Provenance \& Research Role} \\
+\midrule
+Thanh Lam Mart Retail Catalog & \texttt{Retail-AI-} & 3,099 raw (3,081 valid, 18 quarantined); 697 valid brands; 74 leaf categories; 346 paths & 15 Sep 2026 snapshot; grounded catalog for search, unit-price ranking, and promos \\
+Product Knowledge Store & \texttt{Retail-AI-} & 2,205/3,099 SKUs (71.15\%): 2,059 summaries, 1,374 ingredients, 1,403 usage, 650 storage, 1,236 origin & Multi-source SSR + EAN-13 verification; 8-stage cleaned (4,606 $\to$ 0 defects) \\
+Synced 30-Day Sales (\code{synced_sales_30d.json}) & Inter-Agent & 3,099 SKUs (269,936 units/30d): 164 \texttt{FRN\_STORE\_18} (60,871) + 2,935 monthly \texttt{2026-10} (209,065) & Live production bestseller source (\code{demo_sales.sqlite3} kept only for unit tests) \\
+Shared SKU Crosswalk (\code{data/bridge/crosswalk.csv}) & Inter-Agent & 164/164 fresh SKUs matching 100\% \code{product_id}, name \& list price & Shared identifier bridge between \texttt{ops\_chest} and \texttt{Retail-AI-} for E2E sync \\
+Dialogue \& Visual Eval Suites & \texttt{Retail-AI-} & 100Q SOTA~V2 (Dev); 100Q Expert + 50Q Independent Test + 100Q Bestseller/Stock; 16+4 unseen photos & Separates development tuning from held-out accuracy, ablation, safety, and vision tests \\
+Speech Evaluation Corpus & \texttt{Retail-AI-} & 8 human + 8 brand clips $\times$ 3 SNR levels (Clean, 12\,dB, 5\,dB) & Acoustic resilience evaluation for the supporting voice interface \\
+FreshRetailNet-50K~\cite{freshretailnet50k} & \texttt{ops\_chest} & 4.85\,M rows (848 train stores, 50 held-out stores = 2,675 series, 259,475 rows) & Real hourly-stockout perishable demand; LightGBM~v3 training and 50-store backtest \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Exploratory Data Analysis (EDA)}
+
+\subsection*{Retail Catalog EDA (\texttt{Retail-AI-})}
+Integrity checks across all 3,099 raw records confirm \textbf{0 duplicate \code{product_id} values}, \textbf{0 duplicate barcodes}, 99.03\% brand completeness, and 99.90\% image-URL completeness. After filtering 18 price-inconsistent records (\code{sale_price_vnd > price_vnd}, 0.58\%) during ingestion, the 3,081 valid SKUs exhibit a typical right-skewed supermarket price distribution: minimum 3,500\,VND, $Q_1 = 27{,}200$\,VND, median \textbf{52,400\,VND}, mean \textbf{90,853\,VND} (SD 126,855\,VND), $Q_3 = 111{,}800$\,VND, P95 = 264,000\,VND, P99 = 562,920\,VND, and maximum 2,479,000\,VND, with 222 upper IQR outliers ($> Q_3 + 1.5\,\text{IQR}$, predominantly beer cases, infant formula, and cookware). Figure~\ref{fig:catalog_dist} shows the \textbf{true top-10 leaf product categories} (led by \emph{Chăm Sóc Da} 202 SKUs, \emph{Kẹo -- Chocolate} 167, and \emph{Nước Ngọt} 159) alongside the reference price distribution.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Images/fig_catalog_distribution.png}
+    \caption{True top-10 leaf product categories (\code{category_name}, left) and reference price distribution with median, mean, and P95 markers (right, 98.0\% of SKUs $\le 400\text{k}$\,VND) across 3,081 valid Thanh Lam Mart SKUs.}
+    \label{fig:catalog_dist}
+\end{figure}
+
+EDA on the synchronized 30-day sales store (\code{data/synced_sales_30d.json}, \texttt{2026-10}) confirms a sharp turnover gap between perishables and ambient groceries: the 164 fresh SKUs synchronized from FreshRetailNet-50K Store~18 average a median of \textbf{238 units/30d} (mean 371.2, peak 3,754 on \emph{Bí xanh}), \textbf{4.5$\times$} higher than the 53-unit median across the 2,935 monthly catalog SKUs, placing \emph{Củ, Quả} (26,820 units), \emph{Rau Lá} (13,893), and \emph{Trái cây tươi} (11,111) among the top-10 store categories by volume (Figure~\ref{fig:synced_sales_enrichment}a). Figure~\ref{fig:synced_sales_enrichment}b summarizes verified attribute coverage after our 8-stage cleaning pipeline (reducing 4,606 raw defects to 0 across 2,205/3,099 SKUs, 71.2\%).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Images/fig_synced_sales_and_enrichment.png}
+    \caption{Top-10 categories by synchronized 30-day sales volume split across \texttt{FRN\_STORE\_18} fresh SKUs and \texttt{CATALOG\_MONTHLY} groceries (left), and 8-stage cleaned product knowledge coverage (right).}
+    \label{fig:synced_sales_enrichment}
+\end{figure}
+
+\subsection*{FreshRetailNet-50K Perishable Demand EDA (\texttt{ops\_chest})}
+We conducted quantitative EDA across all \textbf{259,475 daily rows} of the 50 held-out validation stores (2,675 series $\times$ 97 days), summarized in Table~\ref{tab:frn_eda_summary} and Figure~\ref{fig:frn_eda}:
+\begin{itemize}
+    \item \textbf{Data completeness:} Zero missing values across all 16 columns and \textbf{0 duplicate \code{(store_id, product_id, day)} keys}.
+    \item \textbf{Stockout severity and Demand Recovery impact:} \textbf{43.84\%} of all SKU-days (\textbf{113,754 / 259,475}) experienced at least one stockout hour, averaging \textbf{7.17 stockout hours} per affected day. On stockout days, raw observed sales average \textbf{1.03 FRN units} (median 0.70), whereas hourly-recovered demand rises to \textbf{1.70 units} (median 1.13)---a \textbf{+65.1\% recovery lift} on censored days (+29.1\% across all rows, Figure~\ref{fig:frn_eda}a).
+    \item \textbf{Demand distribution, outliers, and intermittency:} Daily demand is heavily right-skewed (\textbf{skewness = 8.54}), median 0.85, IQR $[0.50, 1.46]$, P95 = 3.70, P99 = 7.20, and max 49.13 (2,594 rows above P99). Under Syntetos--Boylan classification~\cite{syntetos2005intermittent}, 82.0\% of series are smooth, \textbf{17.6\% are erratic} ($\text{CV}^2 \ge 0.49$), and 0.4\% are lumpy, with an average zero-demand day rate of 1.21\%.
+    \item \textbf{Store-size heterogeneity:} Active fresh SKUs per store range from \textbf{14 to 164} (median 49), partitioning naturally into \textbf{13 small stores ($\le 30$ SKUs)} and \textbf{37 medium/large stores ($> 30$ SKUs)} (Figure~\ref{fig:frn_eda}b), directly motivating store-size-aware routing inside \texttt{B-Gate}.
+    \item \textbf{Seasonality and temporal trend:} Weekend demand (Sat 1.55, Sun 1.65) exceeds weekdays (1.11--1.25) by \textbf{+35.5\%}, and holidays lift demand by \textbf{+31.5\%} (1.54 vs.\ 1.17, Figure~\ref{fig:frn_eda}c). Across the 97-day window (late March to early July), mean demand rises mildly into summer (1.22 in days 0--29 $\to$ 1.31 in days 30--59 $\to$ 1.36 in days 60--96).
+    \item \textbf{Feature correlation and LightGBM split-gain alignment:} Pearson correlations with recovered target demand peak at \code{mean7} ($r=0.897$), \code{lag7} ($r=0.866$), \code{lag1} ($r=0.851$), \code{std28} ($r=0.630$), \code{discount} ($r=-0.377$, lower price ratio lifts demand), and \code{stockout28} ($r=+0.199$). This aligns closely with LightGBM~v3's top split-gain features (Figure~\ref{fig:frn_eda}d): \code{cat2} (20.5\%), \code{ewma_h} (16.4\%), \code{target_wd} (13.1\%), \code{mean7} (9.5\%), \code{log_level} (7.6\%), and \code{stockout28} (4.9\%).
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Exploratory Data Analysis summary on FreshRetailNet-50K (50 held-out stores, $N = 259{,}475$ rows)}
+\label{tab:frn_eda_summary}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{4.2cm} L{4.2cm} Y}
+\toprule
+\textbf{EDA Dimension} & \textbf{Observed Statistics} & \textbf{Modeling Implication} \\
+\midrule
+Missingness \& Duplicates & 0 missing values; 0 duplicate keys & Clean panel structure requiring no static imputation \\
+Stockout Rate (\code{stock_hours>0}) & 43.84\% of SKU-days (113,754 rows; mean 7.17\,h) & Raw sales are heavily right-censored; recovery is mandatory \\
+Before vs.\ After Recovery & OOS days: mean $1.03 \to 1.70$ (+65.1\%); overall $+29.1\%$ & Removes severe downward bias ($-32.3\% \to -0.1\%$ in validation) \\
+Demand Skewness \& Outliers & Median 0.85; IQR $[0.50, 1.46]$; P99 7.20; Skew 8.54 & Favors pinball quantile loss and \code{log_level} feature \\
+Store Assortment Size & 14--164 SKUs (median 49); 13 small ($\le 30$), 37 large ($>30$) & Motivates store-size gating inside \texttt{B-Gate} \\
+Intermittency (Syntetos--Boylan) & 82.0\% smooth; 17.6\% erratic; 0.4\% lumpy; 1.21\% zero-days & Erratic tail variance motivates decoupling $\hat{q}_{50}$ from $\sigma_{\text{EWMA}}$ \\
+Seasonality \& Trend & Weekend +35.5\%; holiday +31.5\%; drift $1.22 \to 1.36$ & Explains high gain of \code{target_wd}, \code{target_holiday}, \code{trend} \\
+Feature Correlations ($r$) & \code{mean7} (0.90), \code{lag7} (0.87), \code{lag1} (0.85), \code{std28} (0.63), \code{discount} ($-0.38$) & Empirically justifies the 29 lag, EWMA, and calendar features \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Images/fig_frn_eda.png}
+    \caption{FreshRetailNet-50K EDA across 50 held-out stores (259,475 rows): (a)~observed sales vs.\ recovered demand on stockout days, (b)~store assortment distribution around \code{size_cut=30}, (c)~weekday and holiday seasonality, and (d)~LightGBM~v3 (\code{q50}) top-12 feature gain share.}
+    \label{fig:frn_eda}
+\end{figure}
+
+\subsection*{Mathematical Rationale and Effect of $K = 10$ Unit Scaling}
+
+\intuitionbox{Plain Example: Why Demand Recovery and $K = 10$ Scaling Matter}{%
+In FreshRetailNet-50K, nearly half of all store--SKU days (43.84\%) experience stockouts averaging 7.17 hours/day, pulling observed sales sharply below true demand (1.03 vs.\ 1.70 units). Moreover, raw dataset units have a median of just \textbf{0.85 units/day}, where integer rounding between 0 and 1 pack injects 50--100\% order error. Scaling linearly by $K = 10$ acts like converting \emph{``0.85 multipacks''} into \emph{``8.5 individual units''}: daily replenishment becomes realistic while relative percentage metrics (profit lift\%, waste\%, OOS\%) stay completely fair across all models.}
+
+Mathematically, at the native scale $\bar{\mu}_{\text{FRN}} = 0.851$, integer lot rounding among 0, 1, and 2 packs introduces coarse relative jumps while EWMA's Poisson variance floor ($\sigma_{\text{Poisson}} = \sqrt{\mu}$) yields $\text{CV} = 1/\sqrt{0.851} = 1.084$. Scaling daily volume linearly by $K = 10$ maps the median SKU to a realistic $\bar{\mu}_{K=10} = 8.51$ packs/day and lowers the Poisson floor to $\text{CV} = 0.343$ (cutting quantization error by $\sqrt{10}\approx 3.16\times$), while preserving scale-invariant relative comparisons across all strategies.
+
+\section{Preprocessing, Feature Engineering, and Anti-Leakage Splitting}
+
+\subsection*{Catalog Hygiene and 29 Tabular Forecasting Features}
+Both modules enforce structured preprocessing to ensure clean, strictly causal inputs:
+\begin{itemize}
+    \item \textbf{Catalog and knowledge cleaning (\texttt{Retail-AI-}):} Alongside filtering 18 price-inconsistent rows, our 8-stage pipeline (inspired by \code{datatrove}~\cite{hf_datatrove} and OpenFoodFacts~\cite{openfoodfacts}) removed 4,606 raw defects across 11 QA dimensions to reach 0 defects over \textbf{2,205/3,099 SKUs (71.15\%)} (details in Appendix~A).
+    \item \textbf{Demand recovery and 29 forecasting features (\texttt{ops\_chest}):} Hourly demand recovery (cutting stockout-day WAPE from 32.35\% to 20.53\% and bias from $-32.35\%$ to $-0.15\%$ over $n=200{,}000$ masked days) feeds \textbf{29 features} per horizon $h \in \{1,\dots,7\}$ grouped into five families: (1)~recent sales history (7 daily lags and 3/7/14-day rolling means); (2)~weekly rhythm and dispersion (same-weekday lags, 28-day standard deviation, and zero-day rate); (3)~stockout history (7/28-day frequency and days since last stockout); (4)~statistical anchors (log-level, trend, and 56-day EWMA mean/sigma); and (5)~calendar and hierarchy context (weekday, holiday, and 3-level category IDs). Version~v3 retains strictly causal features available prior to the forecast origin, ensuring stability and preventing future information leakage.
+\end{itemize}
+
+\subsection*{Train / Validation / Test Splitting and Anti-Leakage Protocol}
+Figure~\ref{fig:data_split_leakage} and Table~\ref{tab:split_protocol} formalize strict data separation across both modules:
+\begin{enumerate}
+    \item \textbf{\texttt{ops\_chest} (Store-Level and Temporal Separation):} The 898 FreshRetailNet-50K stores are split disjointly into \textbf{848 training stores} (47,325 series) and \textbf{50 held-out test stores} (2,675 series, 0\% store overlap). Backtest LightGBM~v3 models are trained strictly on pre-$T_0$ observations ($T_0 = \text{2024-05-26}$; 6,209,287 train / 2,051,590 validation rows from the 848 training stores). To select \texttt{B-Gate} routing rules without leaking test-store profit, the 50 held-out stores are further divided into \textbf{2-fold store-level cross-validation} (25 Fold-0 stores vs.\ 25 Fold-1 stores; exact IDs in Appendix~C): gates evaluated on Fold~0 are fitted strictly on Fold~1 and vice versa.
+    \item \textbf{\texttt{Retail-AI-} (Explicit Dev vs.\ Independent Test Separation):} The 100-question SOTA~V2 benchmark serves as the \textbf{Development Set (Dev Set)} for iterative routing and lexicon optimization (lifting accuracy from 59/100 to 94/100). Out-of-sample generalization is measured on \textbf{three disjoint independent test sets} with 0\% overlap against SOTA~V2: (i)~the \textbf{100-question Independent Expert Catalog Audit} (\code{Q01}--\code{Q100}), (ii)~the \textbf{50-question Independent Held-Out Ablation Test Set} (A1--A4, 0\% overlap with SOTA~V2 and the bestseller/stock suite), and (iii)~the \textbf{16 unseen OpenFoodFacts smartphone photos + 4 real OOD negatives} for \texttt{MobileNetV3Large-224}.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.45cm and 0.55cm]
+  \node[font=\bfseries\small, anchor=west, text=teal!70!black] at (-0.2, 2.3) {\texttt{ops\_chest} Module (FreshRetailNet-50K: 898 stores, 97 days: 2024-03-28 to 2024-07-02)};
+  \node[procbox, text width=3.5cm] (o_tr) {\textbf{LightGBM Train + Val}\\848 stores (47,325 series)\\Pre-$T_0$: 6.21M train / 2.05M val};
+  \node[aiagent, text width=3.4cm, right=of o_tr] (o_ho) {\textbf{50 Held-Out Stores}\\(0\% store overlap)\\2,675 series, 37-day backtest};
+  \node[gatebox, text width=3.2cm, right=of o_ho] (o_f0) {\textbf{2-Fold Store CV}\\Fold~0 (25) $\leftrightarrow$ Fold~1 (25)\\Out-of-sample \texttt{B-Gate}};
+  \node[procbox, draw=teal!70!black, fill=teal!8, text width=2.8cm, right=of o_f0] (o_ev) {\textbf{Final Evaluation}\\WAPE (11,037 obs)\\Profit + 95\% CI};
+  \draw[flowarr] (o_tr) -- node[above, font=\scriptsize] {frozen model} (o_ho);
+  \draw[flowarr] (o_ho) -- (o_f0);
+  \draw[flowarr] (o_f0) -- (o_ev);
+
+  \node[font=\bfseries\small, anchor=west, text=blue!65!black] at (-0.2, -0.25) {\texttt{Retail-AI-} Module (3,081 Valid SKUs: Strict Dev Set vs.\ Independent Test Set Separation)};
+  \node[procbox, draw=orange!75!black, fill=orange!8, text width=3.5cm] (r_dev) {\textbf{Development Set}\\100Q SOTA~V2 (113 turns)\\Used for tuning \& optimization};
+  \node[gatebox, text width=3.4cm, right=of r_dev] (r_frz) {\textbf{System Freeze}\\No rule/lexicon edits\\on held-out test queries};
+  \node[aiagent, text width=3.2cm, right=of r_frz] (r_tst) {\textbf{Independent Test Sets}\\50Q Ablation (0\% overlap)\\100Q Expert; 16+4 photos};
+  \node[procbox, draw=blue!65!black, fill=blue!8, text width=2.8cm, right=of r_tst] (r_ev) {\textbf{Generalization}\\Accuracy, Grounding,\\P50/P95/P99, OOD};
+  \draw[flowarr] (r_dev) -- (r_frz);
+  \draw[flowarr] (r_frz) -- (r_tst);
+  \draw[flowarr] (r_tst) -- (r_ev);
+\end{tikzpicture}%
+}
+\caption{Train / Validation / Test data-splitting protocol and data-leakage prevention across both modules.}
+\label{fig:data_split_leakage}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Dataset splits, sample sizes, time windows, and anti-leakage controls}
+\label{tab:split_protocol}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.8cm} L{2.4cm} L{3.6cm} Y}
+\toprule
+\textbf{Dataset Split} & \textbf{Role} & \textbf{Scale \& Time Window} & \textbf{Anti-Leakage Control} \\
+\midrule
+FRN Train/Val (848 stores) & Train \& Tune LightGBM & 14.91M train / 2.00M val (backtest: 6.21M / 2.05M pre-2024-05-26) & Disjoint store IDs from 50 held-out stores; strictly causal lag features \\
+FRN Held-Out (50 stores) & Independent Test \& 2-Fold CV & 25 Fold-0 + 25 Fold-1 stores; eval week 2024-06-26..07-02 (11,037 obs) & Unseen by LightGBM; \texttt{B-Gate} fitted cross-fold across Fold~0 and Fold~1 \\
+SOTA~V2 (100Q) & \textbf{Dev Set} & 100 queries (113 turns), 10 categories & Development and tuning benchmark (59 $\to$ 94/100), kept disjoint from held-out tests \\
+Expert Audit (100Q) \& Ablation (50Q) & \textbf{Independent Test} & 100 queries (174 cards) + 50 queries (5 groups, 3 runs = 150 timings) & 0\% query overlap with SOTA~V2 Dev Set; executed on frozen system \\
+Vision Zero-Leakage & \textbf{Independent Test} & 16 unseen OpenFoodFacts phone photos + 4 non-retail OOD photos & Excluded from SVD-256 fitting and \texttt{MobileNetV3Large-224} training \\
+\bottomrule
+\end{tabularx}
+\end{table}

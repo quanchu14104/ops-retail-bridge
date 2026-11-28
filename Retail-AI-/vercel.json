@@ -1,0 +1,62 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "fluid": true,
+  "regions": ["sin1"],
+  "buildCommand": "cd apps/kiosk-airi && npm ci && npm run build",
+  "outputDirectory": "apps/kiosk-airi/dist",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{apps/**,docs/**,tests/**,scripts/**,.venv/**,*.md,data/ops_chest_frn/**,data/models/gipformer*/**,data/models/speech-enhancement/**,data/models/turn-detection/**,data/models/product-vision/*.tflite,data/*.png,data/*.svg,data/*.csv}"
+    }
+  },
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/avatars/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/vad/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/catalog-index.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+\chapter{Cơ sở Lý thuyết}
+
+Chương này trình bày các khái niệm nền tảng và cơ sở toán học trực tiếp phục vụ bốn trụ cột nghiên cứu của đồ án: điều phối tác nhân LLM có giới hạn, tiền xử lý tiếng nói hỗ trợ, khôi phục nhu cầu bị kiểm duyệt, và tối ưu tồn kho hàng tươi sống định tuyến theo lợi nhuận.
+
+\section{Các Khái niệm Nền tảng}
+
+\subsection*{Tác nhân AI dựa trên LLM và Định tuyến Không Planner có Giới hạn}
+Một \textbf{tác nhân AI (\emph{AI Agent})} kết hợp Mô hình Ngôn ngữ Lớn (LLM) với tri giác đầu vào, bộ nhớ phiên, tập công cụ có kiểu và vòng điều khiển chính sách~\cite{yao2023react,schick2023toolformer}. Trong bán lẻ, vòng lặp ReAct tự do gặp hai hạn chế: (i) nhiều lượt gọi lập kế hoạch tuần tự làm tăng độ trễ đầu-cuối, và (ii) sinh văn bản không neo chặt công cụ dễ dẫn tới sai lệch giá bán, tồn kho hoặc vượt ranh giới an toàn. Lấy cảm hứng từ hướng nghiên cứu định tuyến truy vấn thích nghi~\cite{chen2023frugalgpt,ong2024routellm}, đồ án áp dụng nguyên lý \textbf{định tuyến xác định trước -- LLM có giới hạn sau}:
+\begin{itemize}
+    \item \textbf{Zero-Planner Hybrid Routing (\texttt{Retail-AI-}):} Các truy vấn đi qua lớp cổng tiền-LLM xác định ($<3$\,ms) gồm kiểm tra an toàn y tế/thuốc, ngoài phạm vi và tiêm lệnh OWASP. Các truy vấn danh mục chuẩn (tra giá, so sánh đơn giá, khuyến mãi, tồn kho, bán chạy) được giải trực tiếp bằng truy xuất chỉ mục đảo và công cụ tính toán xác định trước khi phát luồng văn bản tự nhiên, bỏ qua hoàn toàn các vòng planner JSON trung gian; chỉ những truy vấn phức tạp đa ràng buộc hoặc rủi ro cao (dị ứng, trẻ nhỏ) mới chuyển lên nhánh lập kế hoạch có kiểm chứng.
+    \item \textbf{Tách biệt Quyền Đọc/Đề xuất và Quản trị HITL (\texttt{ops\_chest}):} Tác nhân vận hành chỉ được cấp 22 công cụ đọc/biểu mẫu và 9 công cụ tạo đề xuất, loại bỏ hoàn toàn các công cụ tự thực thi ra khỏi lược đồ LLM. Mọi thay đổi nghiệp vụ phải chuyển qua máy trạng thái đề xuất (\texttt{PENDING} $\to$ \texttt{APPROVED}/\texttt{REJECTED} $\to$ \texttt{EXECUTED}) dưới xác nhận tường minh của Cửa hàng trưởng.
+\end{itemize}
+
+\subsection*{Chuỗi Xử lý Tiếng nói Hỗ trợ Tác nhân}
+Để hỗ trợ nhập liệu bằng giọng nói tiếng Việt tại quầy bán hàng, hệ thống sử dụng một tầng giao diện âm thanh bổ trợ gồm: bộ phát hiện tiếng nói hồi quy \emph{Silero VAD~v6}~\cite{silero_vad} hoạt động trên khung 32\,ms (16\,kHz), bộ lọc thông cao kết hợp mạng tăng cường tiếng nói nơ-ron (như \texttt{DPDFNet2} thuộc họ DeepFilterNet~\cite{schroter2022deepfilternet,sherpa_onnx}), nhận dạng giọng nói truyền luồng có tăng trọng từ vựng miền (\code{PhraseListGrammar}~\cite{azure_speech}), và tổng hợp tiếng nói theo mệnh đề. Chi tiết cấu hình triển khai phần mềm của tầng âm thanh (bao gồm cơ chế chống vọng loa và AI biên trình duyệt) được chuyển xuống Phụ lục~A để giữ trọng tâm nghiên cứu tại các chương chính.
+
+\subsection*{Khôi phục Nhu cầu Kiểm duyệt, Dự báo Phân vị và Định tuyến Cổng Lợi nhuận}
+Hàng tươi sống có hạn sử dụng 1--3 ngày chịu ba đặc trưng cốt lõi:
+\begin{itemize}
+    \item \textbf{Kiểm duyệt phải do đứt hàng (\emph{Right-Censored Demand}):} Khi sản phẩm hết hàng trước giờ đóng cửa, doanh số quan sát chỉ phản ánh lượng tồn sẵn có chứ không phải nhu cầu thực~\cite{wecker1978stockouts,vulcano2012primary}. Từ hồ sơ tỷ trọng bán theo giờ học trên các ngày đủ hàng của FreshRetailNet-50K~\cite{freshretailnet50k}, nhu cầu ngày được khôi phục trước bước trích xuất đặc trưng.
+    \item \textbf{Phân loại chuỗi nhu cầu và Dự báo Phân vị LightGBM vs.\ EWMA:} Dựa trên khung phân loại khoảng cách giữa hai lần phát sinh nhu cầu (ADI) và bình phương hệ số biến thiên ($\text{CV}^2$) của Syntetos và Boylan~\cite{syntetos2005intermittent}, chuỗi bán lẻ thể hiện mức độ biến động rất khác nhau theo quy mô cửa hàng và nhóm hàng. \emph{LightGBM}~\cite{ke2017lightgbm} học quan hệ phi tuyến giữa độ trễ, lịch tuần/lễ và lịch sử đứt hàng thông qua hàm mất mát pinball tại ba phân vị $q \in \{0{,}10;\,0{,}50;\,0{,}90\}$, trong khi \emph{EWMA} có mùa theo thứ và sàn phương sai Poisson cung cấp ước lượng phương sai thấp cho các phân khúc dễ nhiễu.
+    \item \textbf{Dự báo gắn với Quyết định Lợi nhuận (Predict-then-Optimize):} Theo nguyên lý của Ban--Rudin~\cite{ban2019bigdata} và Elmachtoub--Grigas~\cite{elmachtoub2022spo}, mô hình có WAPE thấp hơn không tự động tạo lợi nhuận cao hơn dưới hàm chi phí bất đối xứng Newsvendor--FEFO~\cite{nahmias2011perishable,silver2017inventory}. Bộ định tuyến \texttt{B-Gate} tách biệt ước lượng kỳ vọng ($\hat{q}_{50}^{\text{LGBM}}$) khỏi ước lượng độ bất định ($\sigma_{\text{EWMA}}$) và chỉ bật dự báo ML trên những phân khúc chứng minh được phần lợi nhuận mô phỏng tăng thêm dương trên tập huấn luyện ngoài mẫu.
+\end{itemize}
+
+\section{Cơ sở Toán học và Công thức Mô hình}
+
+\intuitionbox{Giải thích trực quan ba ý tưởng toán học quan trọng nhất của đồ án}{%
+Trước khi đi vào các phương trình chi tiết, bạn có thể hình dung ba bài toán toán học chính bằng ví dụ siêu thị hằng ngày:
+\begin{enumerate}[leftmargin=1.4em, itemsep=2pt, topsep=2pt]
+    \item \textbf{Khôi phục nhu cầu bị kiểm duyệt (Công thức~\ref{eq:wape_recovery}):} Giả sử rau cải thường bán 50\% lượng cả ngày trước 14h chiều. Nếu hôm nay kệ hết sạch rau lúc 14h sau khi bán 10 bó, nhu cầu thực ước lượng là $10 / 0{,}5 = 20$ bó chứ không phải 10 bó.
+    \item \textbf{Cân bằng Newsvendor cho hàng dễ hỏng (Công thức~\ref{eq:newsvendor}--\ref{eq:order_qty}):} Hàng tươi hết hạn sau 1--3 ngày sẽ mất trắng 100\% tiền vốn, trong khi bán thiếu chỉ mất phần lãi gộp. Vì vậy, công thức tính một \emph{mức phục vụ mục tiêu} $SL^*$ cân bằng hai rủi ro này, đồng thời đặt sàn phục vụ tối thiểu 95\% cho nhóm hàng hút khách để không mất lượt khách vào cửa hàng.
+    \item \textbf{Cổng lợi nhuận \texttt{B-Gate} (Công thức~\ref{eq:profit_gate}):} Một mô hình học máy có sai số trung bình thấp hơn vẫn có thể chưa tối ưu lợi nhuận nếu biên độ dự báo quá rộng gây đặt thừa. Do đó, hệ thống chỉ bật mô hình học máy trên những phân khúc chứng minh được lãi gộp mô phỏng cao hơn EWMA trên tập cửa hàng huấn luyện.
+\end{enumerate}}
+
+\subsection*{Tiền xử lý Âm thanh Hỗ trợ và Độ đo ASR}
+Trên nhánh khử nhiễu máy chủ, bộ lọc thông cao bậc 4 pha không với tần số cắt $f_c = 85\,\text{Hz}$ loại bỏ nhiễu ù tần số thấp:
+\begin{equation}
+    H(f) = \frac{1}{1 + \left(\frac{f_c}{\max(f,\,1)}\right)^4}, \qquad H(0) = 0, \qquad x_{\text{HPF}} = \mathcal{F}^{-1}\!\left\{\mathcal{F}\{x\} \cdot H(f)\right\}.
+    \label{eq:hpf85}
+\end{equation}
+Tỷ số tín hiệu trên nhiễu ($\widehat{\text{SNR}}_{\text{dB}}$) được ước lượng trên các khung 20\,ms ($N_f = 320$ mẫu ở 16\,kHz) qua tỷ lệ phân vị thứ 88 và thứ 15 của biên độ RMS, làm cơ sở trộn thích nghi đầu ra khử nhiễu:
+\begin{equation}
+    \widehat{\text{SNR}}_{\text{dB}} = \operatorname{clip}\!\left(20 \log_{10}\!\left(\frac{P_{88}(\text{RMS}_{\text{frame}})}{\max(P_{15}(\text{RMS}_{\text{frame}}),\,10^{-6})}\right),\,-5,\,45\right),
+    \label{eq:snr_est}
+\end{equation}
+\begin{equation}
+    y[n] = w(\widehat{\text{SNR}}_{\text{dB}})\, x_{\text{DPDFNet2}}[n] + \bigl(1 - w(\widehat{\text{SNR}}_{\text{dB}})\bigr)\, x_{\text{HPF}}[n], \quad
+    w = \begin{cases}
+        0{,}00 & \widehat{\text{SNR}}_{\text{dB}} \ge 28\,\text{dB}, \\
+        0{,}85 & 10 \le \widehat{\text{SNR}}_{\text{dB}} < 28\,\text{dB}, \\
+        0{,}75 & \widehat{\text{SNR}}_{\text{dB}} < 10\,\text{dB}.
+    \end{cases}
+    \label{eq:snr_blend}
+\end{equation}
+Độ chính xác nhận dạng tiếng nói đo bằng tỷ lệ lỗi từ (WER) và độ trễ cảm nhận đầu-cuối phân rã thành tổng năm chặng:
+\begin{equation}
+    \text{WER} = \frac{S + D + I}{N}, \qquad T_{\text{E2E}} = T_{\text{VAD}} + T_{\text{STT-post}} + T_{\text{retrieval}} + T_{\text{TTFT}} + T_{\text{TTS-1st}}.
+    \label{eq:wer_latency}
+\end{equation}
+
+\subsection*{Chuẩn hóa Đơn giá Quy đổi (\texttt{Retail-AI-})}
+Để xếp hạng tiết kiệm công bằng giữa các quy cách đóng gói khác nhau, giá tham khảo $P_{\text{VND}}$ được quy đổi về đơn giá theo đơn vị chuẩn (100\,g, 1\,kg hoặc 1\,L) cùng phần trăm giảm giá:
+\begin{equation}
+    P_{\text{unit}} = \frac{P_{\text{VND}}}{Q_{\text{base}}}, \qquad d_{\%} = \max\!\left(0,\, \frac{P_{\text{regular}} - P_{\text{VND}}}{P_{\text{regular}}} \times 100\right).
+    \label{eq:unit_price}
+\end{equation}
+
+\subsection*{Khôi phục Nhu cầu, Hàm Mất mát Phân vị, Newsvendor--FEFO và Cổng Lợi nhuận}
+Gọi $s_{i,t}$ là doanh số quan sát của SKU $i$ ngày $t$, $f_{i,t} \in (0,1]$ là tỷ trọng cầu tích lũy theo giờ trước thời điểm đứt hàng. Nhu cầu khôi phục $\hat{D}_{i,t}$, sai số WAPE và hàm mất mát pinball tại phân vị $q \in (0,1)$ được xác định bởi:
+\begin{equation}
+    \hat{D}_{i,t} = \frac{s_{i,t}}{\max(f_{i,t},\,\epsilon)}, \qquad
+    \text{WAPE} = \frac{\sum_{i,t} \left|D_{i,t} - \hat{y}_{i,t}\right|}{\sum_{i,t} \left|D_{i,t}\right|}, \qquad
+    \mathcal{L}_q(y, \hat{y}) = \max\bigl(q(y-\hat{y}),\,(q-1)(y-\hat{y})\bigr).
+    \label{eq:wape_recovery}
+\end{equation}
+Với giá bán $p$, giá vốn $c$, giá trị thu hồi dự kiến $v$ và chi phí cơ hội đứt hàng $s_{\text{out}}$, mức phục vụ tới hạn Newsvendor $SL^*$ và lượng đặt có trần hạn dùng $Q^*$ (chu kỳ $R$, cầu thiếu FEFO $U_R$, tồn cuối kỳ $L_R$, cửa sổ hạn dùng $W = \min(90, L)$, sức chứa kệ trống $C_{\text{room}}$) là:
+\begin{equation}
+    SL^* = \max\!\left(SL_{\text{floor}},\, \operatorname{clip}\!\left(\frac{p - c + s_{\text{out}}}{(p - c + s_{\text{out}}) + (c - v)},\,0{,}30,\,0{,}98\right)\right), \qquad z = \Phi^{-1}(SL^*),
+    \label{eq:newsvendor}
+\end{equation}
+\begin{equation}
+\begin{aligned}
+    Q_{\text{raw}} &= U_R + z\,\sigma_{\text{daily}}\sqrt{R} - L_R, \qquad
+    Q_{\text{cap}} = \max(0,\, D_W - S_W) + \max(z,0)\,\sigma_{\text{daily}}\sqrt{W}, \\
+    Q^* &= \max\!\bigl(0,\,\min(Q_{\text{raw}}, Q_{\text{cap}}, C_{\text{room}})\bigr),
+\end{aligned}
+    \label{eq:order_qty}
+\end{equation}
+trong đó $SL_{\text{floor}} \in \{0{,}95\text{ (hút khách)},\,0{,}90\text{ (ABC-A)},\,0{,}50\text{ (khác)}\}$. Cổng lợi nhuận (\texttt{B-Gate}) chỉ kích hoạt LightGBM cho phân khúc $g = (\text{bậc doanh số} \times \text{tính gián đoạn} \times \text{quy mô cửa hàng})$ khi tổng phần lợi nhuận gộp chuẩn hóa tăng thêm so với EWMA trên tập cửa hàng huấn luyện dương chặt:
+\begin{equation}
+\begin{aligned}
+    V(g) &= \sum_{s \in \mathcal{S}_{\text{train}}} \frac{\sum_{i \in g \cap s}\bigl(\Pi^{\text{ML}}_{i,s} - \Pi^{\text{EWMA}}_{i,s}\bigr)}{\Pi^{\text{EWMA}}_s} > 0, \\
+    \Pi_{i,s} &= \text{Doanh thu}_{i,s} - \text{Giá vốn}_{i,s} - \text{Chi phí hủy}_{i,s}.
+\end{aligned}
+    \label{eq:profit_gate}
+\end{equation}

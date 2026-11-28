@@ -35,9 +35,9 @@ Write-Host "WORKSPACE: $Workspace"
 Write-Step 'Kiem tra 3 repo'
 $missing = @()
 foreach ($repo in @(
-        @{ Dir = $OpsChest; Url = 'https://github.com/quanchu14104/ops_chest.git'; Name = 'ops_chest' },
-        @{ Dir = $RetailAI; Url = 'https://github.com/chinhdz102/Retail-AI-.git'; Name = 'Retail-AI-' })) {
-    if (Test-Path (Join-Path $repo.Dir '.git')) { Write-Ok $repo.Name } else { $missing += $repo }
+        @{ Dir = $OpsChest; Marker = '.git'; Url = 'https://github.com/quanchu14104/ops_chest.git'; Name = 'ops_chest' },
+        @{ Dir = $RetailAI; Marker = 'pyproject.toml'; Url = 'https://github.com/chinhdz102/Retail-AI-.git'; Name = 'Retail-AI-' })) {
+    if ((Test-Path (Join-Path $repo.Dir '.git')) -or (Test-Path (Join-Path $repo.Dir $repo.Marker))) { Write-Ok $repo.Name } else { $missing += $repo }
 }
 if ($missing.Count -gt 0) {
     Write-Warn 'Thieu repo. Chay trong thu muc WORKSPACE roi chay lai script:'
@@ -86,8 +86,17 @@ if (-not $retailEnv['GROQ_API_KEY'] -or $retailEnv['GROQ_API_KEY'].StartsWith('r
 
 # ---- 5. Bridge: crosswalk va overrides ----
 Write-Step 'Bridge: kiem tra crosswalk va sinh overrides'
-Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
-Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
+$prevCatalogPath = $env:THANH_LAM_CATALOG_PATH
+if (($RetailAI -eq $EmbeddedRetailAI) -and -not $prevCatalogPath) {
+    $env:THANH_LAM_CATALOG_PATH = Join-Path $RetailAI 'data\thanh_lam_products.json'
+}
+try {
+    Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
+    Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
+} finally {
+    if ($null -eq $prevCatalogPath) { Remove-Item env:THANH_LAM_CATALOG_PATH -ErrorAction SilentlyContinue }
+    else { $env:THANH_LAM_CATALOG_PATH = $prevCatalogPath }
+}
 
 # ---- 6. Seed DB demo cua Ops Chest (ten/gia Thanh Lam Mart) ----
 $db = Join-Path $OpsChest 'backend\ops_chest.db'
