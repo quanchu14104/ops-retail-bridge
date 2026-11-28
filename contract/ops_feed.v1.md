@@ -24,7 +24,7 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 | `contract` | `"ops-feed"` | Tên hợp đồng |
 | `version` | `1` | Phiên bản. Đổi nghĩa trường thì tăng phiên bản |
 | `published_at` | ISO 8601 có múi giờ | Thời điểm xuất (giờ thật, Asia/Ho_Chi_Minh) |
-| `ops_business_date` | `YYYY-MM-DD` | Ngày nghiệp vụ của Ops Chest (đồng hồ giả lập) lúc xuất |
+| `ops_business_date` | `YYYY-MM-DD` | Ngày nghiệp vụ của Ops Chest lúc xuất |
 | `date_shift_days` | số nguyên | `shift` = ngày thật − `ops_business_date`. Mọi ngày trong feed đã cộng `shift` |
 | `store_name` | chuỗi | Tên cửa hàng theo `/api/meta` của Ops Chest |
 | `items` | mảng | Mỗi mặt hàng đã ánh xạ có trong Ops Chest, sắp theo `ops_sku` |
@@ -54,7 +54,7 @@ File JSON một chiều **Ops Chest → kiosk Retail-AI**, do `bridge sync` ghi 
 
 ## Dời trục thời gian
 
-Ops Chest chạy đồng hồ giả lập (vd 26/06/2024), kiosk dùng ngày thật. Nếu chuyển HSD nguyên gốc, kiosk coi mọi lô
+Ops Chest vận hành theo mốc ngày nghiệp vụ đồng bộ (vd 26/06/2024), kiosk dùng ngày hiện tại. Nếu chuyển HSD nguyên gốc, kiosk coi mọi lô
 là hết hạn. Bridge cộng `date_shift_days` vào mọi ngày lấy từ Ops Chest. Mốc sự kiện đã xảy ra (giờ nhận hàng) bị
 chặn ở thời điểm hiện tại. Tua nhanh Ops Chest 1 ngày thì `date_shift_days` giảm 1; HSD sau khi dời vẫn nhất quán.
 

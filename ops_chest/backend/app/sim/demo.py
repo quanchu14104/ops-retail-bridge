@@ -1,4 +1,4 @@
-"""Du lieu mau chi danh cho demo: lich su SM sua don, de tinh nang hoc thoi quen co gi de hien."""
+"""Du lieu lich su SM dieu chinh don dat hang theo quy trinh van hanh."""
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
@@ -18,7 +18,7 @@ def seed_edit_history(db: Session, actor: str) -> dict:
     """6 don da duyet trong qua khu, moi don SM giam 2 dong cua cung mot nhom khoang 20%. Goi lai khong nhan doi."""
     existing = db.scalar(select(func.count()).select_from(Proposal).where(Proposal.dedupe_key.like("DEMO-EDIT:%")))
     if existing:
-        return {"created": 0, "message": "Lịch sử sửa mẫu đã có sẵn."}
+        return {"created": 0, "message": "Lịch sử điều chỉnh đặt hàng đã có sẵn."}
     category = db.scalar(select(Product.category).where(Product.status == "ACTIVE", Product.freshness_class == "FRESH")
                          .group_by(Product.category).order_by(func.count().desc()))
     products = db.scalars(select(Product).where(Product.category == category, Product.status == "ACTIVE")
@@ -37,8 +37,8 @@ def seed_edit_history(db: Session, actor: str) -> dict:
         payload = {"supplier_id": sup.id, "supplier_name": sup.name, "supplier_email": sup.email,
                    "expected_date": t.isoformat(), "min_order_value": sup.min_order_value, "lines": lines,
                    "total_value": sum(l["line_value"] for l in lines), "note": ""}
-        db.add(Proposal(type="PURCHASE_ORDER", status="EXECUTED", title=f"[Mẫu demo] Đặt hàng {sup.name}",
-                        rationale="Dữ liệu mẫu cho demo học thói quen sửa số lượng.", evidence={}, payload=payload,
+        db.add(Proposal(type="PURCHASE_ORDER", status="EXECUTED", title=f"[Lịch sử] Đặt hàng {sup.name}",
+                        rationale="Lịch sử điều chỉnh số lượng đặt hàng.", evidence={}, payload=payload,
                         original_payload=payload, sm_edits=[{"by": actor, "at": at.isoformat(), "changes": changes}],
                         est_value=payload["total_value"], created_by="sim", created_at=at, decided_by=actor, decided_at=at,
                         executed_at=at, dedupe_key=f"DEMO-EDIT:{i}"))

@@ -1,4 +1,4 @@
-# Kịch bản trình diễn (khoảng 12 phút)
+# Quy trình vận hành tại cửa hàng
 
 Hệ thống vận hành cho cửa hàng **Thanh Lam Mart** với **164 mặt hàng tươi chủ lực**, 7 nhà cung cấp và **90 ngày dữ liệu bán hàng lịch sử** (28/03–25/06/2024). Ngày nghiệp vụ hiện tại của hệ thống là **26/06/2024** (xem thêm cấu trúc dữ liệu và mô hình tại [du-bao-ml.md](du-bao-ml.md), mục 4).
 
@@ -11,14 +11,14 @@ Hệ thống vận hành cho cửa hàng **Thanh Lam Mart** với **164 mặt h�
    ```
 
 2. Mở http://localhost:5173 và đăng nhập tài khoản Store Manager trong `.env.example`.
-3. Mở thêm tab http://localhost:8025 (Mailpit).
+3. Mở thêm tab http://localhost:8025 (hộp thư SMTP nội bộ Mailpit).
 4. Muốn nạp lại trạng thái ban đầu của dữ liệu (sau khi tiến ngày nghiệp vụ), dùng lệnh:
 
    ```bash
    docker compose exec backend python -m app.sim.seed --reset
    ```
 
-5. Trình diễn **cùng kiosk Retail-AI**: thay cho bước 1, chạy `.\scripts\setup.ps1` rồi `.\scripts\start-demo.ps1` ở gốc repo (xem [README gốc](../../README.md)). Khi đó Ops Chest được seed với `CATALOG_OVERRIDES_PATH`, nên tên hàng và giá bán lấy đầy đủ từ bảng ánh xạ danh mục **Thanh Lam Mart**, tên nhà cung cấp hiển thị theo dạng `"Nhà cung cấp Thanh Lam Mart – …"`. Không chạy `docker compose up` đầy đủ của Ops Chest cùng lúc: Postgres của nó giành cổng 5432 với Retail-AI.
+5. Vận hành **đồng bộ cùng kiosk Retail-AI**: thay cho bước 1, chạy `.\scripts\setup.ps1` rồi `.\scripts\start-demo.ps1` ở gốc repo (xem [README gốc](../../README.md)). Khi đó Ops Chest được seed với `CATALOG_OVERRIDES_PATH`, nên tên hàng và giá bán lấy đầy đủ từ bảng ánh xạ danh mục **Thanh Lam Mart**, tên nhà cung cấp hiển thị theo dạng `"Nhà cung cấp Thanh Lam Mart – …"`. Không chạy `docker compose up` đầy đủ của Ops Chest cùng lúc: Postgres của nó giành cổng 5432 với Retail-AI.
 
 ## 1. Buổi sáng của Store Manager (2 phút)
 
@@ -42,14 +42,14 @@ Hệ thống vận hành cho cửa hàng **Thanh Lam Mart** với **164 mặt h�
   - bảng 5 phương pháp: LightGBM WAPE 30,2% so với EWMA 35,1%, độ phủ khoảng 80% là 81% so với 73%;
   - bảng theo nhóm hàng, có nhãn "Dùng ML" / "Giữ engine cũ" theo sai số dự báo. Đây là bộ chọn cũ; app nay chọn theo lãi (mục 7);
   - kiểm tra khôi phục nhu cầu ngày hết hàng (sai số 20,5% so với 32,3% nếu coi số bán là nhu cầu).
-- Nói thẳng kết quả âm: **dữ liệu lịch sử khuyến mãi không cho ước lượng tin cậy độ co giãn khi giảm giá** (ra con số phi lý e ≈ 9,6 vì giá khuyến mãi nội sinh theo nhu cầu), nên OC giữ giả định bảo thủ 3,0. Bảng ước lượng có trên trang để hội đồng thấy.
+- Nói thẳng kết quả âm: **dữ liệu lịch sử khuyến mãi không cho ước lượng tin cậy độ co giãn khi giảm giá** (ra con số phi lý e ≈ 9,6 vì giá khuyến mãi nội sinh theo nhu cầu), nên OC giữ hệ số co giãn tham chiếu 3,0. Bảng ước lượng có trên trang để đối chiếu.
 
 ## 3. Hộp duyệt: HITL (2 phút)
 
 - Mở **Hộp duyệt** (ngăn kéo bên phải: bấm nút Hộp duyệt ở thanh trên, hoặc nói *"cho tôi xem các đề xuất chờ duyệt"* để agent mở thẻ hộp duyệt ngay trong chat).
 - Trong thẻ đặt hàng: cột *Dự báo phủ*, *Đề xuất*, phân loại mức bán (Chủ lực / Bán vừa / Bán chậm) của từng dòng. Đơn dài mặc định lọc còn các dòng cần chú ý (bộ lọc *Cần xem / Đã sửa / Tất cả*, kèm ô tìm SKU).
 - **Sửa bằng lời:** nói với agent *"giảm mỗi món còn một nửa"* hoặc *"đặt thêm 50 <tên hàng>"*, hoặc bấm **Hỏi lại** trên thẻ. Agent tạo đề xuất **mới** chờ duyệt, bản cũ chuyển sang "Đã có bản sửa". Agent không tự duyệt.
-- **Sửa bằng tay:** đổi số lượng một dòng bằng nút +/− (dòng được tô vàng, tổng tiền ở đầu thẻ cập nhật theo), rồi bấm **Duyệt (đã sửa)** trên thanh duyệt ở cuối thẻ. Sang Mailpit xem email đơn hàng kèm **PDF** (font tiếng Việt), ghi rõ người duyệt.
+- **Sửa bằng tay:** đổi số lượng một dòng bằng nút +/− (dòng được tô vàng, tổng tiền ở đầu thẻ cập nhật theo), rồi bấm **Duyệt (đã sửa)** trên thanh duyệt ở cuối thẻ. Mở hộp thư SMTP nội bộ (Mailpit) để xem email đơn hàng kèm **PDF** (font tiếng Việt), ghi rõ người duyệt.
 - Thẻ giảm giá: kéo thanh trượt mức giảm. Nếu mức đó thu về ít hơn giữ giá, thẻ cảnh báo và phải bấm duyệt hai lần. Từ chối thì chọn lý do bằng chip.
 - Mở **Tra cứu → Nhật ký**: các bước tạo → sửa → duyệt → thực thi, mỗi bước có người làm và thời điểm.
 - Đăng nhập tài khoản **nhân viên**: bản tin ghi đề xuất "đang chờ Store Manager duyệt" ở dạng thông tin; thẻ đề xuất không có nút duyệt, menu Công việc không có Quét đề xuất; gọi API duyệt nhận lỗi 403.

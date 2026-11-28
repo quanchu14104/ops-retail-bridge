@@ -83,7 +83,7 @@ def baseline_demand(sold: float, discounted_units: float, discount_pct: float, e
 
     Hang ban nho giam gia khong phai nhu cau binh thuong: tinh ca vao thi du bao bi thoi len, dat du,
     roi lai phai giam gia tiep. Ban gio vang la xa hang du nen bo han; ban giam gia ca ngay thi chia
-    cho he so kich cau (1 + co gian * muc giam). Dung co gian GIA DINH vi cua hang khong biet so that.
+    cho he so kich cau (1 + co gian * muc giam). Dung tham so co gian tham chieu theo cau hinh.
     """
     full_price = max(0.0, sold - discounted_units - evening_units)
     return full_price + discounted_units / (1 + max(0.0, elasticity * discount_pct))

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Dung moi truong demo Ops Chest -> Retail-AI tren mot may moi.
+  Dung moi truong van hanh Ops Chest -> Retail-AI tren mot may moi.
 
 .DESCRIPTION
   Toan bo du an nam trong MOT repo (github.com/quanchu14104/ops-retail-bridge):
@@ -11,7 +11,7 @@
   Khong bao gio ghi khoa API vao dau ca; file .env tao tu .env.example de trong khoa.
 
 .PARAMETER ResetDemo
-  Seed lai DB demo cua Ops Chest (xoa du lieu demo cu: de xuat, lan duyet, ngay da tua).
+  Seed lai DB cua Ops Chest (xoa du lieu phien truoc: de xuat, lan duyet, ngay da tua).
 .PARAMETER SkipInstall
   Bo qua uv sync / npm install.
 .PARAMETER SkipDocker
@@ -95,12 +95,12 @@ Write-Step 'Bridge: kiem tra crosswalk va sinh overrides'
 Invoke-In $Bridge 'uv' @('run', 'bridge', 'crosswalk', 'check')
 Invoke-In $Bridge 'uv' @('run', 'bridge', 'overrides')
 
-# ---- 6. Seed DB demo cua Ops Chest (ten/gia Thanh Lam Mart) ----
+# ---- 6. Seed DB Ops Chest (ten/gia Thanh Lam Mart) ----
 $db = Join-Path $OpsChest 'backend\ops_chest.db'
 if ((Test-Path $db) -and -not $ResetDemo) {
-    Write-Step 'DB demo Ops Chest da co, giu nguyen (them -ResetDemo de seed lai)'
+    Write-Step 'DB Ops Chest da co, giu nguyen (them -ResetDemo de seed lai)'
 } else {
-    Write-Step 'Seed DB demo Ops Chest kem ten/gia Thanh Lam Mart'
+    Write-Step 'Seed DB Ops Chest kem ten/gia Thanh Lam Mart'
     $demo = Read-EnvFile (Join-Path $Bridge 'demo\ops-chest.env')
     foreach ($k in $demo.Keys) { Set-Item "env:$k" $demo[$k] }
     try {
@@ -126,7 +126,7 @@ if ($hasDocker) {
     }
     if (-not $ready) { throw 'Postgres cua Retail-AI chua san sang sau 60 giay' }
     Invoke-In $RetailAI 'uv' @('run', 'python', 'scripts/import_thanh_lam.py', '--apply')
-    Write-Step 'Mailpit (hop thu gia cho email dat hang)'
+    Write-Step 'Mailpit (dich vu SMTP noi bo cho email dat hang)'
     # Chi bat Mailpit: Postgres trong compose cua Ops Chest gianh cong 5432 voi Retail-AI
     Invoke-In $OpsChest 'docker' @('compose', 'up', '-d', 'mailpit')
 }
@@ -138,12 +138,12 @@ Write-Step 'Xong'
 if ($needKeys.Count -gt 0) {
     Write-Warn 'Can dien khoa API cua ban (khong dung chung khoa qua GitHub):'
     foreach ($k in $needKeys) { Write-Host "    - $k" }
-    Write-Host '    Khong co khoa thi demo van chay: Ops Chest khong chat duoc, kiosk chi tra loi cac cau co dinh.'
+    Write-Host '    Khong co khoa thi he thong van chay: Ops Chest khong chat duoc, kiosk chi tra loi cac cau co dinh.'
 }
 if (-not $hasDocker) {
     Write-Warn 'Chua chay buoc Docker. Bat Docker Desktop roi chay lai: .\scripts\setup.ps1 -SkipInstall'
     Write-Host '    Thieu Postgres thi kiosk khong tra loi duoc khuyen mai, hang moi ve; thieu Mailpit thi duyet don dat hang bao loi gui email.'
 }
 Write-Host ''
-Write-Host 'Chay demo:  .\scripts\start-demo.ps1'
+Write-Host 'Khoi chay he thong: .\scripts\start-demo.ps1'
 Write-Host 'Tai khoan Ops Chest: quanly / quanly123 (Store Manager), nhanvien / nhanvien123 (nhan vien)'

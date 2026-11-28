@@ -22,7 +22,7 @@ const ACTION: Record<string, string> = {
   RECEIVE_SHORT_DATED: "Cảnh báo hàng giao cận date",
   AGENT_TURN: "Lượt chat",
   LOTS_PULLED: "Rút kệ",
-  SIM_ADVANCED: "Tua ngày (demo)",
+  SIM_ADVANCED: "Chuyển ngày nghiệp vụ",
 };
 
 const ENTITY: Record<string, string> = {
@@ -100,7 +100,7 @@ export default function Audit() {
   const [action, setAction] = useState("");
   const [entity, setEntity] = useState("");
   const [open, setOpen] = useState<number | null>(null);
-  // Sắp theo thứ tự ghi sổ (id), vì giờ ghi lẫn giờ demo và giờ thật (L-14)
+  // Sắp theo thứ tự ghi sổ (id), vì giờ ghi lẫn mốc ngày nghiệp vụ và giờ hệ thống (L-14)
   const all = useMemo(() => [...(q.data ?? [])].sort((a, b) => b.id - a.id), [q.data]);
   const opts = (f: (r: Row) => string) => [...new Set(all.map(f))].sort();
   const rows = all.filter((r) => (!actor || actorLabel(r.actor) === actor) && (!action || r.action === action) && (!entity || r.entity === entity));

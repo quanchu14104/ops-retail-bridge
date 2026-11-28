@@ -60,8 +60,8 @@ def test_write_is_one_transaction_with_delete_then_insert_and_no_promotions_feed
     sku_to_product = {r["ops_sku"]: r["product_id"] for r in crosswalk_rows}
     recs = build_receipts([ops["pos"][0]], ops["details"], sku_to_product, ts)
     conn = FakeConn()
-    out = write_receipts(conn, recs, store_code="TLM-DEMO-01", kiosk_id="kiosk-01", store_name="Thanh Lam Mart",
-                         address="12 Phố Demo", phone="024", now=ts.now)
+    out = write_receipts(conn, recs, store_code="TLM-01", kiosk_id="kiosk-01", store_name="Thanh Lam Mart",
+                         address="Thanh Lam Mart — Cửa hàng chính", phone="024", now=ts.now)
     assert out == {"deleted": 3, "inserted": len(recs)}
     assert conn.transactions == 1
     sql = [s for s, _ in conn.log]
@@ -72,7 +72,7 @@ def test_write_is_one_transaction_with_delete_then_insert_and_no_promotions_feed
                       "inventory_receipts(event_id,"]
     feed_sql, feed_params = conn.log[4]
     assert "'RECEIVING'" in feed_sql and "PROMOTIONS" not in " ".join(sql)
-    assert feed_params[0] == "TLM-DEMO-01" and (feed_params[4] - feed_params[3]).days == 7
+    assert feed_params[0] == "TLM-01" and (feed_params[4] - feed_params[3]).days == 7
     assert conn.log[5][1] == (SOURCE_NAME,)
     inserted = conn.log[6][1]
-    assert all(row[1] == "TLM-DEMO-01" and row[5] == SOURCE_NAME for row in inserted)
+    assert all(row[1] == "TLM-01" and row[5] == SOURCE_NAME for row in inserted)

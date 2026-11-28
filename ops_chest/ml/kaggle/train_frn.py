@@ -169,7 +169,7 @@ def recover(P: Panel, prof: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def recovery_check(P: Panel, prof: np.ndarray, rng: np.random.Generator) -> dict:
-    """Che gio tren ngay con hang du gio (gia lap het hang tu gio k den het ngay) roi so voi so that."""
+    """Che gio tren ngay con hang du gio (tao tinh huong het hang tu gio k den het ngay) roi so voi so that."""
     i, j = np.where(P.stock_hours[:, :CUTOFF + 1] == 0)
     pick = rng.choice(len(i), size=min(200_000, len(i)), replace=False)
     i, j = i[pick], j[pick]

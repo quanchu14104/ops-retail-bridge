@@ -17,10 +17,10 @@ Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham kh
 > và `scripts\start-demo.ps1` ở gốc repo (xem [README gốc](../README.md)). Các lệnh dưới đây chạy Ops Chest một mình,
 > trong thư mục `ops_chest/`.
 
-> **Dữ liệu và phạm vi trình diễn (Thanh Lam Mart):**
+> **Dữ liệu và phạm vi vận hành (Thanh Lam Mart):**
 > - Hệ thống sử dụng **bộ dữ liệu thực tế của Thanh Lam Mart** gồm danh mục sản phẩm, giá bán và chuỗi lịch sử bán hàng tươi 90 ngày (164 mặt hàng tươi chủ lực, từ 28/03 đến 25/06/2024; tập đánh giá 7 ngày tiếp theo đến 02/07/2024). Một số thông số vận hành chưa có sổ lô lịch sử (giá vốn chuẩn hóa, HSD từng lô, lịch giao của 7 nhà cung cấp) được thiết lập theo quy chuẩn nghiệp vụ của cửa hàng và ghi chú rõ trong [docs/nghiep-vu.md](docs/nghiep-vu.md).
 > - Dự báo cho hàng tươi dùng mô hình **LightGBM** kết hợp engine **EWMA**. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi gộp trong kiểm chứng hồi cứu (backtest)**, không chỉ theo sai số dự báo. Ngoài mẫu, dùng dự báo điểm của LightGBM với độ bất định của EWMA lãi hơn engine EWMA **+0,8%** (trung vị) và thắng ở **76%** số tập kiểm chứng. Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
-> - Email đơn đặt hàng gửi vào hộp thư sandbox Mailpit (`*.test`) để an toàn khi vận hành trình diễn, không gửi ra Internet.
+> - Email đơn đặt hàng gửi qua dịch vụ SMTP nội bộ (Mailpit) với tên miền nội bộ `.local`, không gửi ra Internet.
 
 ## Chạy nhanh (Docker)
 
@@ -33,7 +33,7 @@ docker compose up -d --build
 |---|---|
 | Giao diện | http://localhost:5173 |
 | API + tài liệu OpenAPI | http://localhost:8000/docs |
-| Hộp thư sandbox (đơn hàng PDF gửi tới đây) | http://localhost:8025 |
+| Dịch vụ SMTP nội bộ (đơn hàng PDF gửi tới đây) | http://localhost:8025 |
 
 - Lần chạy đầu, backend tự migrate schema (Alembic) và nạp 90 ngày dữ liệu lịch sử của **Thanh Lam Mart**, mất khoảng 10 giây. Đồng hồ nghiệp vụ đặt ở ngày **26/06/2024**, hỗ trợ tiến ngày tối đa 7 ngày đến **02/07/2024** theo chuỗi dữ liệu đánh giá.
 - Tài khoản đăng nhập mẫu ghi trong `.env.example`: một Store Manager (được duyệt) và một nhân viên (chỉ xem, chat, nhận hàng).
@@ -145,12 +145,12 @@ Bộ eval hiện có 37 câu hỏi tiếng Việt (`app/agent/evals.py`) và ch�
 - **Hàng đang hết:** `search_products` với `out_of_stock=true` liệt kê mặt hàng hết hàng, bán chạy 28 ngày qua lên trước, nên "món nào đang hết" ra tên hàng, không chỉ con số.
 - **Nhận hàng:** `open_receive_form` chỉ hiện form trong chat; việc ghi vẫn đi qua `POST /api/purchase-orders/{id}/receive` do người dùng bấm.
 - **Điều khiển cảm ứng:** nút +/−, thanh trượt mức giảm giá, chip, công tắc, ô ngày dd/mm/yyyy; chữ phụ chuyển vào ô thông tin (i). Nhật ký hiện dạng dễ đọc, danh mục hàng có bộ lọc, KPI chia nhóm, bảng xếp chồng trên điện thoại.
-- **Khi LLM lỗi:** bản tin, menu Công việc và gợi ý nhanh gọi `GET /api/chat/quick/{khóa}` (chạy thẳng tool đọc, không ghi gì) hoặc tự tải thẻ việc, nên app vẫn dùng được và trình diễn không phụ thuộc hoàn toàn vào LLM.
+- **Khi LLM lỗi:** bản tin, menu Công việc và gợi ý nhanh gọi `GET /api/chat/quick/{khóa}` (chạy thẳng tool đọc, không ghi gì) hoặc tự tải thẻ việc, nên app vẫn dùng được ổn định mà không phụ thuộc hoàn toàn vào LLM.
 
 ## Tài liệu
 
 - [docs/nghiep-vu.md](docs/nghiep-vu.md): các quyết định nghiệp vụ, cấu hình vận hành, KPI và tóm tắt kết quả kiểm chứng.
-- [docs/demo.md](docs/demo.md): kịch bản trình diễn khoảng 12 phút tại Thanh Lam Mart.
+- [docs/demo.md](docs/demo.md): hướng dẫn quy trình vận hành chuẩn tại Thanh Lam Mart.
 - [docs/du-bao-ml.md](docs/du-bao-ml.md): dữ liệu lịch sử Thanh Lam Mart, mô hình LightGBM, bộ chọn theo lãi và kiểm chứng hồi cứu A/B.
 - [docs/plan-sua-nghiep-vu.md](docs/plan-sua-nghiep-vu.md): kế hoạch sửa nghiệp vụ N1–N15 (10/11/2026) và trạng thái triển khai.
 - [docs/eval/](docs/eval/): kết quả eval agent theo từng model.

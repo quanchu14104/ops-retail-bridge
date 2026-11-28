@@ -1,4 +1,4 @@
-"""Mot nguon duy nhat cho 'hom nay' de demo/backtest co the co dinh ngay."""
+"""Mot nguon duy nhat cho 'hom nay' de co dinh moc ngay nghiep vu va backtest."""
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
@@ -24,7 +24,7 @@ def now() -> datetime:
 
 
 def set_today(d: date | None) -> None:
-    """Dung cho test va nut tua nhanh demo (app.sim.advance)."""
+    """Dung cho test va chuc nang chuyen ngay nghiep vu (app.sim.advance)."""
     global _override
     _override = d
 

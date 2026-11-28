@@ -87,7 +87,7 @@ def test_forecast_horizon_covers_shelf_life_window():
     assert forecast_horizon(1, 7, 2) == 1 + 7 + 2
 
 
-# ---- giam gia: keo them khach cho ca mat hang, nhu hai bo mo phong
+# ---- giam gia: keo them khach cho ca mat hang, nhat quan voi he thong kiem chung
 def test_markdown_moves_a_lot_that_sells_nothing_at_full_price():
     inp = DispositionInput(qty=20, unit_cost=6000, unit_price=10000, days_left=2, expected_sold_full_price=0,
                            elasticity=3.0, daily_demand=5.0)

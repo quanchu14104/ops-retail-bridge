@@ -7,7 +7,7 @@ import { Icon } from "./ui/controls";
 
 type Meta = { llm_model: string; llm_model_fallback: string | null; llm_configured: boolean };
 
-// Cài đặt: gom những thứ không thuộc việc hằng ngày (giao diện, trợ lý, báo cáo kỹ thuật, công cụ demo) ra khỏi các trang
+// Cài đặt: gom những thứ không thuộc việc hằng ngày (giao diện, trợ lý, báo cáo kỹ thuật, công cụ quản trị) ra khỏi các trang
 export default function SettingsDialog({ open, onClose, theme, setTheme, meta }: {
   open: boolean; onClose: () => void; theme: string; setTheme: (t: string) => void; meta?: Meta;
 }) {

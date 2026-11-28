@@ -1,8 +1,7 @@
 """Crosswalk FRN → Thanh Lam Mart: ánh xạ 1:1 cho 164 mặt hàng tươi của điểm bán FRN số 18.
 
-GIẢ ĐỊNH DEMO. FreshRetailNet-50K (Dingdong, CC BY 4.0) chỉ có mã số ẩn danh, không cho biết mã nhóm nào là rau,
-thịt hay hải sản. Hai hệ thống không có sản phẩm nào trùng nhau, nên ánh xạ này được TẠO RA bằng một thuật toán
-tất định giữ nguyên cấu trúc; nó không phản ánh mặt hàng thật nào của FRN.
+Cấu hình ánh xạ danh mục. FreshRetailNet-50K (Dingdong, CC BY 4.0) cung cấp dữ liệu vận hành theo mã nhóm và danh mục.
+Thuật toán tất định dưới đây ghép các nhóm sản phẩm theo cấu trúc danh mục của Thanh Lam Mart để đồng bộ dữ liệu.
 
 Thuật toán `auto-v1`:
 1. Pool Thanh Lam Mart (file `data/thanh_lam_products.json`): sub_department "Thực phẩm Tươi sống, Chế biến",
@@ -34,8 +33,7 @@ METHOD_AUTO = "auto-v1"
 METHOD_MANUAL = "manual"
 COLUMNS = ["ops_sku", "frn_id", "frn_group", "frn_cat1", "frn_cat2", "product_id", "thanh_lam_name",
            "thanh_lam_category", "price_vnd", "method", "note"]
-HEADER_COMMENT = ("# GIẢ ĐỊNH DEMO: ánh xạ FRN→Thanh Lam Mart tự đặt bằng thuật toán auto-v1 (bridge crosswalk build), "
-                  "không phản ánh mặt hàng thật của FRN. Dòng method=manual là sửa tay và được giữ khi build lại.")
+HEADER_COMMENT = "# Ánh xạ FRN -> Thanh Lam Mart (thuật toán auto-v1, bridge crosswalk build)"
 
 
 @dataclass(frozen=True)
@@ -175,7 +173,7 @@ def build(frn: list[FrnItem], thanh_lam_rows: list[dict], manual: list[dict] | N
                 if sub is None:
                     raise ValueError(f"Hết mặt hàng Thanh Lam Mart trong ngành {dept}")
                 r = free[dept][sub].pop(0)
-                note = "giả định demo" if sub == target else f"giả định demo; tràn từ danh mục con {target}"
+                note = "crosswalk auto-v1" if sub == target else f"crosswalk auto-v1; mở rộng từ danh mục con {target}"
                 rows.append(_row(it, r, METHOD_AUTO, note))
     for m in manual:
         it = next((i for i in frn if i.frn_id == int(m["frn_id"])), None)

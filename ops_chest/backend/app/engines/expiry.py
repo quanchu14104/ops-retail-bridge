@@ -1,4 +1,4 @@
-"""Du bao luong hang se bi huy cua tung lo: mo phong ban FEFO theo du bao nhu cau."""
+"""Du bao luong hang se bi huy cua tung lo: uoc tinh ban FEFO theo du bao nhu cau."""
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Bat ca demo Ops Chest -> Retail-AI: moi dich vu mot cua so PowerShell rieng.
+  Khoi chay he thong Ops Chest -> Retail-AI: moi dich vu mot cua so PowerShell rieng.
 
 .DESCRIPTION
   Mo 5 cua so: Ops Chest API (8000), Ops Chest UI (5173), Retail-AI API (8020), kiosk (5190) va bridge sync
@@ -36,7 +36,7 @@ function Start-ServiceWindow([string]$Title, [string]$Dir, [hashtable]$Environme
 function ConvertTo-Hashtable($Ordered) { $h = @{}; foreach ($k in $Ordered.Keys) { $h[$k] = $Ordered[$k] }; return $h }
 
 if (-not (Test-Path (Join-Path $OpsChest 'backend\ops_chest.db'))) {
-    Write-Warn 'Chua co DB demo cua Ops Chest. Chay .\scripts\setup.ps1 truoc.'
+    Write-Warn 'Chua co DB cua Ops Chest. Chay .\scripts\setup.ps1 truoc.'
     exit 1
 }
 
@@ -75,4 +75,4 @@ Write-Host ''
 Write-Host 'Ops Chest (Store Manager): http://localhost:5173   tai khoan quanly / quanly123'
 Write-Host 'Kiosk (nguoi mua):         http://127.0.0.1:5190'
 Write-Host 'Mailpit (email dat hang):  http://localhost:8025'
-Write-Host 'Dung demo: .\scripts\stop-demo.ps1 (hoac dong cac cua so vua mo).'
+Write-Host 'Dung he thong: .\scripts\stop-demo.ps1 (hoac dong cac cua so vua mo).'

@@ -253,7 +253,7 @@ _backtest_cache: dict = {}
 
 @router.get("/reports/backtest")
 def backtest(days: int = Query(60, ge=14, le=120), user: User = Depends(current_user)):
-    """Mo phong A/B tren cung nhu cau: chinh sach 'kinh nghiem' vs Ops Chest. Mat ~10-30 giay."""
+    """So sanh A/B tren cung du lieu nhu cau: chinh sach 'kinh nghiem' vs Ops Chest. Mat ~10-30 giay."""
     from app.sim.backtest import run_backtest
 
     start = today() - timedelta(days=days)

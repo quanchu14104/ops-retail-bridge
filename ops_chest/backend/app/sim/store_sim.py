@@ -1,4 +1,4 @@
-"""Cua hang mo phong theo ngay: hang ve -> xu ly can date -> ban FEFO -> huy hang het han -> dat hang."""
+"""Vong doi cua hang theo ngay trong kiem chung: hang ve -> xu ly can date -> ban FEFO -> huy hang het han -> dat hang."""
 from __future__ import annotations
 
 from collections import defaultdict

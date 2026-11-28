@@ -15,7 +15,7 @@ services:
       retries: 20
 
   mailpit:
-    # Hop thu sandbox: moi email PO/tra hang deu nam o day, khong gui ra Internet
+    # Dich vu SMTP noi bo (Mailpit): nhan email dat hang/tra hang noi bo, khong gui ra Internet
     image: axllent/mailpit:v1.21
     ports:
       - "8025:8025"  # giao dien web

@@ -6,7 +6,7 @@ Hai che do:
 - Hang ben: order-up-to voi ton an toan z*sigma*sqrt(L+R), z lay theo o ABC-XYZ.
 
 Ca hai deu:
-- Mo phong FEFO ton hien co den ngay hang ve -> chi tinh phan ton CON HAN khi hang moi ve.
+- Uoc tinh FEFO ton hien co den ngay hang ve -> chi tinh phan ton CON HAN khi hang moi ve.
 - Bi chan tran boi luong ban duoc truoc khi lo moi het han (tran HSD) va boi suc chua ke/tu.
 - Co SAN muc phuc vu theo vai tro mat hang (hang keo khach, nhom A, con lai): khach vao cua hang tien loi
   vi tin la co hang, nen engine khong duoc chu dong de thieu hang chi vi lai thap.
@@ -153,7 +153,7 @@ def compute_order(inp: ReplenishmentInput) -> ReplenishmentResult:
     lots = [[float(l.qty), l.expiry] for l in inp.lots if l.qty > 0]
     # Don giao tre van la hang dang ve, neu khong se dat trung. Khong giao nua thi SM phai huy don.
     lots += [[float(inc.qty), inc.expiry] for inc in inp.incoming if inc.arrival < base]
-    # 1) Mo phong tu ngay mai den truoc ngay hang moi ve (hang dang ve cung duoc cong vao)
+    # 1) Uoc tinh tu ngay mai den truoc ngay hang moi ve (hang dang ve cung duoc cong vao)
     pre_days = (arrival - base).days
     pre_sold = pre_waste = 0.0
     for k in range(pre_days):

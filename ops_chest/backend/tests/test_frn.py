@@ -280,7 +280,7 @@ def test_gate_file_overrides_meta_segments(tmp_path, monkeypatch):
         {"variant": "split", "size_cut": 30, "use_ml": ["ban_vua|deu|lon"]}), encoding="utf-8")
     m = _stub_forecaster(tmp_path)
     monkeypatch.setattr("app.ml.forecaster.load", lambda prefix="", art_dir=None: m)
-    big = forecast_router.forecast(mid, END, 7, frn_statics=(1, 2, 3), store_size=164)  # cua hang demo: 164 mat hang
+    big = forecast_router.forecast(mid, END, 7, frn_statics=(1, 2, 3), store_size=164)  # cua hang chinh: 164 mat hang
     assert big.method == "lightgbm_frn" and (big.sigma_lo, big.sigma_hi) == (0.5, 2.0)  # bien the split
     small = forecast_router.forecast(mid, END, 7, frn_statics=(1, 2, 3), store_size=20)  # diem nho: nhom bi loai
     assert small.method.startswith("ewma")

@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     # Gio dong cua: danh sach rut ke chay sau gio nay (cua hang khong mo 24 gio)
     closing_hour: int = 22
 
-    # Nut tua nhanh ngay nghiep vu cho trinh dien. Tat khi van hanh thuc te.
+    # Cho phep chuyen ngay nghiep vu khi kiem thu. Tat khi van hanh theo ngay thuc te.
     enable_sim_controls: bool = True
 
     # Du bao: "auto" = LightGBM (huan luyen tren du lieu lich su Thanh Lam Mart) cho hang tuoi o nhom thang engine cu,
@@ -56,15 +56,15 @@ class Settings(BaseSettings):
 
     smtp_host: str = "localhost"
     smtp_port: int = 1025
-    smtp_from: str = "dathang@opschest-demo.test"
+    smtp_from: str = "cuahang@thanhlammart.local"
 
     store_name: str = "Thanh Lam Mart"
-    store_address: str = "14 Bà Triệu"
+    store_address: str = "Thanh Lam Mart — Cửa hàng chính"
     store_phone: str = "0987654321"
     # File JSON ghi de ten/gia hang va ten/email NCC Thanh Lam Mart luc khoi tao (vd bridge sinh). De trong = khong ghi de.
     catalog_overrides_path: str | None = None
 
-    # Ngay nghiep vu. De trong = ngay that (Asia/Ho_Chi_Minh). Dat co dinh de demo on dinh.
+    # Ngay nghiep vu. De trong = ngay hien tai (Asia/Ho_Chi_Minh). Co the dat co dinh moc ngay nghiep vu.
     sim_today: date | None = None
     timezone: str = "Asia/Ho_Chi_Minh"
 

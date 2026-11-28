@@ -241,7 +241,7 @@ function Elasticity({ e }: { e: NonNullable<FrnReport["elasticity"]> }) {
       <p className="small" style={{ marginTop: 4 }}>
         <strong>Không dùng trong OC.</strong> e ≈ 9 nghĩa là giảm 10% giá mà bán tăng ~90%: không hợp lý. Giá khuyến mãi trong lịch sử bán hàng mang tính
         nội sinh (thường giảm giá vào lúc nhu cầu cao), nên so ngày giảm với ngày không giảm không đo được tác động thuần của giá. Engine giữ
-        giả định bảo thủ 3,0; muốn đo đúng phải thử nghiệm giá có kiểm soát.
+        tham số tham chiếu 3,0; muốn đo đúng phải thử nghiệm giá có kiểm soát.
       </p>
       <table>
         <thead><tr><th>Tập điểm bán</th><th className="num">e</th><th className="num">Khoảng tin cậy 90%</th><th className="num">Số dòng</th></tr></thead>

@@ -1,8 +1,8 @@
 """Sinh `out/ops_catalog_overrides.json` cho seam lúc seed của Ops Chest (CATALOG_OVERRIDES_PATH).
 
 - Tên và giá bán Thanh Lam Mart cho từng SKU đã ánh xạ (giá vốn do Ops Chest tính lại theo tỷ lệ cũ).
-- 7 nguồn hàng đổi thành "Nhà cung cấp Thanh Lam Mart – {ngành hàng} (demo)", dùng chung email `.test`. Mã NCC01…NCC07
-  khớp nhóm FRN đã sắp xếp tăng dần, đúng quy tắc của `build_frn_catalog`.
+- 7 nguồn hàng dùng tên "Nhà cung cấp Thanh Lam Mart – {ngành hàng}" và email nội bộ `dathang@ncc.thanhlammart.local`.
+  Mã NCC01…NCC07 khớp nhóm FRN đã sắp xếp tăng dần, đúng quy tắc của `build_frn_catalog`.
 - Lead time, lịch giao, đơn tối thiểu và thỏa thuận trả hàng KHÔNG có trong file, nên giữ nguyên.
 """
 from __future__ import annotations
@@ -14,9 +14,9 @@ from pathlib import Path
 
 FORMAT = "ops-catalog-overrides"
 VERSION = 1
-SUPPLIER_EMAIL = "dathang@khotong-demo.test"
-DISCLAIMER = ("Giả định demo: tên/giá Thanh Lam Mart gán cho mặt hàng FRN qua crosswalk tự đặt; nguồn hàng là nhà "
-              "cung cấp giả định, email chỉ rơi vào Mailpit (.test).")
+SUPPLIER_EMAIL = "dathang@ncc.thanhlammart.local"
+DISCLAIMER = ("Ánh xạ tên và giá danh mục Thanh Lam Mart cho chuỗi 164 SKU tươi sống qua crosswalk; "
+              "đồng bộ cung ứng nội bộ Thanh Lam Mart.")
 
 
 def supplier_names(rows: list[dict]) -> dict[str, str]:
@@ -30,7 +30,7 @@ def supplier_names(rows: list[dict]) -> dict[str, str]:
     for g in sorted(groups, key=lambda g: (-size[g], g)):
         seen[dept[g]] += 1
         label[g] = dept[g] if seen[dept[g]] == 1 else f"{dept[g]} {seen[dept[g]]}"
-    return {f"NCC{n + 1:02d}": f"Nhà cung cấp Thanh Lam Mart – {label[g]} (demo)" for n, g in enumerate(groups)}
+    return {f"NCC{n + 1:02d}": f"Nhà cung cấp Thanh Lam Mart – {label[g]}" for n, g in enumerate(groups)}
 
 
 def build(rows: list[dict], thanh_lam_sha: str = "", crosswalk_sha: str = "", now: datetime | None = None) -> dict:

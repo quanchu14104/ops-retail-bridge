@@ -5,7 +5,7 @@ A - BaselinePolicy ("kinh nghiem"): muc ton muc tieu = TB ban 28 ngay x so ngay 
 A' - BaselineGoldenHourPolicy: A + giam 30% buoi toi hang het han hom nay, dung nhu chu tiem binh thuong.
     Day la doi thu so sanh mac dinh; so voi A thuan thi phan loi cua giam gia bi tinh het cho B.
 B - OpsChestPolicy: dung dung cac engine cua Ops Chest (du bao, newsvendor/order-up-to, tran HSD,
-    ABC-XYZ, de xuat giam gia/tra hang). Trong mo phong coi nhu SM duyet het de xuat.
+    ABC-XYZ, de xuat giam gia/tra hang). Trong kiem chung coi nhu SM duyet het de xuat.
 """
 from __future__ import annotations
 
@@ -114,7 +114,7 @@ class OpsChestPolicy(Policy):
         return self.approval_rate >= 1 or _rng(sim.seed, "approve", *key, d.toordinal()).random() < self.approval_rate
 
     def _demand(self, sim: StoreSim, p: ProductSpec, last: int) -> list[float]:
-        """Chuoi nhu cau cho du bao, chi dung thu cua hang quan sat duoc (khong nhin so that cua gia lap)."""
+        """Chuoi nhu cau cho du bao, chi dung thu cua hang quan sat duoc (khong nhin du lieu an cua bo kiem chung)."""
         h = sim.hist[p.sku]
         sales = h["sales"][-last:]
         if not self.adjust_markdown:

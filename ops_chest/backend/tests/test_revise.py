@@ -14,7 +14,7 @@ from tests.test_hitl import ScriptedLLM
 
 
 def _fresh(db, p):
-    # Ngay mo phong (SIM_TODAY) co the cu hon dong ho that -> de xuat vua tao da qua han chot; keo han ra xa.
+    # Ngay nghiep vu (SIM_TODAY) co the cu hon dong ho he thong -> de xuat vua tao da qua han chot; keo han ra xa.
     p.expires_at = dt.datetime.now() + dt.timedelta(days=1)
     db.commit()
 

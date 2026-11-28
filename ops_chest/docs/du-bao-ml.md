@@ -13,7 +13,7 @@ Tài liệu này mô tả thiết kế hệ thống dự báo nhu cầu hàng t�
 
 ## 2. Dữ liệu Thanh Lam Mart
 
-- **Nguồn:** Bộ dữ liệu danh mục sản phẩm, giá bán và chuỗi lịch sử bán hàng tươi thu thập từ cửa hàng **Thanh Lam Mart** (chỉ phục vụ nghiên cứu và trình diễn đồ án).
+- **Nguồn:** Bộ dữ liệu danh mục sản phẩm, giá bán và chuỗi lịch sử bán hàng tươi thu thập từ cửa hàng **Thanh Lam Mart** (dữ liệu vận hành phục vụ nghiên cứu và dự báo).
 - **Quy mô:**
   - 164 mặt hàng tươi chủ lực tại điểm bán chính Thanh Lam Mart, mở rộng chuẩn hóa qua 50.000 chuỗi dữ liệu (898 mã điểm chuẩn hóa, 865 mặt hàng tươi, 7 nhóm quản lý, 32 / 84 / 233 nhóm hàng cấp 1 / 2 / 3) để huấn luyện mô hình tổng quát hóa và chống quá khớp.
 - **Thời gian:** 28/03–25/06/2024 (90 ngày lịch sử huấn luyện) và 26/06–02/07/2024 (7 ngày đánh giá tiếp theo). Có dữ liệu bán theo ngày và chi tiết theo từng khung giờ.
@@ -141,8 +141,8 @@ Che các giờ cuối ngày trên 200.000 ngày còn hàng đủ giờ, rồi so
   - bỏ những ngày có cờ khuyến mãi: e ≈ 9,6.
 - Hai con số đều phi lý: giảm 10% giá mà bán tăng 50–96%. Giải thích hợp lý nhất là **giá khuyến mãi trong lịch sử mang tính nội sinh**: cửa hàng thường giảm giá đúng vào lúc hoặc đúng mặt hàng mà nhu cầu đang cao, nên so sánh ngày giảm giá với ngày không giảm giá không đo được tác động thuần của giá.
 - **Vì vậy:**
-  - OC **không** lấy độ co giãn trực tiếp từ hồi quy lịch sử; engine giữ giả định bảo thủ 3,0 cho hàng tươi. Cấu hình `ELASTICITY_FROM_FRN=false` mặc định; bật lên chỉ để kiểm chứng đối chiếu.
-  - Phép kiểm chứng hồi cứu giữ mức tham chiếu thận trọng: khách phản ứng bằng 50% mức engine giả định, kèm các kịch bản độ nhạy 25% và 100%.
+  - OC **không** lấy độ co giãn trực tiếp từ hồi quy lịch sử; engine giữ hệ số co giãn tham chiếu 3,0 cho hàng tươi. Cấu hình `ELASTICITY_FROM_FRN=false` mặc định; bật lên chỉ để kiểm chứng đối chiếu.
+  - Phép kiểm chứng hồi cứu giữ mức tham chiếu thận trọng: khách phản ứng bằng 50% mức tham chiếu của engine, kèm các kịch bản độ nhạy 25% và 100%.
 - Đây là một **kết quả âm có giá trị**: không nên học độ co giãn trực tiếp từ lịch sử giá quan sát được khi giá không được đặt ngẫu nhiên. Muốn đo đúng cần thử nghiệm giá có kiểm soát tại cửa hàng.
 
 ### 5.5 Khung giờ bán
@@ -246,7 +246,7 @@ Mục 5.6 cho thấy dự báo sai số thấp chưa hẳn tối ưu về lợi 
 
 **Giới hạn của phép đối chiếu:**
 - Dữ liệu gốc chưa có đầy đủ số liệu hao hụt theo từng lô hay giá vốn lịch sử chi tiết, nên một phần tham số vận hành (chiết khấu NCC, kỳ hạn đổi trả, hệ số co giãn) được chuẩn hóa theo cấu hình nghiệp vụ của Thanh Lam Mart.
-- Trong kiểm chứng hồi cứu, nhà cung cấp được giả định giao đủ và đúng hẹn, làm mức hết hàng tuyệt đối của các chính sách đều khả quan hơn thực tế.
+- Trong kiểm chứng hồi cứu, nhà cung cấp được thiết lập giao đủ và đúng hẹn, làm mức hết hàng tuyệt đối của các chính sách đều khả quan hơn thực tế.
 
 ## 6. Giới hạn cần nói rõ
 

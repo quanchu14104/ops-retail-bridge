@@ -15,11 +15,11 @@ Mặc định đã dùng cho các câu hỏi ở mục 8 (chờ xác nhận): (1
 | N3 | Xong (đợt 1) | `StockMovement.reason`; báo hủy có lý do là đề xuất `DISPOSE` (không thêm loại mới), báo cáo tách theo lý do. |
 | N4 | Xong (đợt 1) | Nhiều lô mỗi dòng, từ chối tại cửa, chuẩn 2/3 vòng đời, giao thiếu/dư, giá hóa đơn. Form `open_receive_form` trong chat vẫn một HSD mỗi dòng; form đầy đủ ở trang Đặt & nhận hàng, và từ 24/11/2026 cũng có trong thẻ "Đơn chờ giao" mở trong chat. |
 | N6 | Xong (đợt 2) | Sàn 95/90/50% trong config, dùng cả ở engine DB và bộ kiểm chứng hồi cứu. Backtest đo thêm hết hàng của hàng kéo khách, nhóm A và "cả nhóm tươi trống". Thêm dòng "B không có sàn" và "sàn nhóm A 80%". |
-| N9 | Xong (đợt 2) | `max_stock_qty`, `min_display_qty`; demo: tủ kem 36 đơn vị, hàng bền trưng bày tối thiểu 2–3. |
-| N7 | Xong (đợt 2) | `delivery_weekdays`, bảng `supplier_closures`; demo seed lịch nghỉ Tết cho 8 đại lý. Baseline A trong backtest không tính trước kỳ nghỉ (giống cửa hàng làm tay). |
+| N9 | Xong (đợt 2) | `max_stock_qty`, `min_display_qty`; ví dụ: tủ kem 36 đơn vị, hàng bền trưng bày tối thiểu 2–3. |
+| N7 | Xong (đợt 2) | `delivery_weekdays`, bảng `supplier_closures`; dữ liệu khởi tạo có lịch nghỉ Tết cho 8 đại lý. Baseline A trong backtest không tính trước kỳ nghỉ (giống cửa hàng làm tay). |
 | N8 | Xong (đợt 2) | Phương án bù đơn/hoãn trong payload, duyệt đơn dưới mức cần `min_order_ack`. Bộ kiểm chứng hồi cứu vẫn bỏ qua đơn tối thiểu. |
 | N15 | Xong (đợt 2) | Dòng SM tự thêm được áp chiết khấu của thỏa thuận. |
-| N5 | Xong (đợt 3) | Bảng `supplier_returns`, lô `RETURN_PENDING` tách từ lô gốc, `return_mode` CREDIT/EXCHANGE (demo: NCC sữa đổi hàng). Xác nhận/lấy hàng/từ chối/đã nhận tiền là thao tác của SM qua REST, không qua đề xuất. Bộ backtest vẫn ghi tiền hoàn ngay (ghi trong giới hạn). |
+| N5 | Xong (đợt 3) | Bảng `supplier_returns`, lô `RETURN_PENDING` tách từ lô gốc, `return_mode` CREDIT/EXCHANGE (ví dụ: NCC sữa đổi hàng). Xác nhận/lấy hàng/từ chối/đã nhận tiền là thao tác của SM qua REST, không qua đề xuất. Bộ backtest vẫn ghi tiền hoàn ngay (ghi trong giới hạn). |
 | N13 | Xong (đợt 3) | `inventory_snapshots` (job sáng, tua nhanh, seed), hao hụt trừ vào lợi nhuận gộp, GMROI, điểm NCC, hủy theo lý do. |
 | N12 | Xong (đợt 3) | `listed_date`, nhãn hàng mới, kế hoạch xả tồn trên thẻ ngừng nhập. Luồng SKU tham chiếu để ở P2. |
 | N14 | Xong (đợt 3) | `last_counted_date` (ghi ở endpoint đếm, không ở builder), lịch A/B/C 7/14/30 ngày, phát hiện tồn ảo. |
@@ -68,7 +68,7 @@ Công sức: S dưới nửa ngày, M một đến hai ngày, L từ ba ngày.
 
 ### N1. Kiểm date: đếm theo lô, không chỉ theo SKU
 
-**Hiện trạng.** Kiểm kê (`services/stockcount.py`) đếm theo SKU. Thiếu thì trừ lô gần hết hạn trước, dư thì cộng vào lô mới nhất (`proposals/executor.py`, `_stock_adjust`). Doanh số POS cũng trừ lô theo FEFO giả định.
+**Hiện trạng.** Kiểm kê (`services/stockcount.py`) đếm theo SKU. Thiếu thì trừ lô gần hết hạn trước, dư thì cộng vào lô mới nhất (`proposals/executor.py`, `_stock_adjust`). Doanh số POS cũng trừ lô theo quy tắc FEFO.
 
 **Vì sao sai.** Khách hay với tay lấy hộp sữa ở phía trong, tức lô mới. Sổ ghi lô cũ đã hết, trên kệ lô cũ vẫn còn. Hệ quả: lô sắp hết hạn không hiện trong báo cáo cận date, không được đề xuất giảm giá, và quá hạn ngay trên kệ mà sổ không biết. Bảng độ nhạy đã có dòng "20–50% lượt mua lấy lô mới", nhưng chỉ đo lượng hủy; nó không cho hệ thống cách nào sửa sổ.
 
@@ -198,7 +198,7 @@ Duyệt đơn dưới mức tối thiểu cần tick "đã thỏa thuận với 
 
 ### N10. Giờ giảm giá theo nhóm hàng
 
-**Hiện trạng.** Giờ vàng cố định sau 18h, giả định 30% lượt khách cho mọi nhóm (`EVENING_SHARE` trong `engines/disposition.py`). Dữ liệu bán chỉ có theo ngày.
+**Hiện trạng.** Giờ vàng cố định sau 18h, ước tính 30% lượt khách cho mọi nhóm (`EVENING_SHARE` trong `engines/disposition.py`). Dữ liệu bán chỉ có theo ngày.
 
 **Vì sao cần.** Cơm hộp bán chủ yếu buổi trưa. Giảm giá sau 18h ở cửa hàng khu văn phòng là giảm cho không ai mua. Bánh mì thì đỉnh buổi sáng.
 
@@ -210,7 +210,7 @@ Mục này tốn công nhất trong P1. Nếu không kịp, ghi vào giới hạ
 
 **Hiện trạng.** Mức giảm được chấp nhận tới 95% cho mọi nhóm hàng.
 
-**Sửa.** Thêm cấu hình theo nhóm: `markdown_allowed` và `max_markdown_pct`. Theo trí nhớ của tôi, Nghị định 81/2018/NĐ-CP đặt trần giảm giá 50%, có ngoại lệ cho thực phẩm tươi sống, và cấm khuyến mại thuốc lá, rượu từ 15 độ, sữa thay thế sữa mẹ. **Phải đối chiếu lại văn bản trước khi viết vào báo cáo.** Danh mục demo chưa có các nhóm cấm, nên việc cần làm chỉ là cờ, trần, và test chặn.
+**Sửa.** Thêm cấu hình theo nhóm: `markdown_allowed` và `max_markdown_pct`. Theo trí nhớ của tôi, Nghị định 81/2018/NĐ-CP đặt trần giảm giá 50%, có ngoại lệ cho thực phẩm tươi sống, và cấm khuyến mại thuốc lá, rượu từ 15 độ, sữa thay thế sữa mẹ. **Phải đối chiếu lại văn bản trước khi viết vào báo cáo.** Danh mục hiện tại chưa có các nhóm cấm, nên việc cần làm chỉ là cờ, trần, và test chặn.
 
 ### N12. Ngừng nhập và hàng mới
 
@@ -248,7 +248,7 @@ Trong `apply_edits` (`proposals/service.py`), dòng hàng SM tự thêm vào đ�
 
 ## 5. P2: không làm, ghi vào giới hạn của đồ án
 
-- **Kênh đặt hàng.** Cửa hàng độc lập phần lớn đặt qua Zalo, điện thoại, hoặc nhân viên bán hàng của nhà phân phối ghé theo tuyến. PO qua email kèm PDF là giả định của demo. Nên nói rõ khi bảo vệ.
+- **Kênh đặt hàng.** Cửa hàng độc lập phần lớn đặt qua Zalo, điện thoại, hoặc nhân viên bán hàng của nhà phân phối ghé theo tuyến. PO qua email nội bộ kèm PDF là chuẩn xuất chứng từ của hệ thống.
 - **Công nợ và ngân sách nhập hàng.** Cửa hàng nhỏ bị giới hạn bởi tiền mặt nhiều hơn bởi dự báo.
 - **Nhiều NCC cho một SKU**, giá vốn thay đổi theo thời gian, VAT.
 - **Hàng ký gửi**: NCC chịu rủi ro hủy, cách đặt hàng khác hẳn.
@@ -281,5 +281,5 @@ Mỗi mục kèm test trong `backend/tests/test_zy_business_rules.py` theo đún
 
 1. **Cửa hàng mở 24 giờ hay có giờ đóng cửa?** Quyết định thời điểm chạy danh sách rút kệ (N2) và giờ giảm giá (N10).
 2. **N6:** chấp nhận con số lợi nhuận trong báo cáo giảm để đổi lấy tỷ lệ hết hàng không tệ hơn baseline?
-3. **N5:** demo theo hướng hoàn tiền, đổi hàng, hay cả hai?
+3. **N5:** vận hành theo hướng hoàn tiền, đổi hàng, hay cả hai?
 4. **Phạm vi:** làm đủ ba đợt, hay Đợt 1 cộng N6 rồi ghi phần còn lại vào giới hạn?

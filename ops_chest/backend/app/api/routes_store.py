@@ -1,4 +1,4 @@
-"""Gia thuyet nhu cau, he so hoc tu phan sua, tua nhanh demo."""
+"""Gia thuyet nhu cau, he so hoc tu phan sua, chuyen ngay nghiep vu."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException

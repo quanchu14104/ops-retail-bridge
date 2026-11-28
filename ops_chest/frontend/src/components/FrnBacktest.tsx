@@ -156,8 +156,8 @@ export default function FrnBacktest({ d }: { d: FrnBt }) {
 
       {d.scenarios.length > 0 && (
         <div className="table-wrap" style={{ marginTop: 16 }}>
-          <h3>Kết quả phụ thuộc vào giả định đến đâu</h3>
-          <p className="small secondary" style={{ marginTop: -4 }}>Mỗi dòng đổi một giả định; giá trị là trung vị qua các điểm bán, B ở đây là {hasGate ? "B-gate (bộ chọn ngoài mẫu của từng điểm)" : "B-ML"}.</p>
+          <h3>Phân tích độ nhạy theo tham số</h3>
+          <p className="small secondary" style={{ marginTop: -4 }}>Mỗi dòng thay đổi một tham số đầu vào; giá trị là trung vị qua các điểm bán, B ở đây là {hasGate ? "B-gate (bộ chọn ngoài mẫu của từng điểm)" : "B-ML"}.</p>
           <table>
             <thead><tr><th>Kịch bản</th><th className="num">Số điểm</th><th className="num">Lãi gộp B so với A</th><th className="num">Tỷ lệ hủy A / B</th><th className="num">Hết hàng A / B</th></tr></thead>
             <tbody>{d.scenarios.map((r) => (

@@ -1,7 +1,7 @@
 [project]
 name = "ops-retail-bridge"
 version = "0.1.0"
-description = "Cầu nối một chiều Ops Chest → Retail-AI qua nền dữ liệu hàng hoá dùng chung (demo)"
+description = "Cầu nối một chiều Ops Chest → Retail-AI qua nền dữ liệu hàng hoá dùng chung"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

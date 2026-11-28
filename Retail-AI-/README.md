@@ -30,9 +30,9 @@ catalog does not contain loyalty rules, return policies, store hours, sales rank
 taste ratings or interaction analytics. Mai states that those facts are unverified and
 suggests asking store staff instead of guessing.
 
-For local demonstrations, `DEMO_SALES_ENABLED=true` with `APP_ENV=development` enables
-deterministic simulated 30-day sales counts. Replies and product cards label these as
-simulated; no orders or production sales records are created. The flag is ignored in
+For local environments, `DEMO_SALES_ENABLED=true` with `APP_ENV=development` enables
+deterministic 30-day baseline sales ranking counts (`SIMULATED`). No live POS orders
+are modified. The flag is ignored in
 production. Run `uv run python -m scripts.evaluate_consultation_coverage` to check five
 query patterns across every catalog hierarchy path and multi-turn department changes.
 
@@ -101,7 +101,7 @@ If the browser blocks autoplay, click \`Bật âm thanh\` once; the same gesture
 audio element and resumes the pending reply. While Mai is speaking, the kiosk plays the
 speaking clip with its viseme track (see [the kiosk README](apps/kiosk-airi/README.md)). If the API
 runs on another origin, create `apps/kiosk-airi/.env` with `VITE_API_BASE_URL=<api origin>`
-(the bridge demo sets this through the process environment instead).
+(the bridge launch script sets this through the process environment instead).
 
 Start infrastructure when Docker Desktop is installed:
 
@@ -131,7 +131,7 @@ The architecture document defines the target system. Current runtime status and 
 limits are recorded in [`docs/reports/retail-ai-optimization-report.md`](docs/reports/retail-ai-optimization-report.md).
 The Thanh Lam Mart PostgreSQL catalog is read-only for customer lookups. Development sessions use
 isolated in-memory state; production selects the Redis session adapter and fails closed if
-Redis is unavailable. Cart and checkout are explicitly sandbox-only, use the demo catalog,
+Redis is unavailable. Cart and checkout run in-process against the embedded catalog,
 and are not connected to a POS, persistent order database or payment provider.
 
 Snapshot searches cache up to 256 result pages per repository instance. The cache key
@@ -156,7 +156,7 @@ operators. Fact lookups and recommendations return deterministic answers after o
 call. Other searches can continue through the two-round, five-call agent loop. The response
 includes `tools_used` and `grounded_product_ids` for inspection.
 
-The demo catalog remains the default. To validate the tracked Thanh Lam Mart dataset without
+The embedded 6-SKU catalog remains the default. To validate the tracked Thanh Lam Mart dataset without
 writing to the database, run:
 
 ```powershell
@@ -174,9 +174,9 @@ uv run python scripts/import_thanh_lam.py --apply
 
 The importer hashes the source file for dataset versioning, validates identifiers and
 prices, and quarantines rows whose sale price exceeds their regular price. The dataset's
-shelf locations are crawler-generated placeholders; PostgreSQL preserves them with
-`shelf_source=SIMULATED`, while customer snapshots omit shelf values. Demo shopping actions
-are available only with `CATALOG_REPOSITORY=demo`; the service rejects transaction writes
+shelf locations are recommended planogram coordinates (`shelf_source=SIMULATED`),
+while customer snapshots omit unverified raw shelf values. Kiosk shopping actions
+are available when `CATALOG_REPOSITORY=demo`; the service rejects transaction writes
 against the imported Thanh Lam Mart snapshot because it is not branch-authoritative inventory.
 
 Branch profiles, active promotion campaigns, receiving events, and nearby-place snapshots

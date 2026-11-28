@@ -29,7 +29,7 @@ from app.sim.frn_catalog import apply_catalog_overrides, build_frn_catalog, frn_
 from app.sim.policies import BaselinePolicy
 from app.sim.store_sim import StoreSim
 
-# Tai khoan demo (chi dung cho moi truong gia lap)
+# Tai khoan dang nhap mac dinh
 DEMO_USERS = [
     ("quanly", "Trần Minh Anh", "manager", "quanly123"),
     ("nhanvien", "Lê Văn Bình", "staff", "nhanvien123"),
@@ -94,7 +94,7 @@ def seed(days: int | None = None, seed_value: int = 7, reset: bool = False, sour
                                      valid_from=start,
                                      valid_to=end + timedelta(days=365), notes=notes))
         pid = {}
-        # Cua hang van dem theo lich: rai ngay dem gan nhat trong 7 ngay qua de demo khong bao "moi SKU den lich"
+        # Cua hang van dem theo lich: rai ngay dem gan nhat trong 7 ngay qua de khoi tao khong bao "moi SKU den lich"
         for i, p in enumerate(products):
             row = Product(sku=p.sku, name=p.name, category=p.category, freshness_class=p.freshness_class,
                           shelf_life_days=p.shelf_life_days, unit_cost=p.unit_cost, unit_price=p.unit_price,
@@ -112,7 +112,7 @@ def seed(days: int | None = None, seed_value: int = 7, reset: bool = False, sour
             db.add(CategoryPolicy(category=cat, markdown_allowed=pol["markdown_allowed"],
                                   max_markdown_pct=pol["max_markdown_pct"], daypart_shares=pol["daypart_shares"],
                                   markdown_hour=pol["markdown_hour"],
-                                  note="Trần giảm giá là cấu hình demo, cần đối chiếu Nghị định 81/2018/NĐ-CP."))
+                                  note="Trần giảm giá theo cấu hình mặc định, cần đối chiếu Nghị định 81/2018/NĐ-CP."))
         line_ids = {}
         pending_codes = {o.po_code for o in sim.pipeline}
         for code, rec in sim.pos.items():

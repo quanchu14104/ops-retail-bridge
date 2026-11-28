@@ -1,7 +1,7 @@
 """So sanh phuong an xu ly hang can date theo GIA TRI THU HOI KY VONG (VND) cua mot lo.
 
 Phuong an: giu nguyen (de het han roi huy) / giam gia theo bac / tra NCC (neu thoa thuan cho phep).
-Gia dinh co gian: giam p% gia -> nhu cau tang (elasticity * p). He so theo nhom vong doi, ghi ro
+Tham so co gian: giam p% gia -> nhu cau tang (elasticity * p). He so theo nhom vong doi, ghi ro
 trong docs; Store Manager thay doi duoc.
 """
 from __future__ import annotations
@@ -9,11 +9,11 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 ELASTICITY = {"FRESH": 3.0, "SHORT": 2.0, "LONG": 1.2}
-ELASTICITY_SOURCE = {"FRESH": "giả định", "SHORT": "giả định", "LONG": "giả định"}
+ELASTICITY_SOURCE = {"FRESH": "tham chiếu", "SHORT": "tham chiếu", "LONG": "tham chiếu"}
 
 
 def _calibrate_from_frn() -> None:
-    """Hang tuoi: thay gia dinh 3,0 bang uoc luong tren du lieu lich su Thanh Lam Mart (ngay con hang du gio,
+    """Hang tuoi: thay tham so tham chieu 3,0 bang uoc luong tren du lieu lich su Thanh Lam Mart (ngay con hang du gio,
     dang 'ban tang ~ 1 + e x muc giam'). Lich su khuyen mai khong phai giam vi can han: chi la xap xi."""
     import json
     from pathlib import Path
@@ -39,7 +39,7 @@ DISPOSAL_COST_PER_UNIT = 500  # VND: chi phi xu ly/huy uoc tinh moi don vi
 EVENING_SHARE = 0.3  # mac dinh: ty trong luot khach sau 18h; giam gia gio vang chi ap cho phan con du
 # Khung ban trong ngay: sang 6-11h, trua 11-14h, chieu 14-17h, toi 17-22h (cua hang dong cua 22h)
 DAYPARTS = ((6, 11), (11, 14), (14, 17), (17, 22))
-DEFAULT_DAYPART_SHARES = (0.2, 0.2, 0.225, 0.375)  # sau 18h = 0,3 nhu gia dinh cu
+DEFAULT_DAYPART_SHARES = (0.2, 0.2, 0.225, 0.375)  # sau 18h = 0,3 nhu tham so ban dau
 
 
 def share_after(shares, hour: int) -> float:
@@ -130,7 +130,7 @@ def evaluate(inp: DispositionInput) -> list[Option]:
             # Truoc gio vang ban gia goc; sau do nguoi vao mua them, nhung khach von tra gia goc cung duoc giam
             extra = min(waste_full, day_demand * share * inp.elasticity * p)
             return sold_full + extra, value_full + extra * (price * (1 - p) + disposal) - evening_buyers * price * p
-        # Giam gia keo THEM khach cho ca mat hang (nhu hai bo mo phong: them ~ nhu cau x co gian x muc giam moi ngay),
+        # Giam gia keo THEM khach cho ca mat hang (nhat quan voi kiem chung: them ~ nhu cau x co gian x muc giam moi ngay),
         # khong ty le voi phan lo nay tu ban duoc gia goc: lo dung sau trong FEFO (sold_full ~ 0) van day duoc hang
         window = inp.daily_demand * (inp.days_left + 1) if inp.daily_demand is not None else sold_full
         sold = min(q, sold_full + window * inp.elasticity * p)

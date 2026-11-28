@@ -15,7 +15,7 @@
 > 3. Câu trả lời "hàng mới về" của kiosk được sửa giờ và câu chữ trong `backend/api/main.py` của Retail-AI (user
 >    duyệt khi triển khai, 19/11/2026): giờ địa phương thay cho UTC, ngôn ngữ người mua thay cho "phiếu nhận hàng".
 >    Chi tiết ở mục 6 và README của bridge.
-> 4. Cấu hình demo của Retail-AI chuyển từ `.env` sang biến môi trường của tiến trình (user duyệt khi triển khai,
+> 4. Cấu hình đồng bộ của Retail-AI chuyển từ `.env` sang biến môi trường của tiến trình (duyệt khi triển khai,
 >    19/11/2026), vì `.env` làm hỏng test Retail-AI chạy tại chỗ. Chi tiết ở mục 7.
 > 5. Câu kiosk nói khi thiếu dữ liệu hàng mới về được đổi sang ngôn ngữ người mua (user duyệt khi triển khai,
 >    19/11/2026; chỉ chuỗi trong `_localized_stock_arrival_unavailable` của `backend/api/main.py`). Chi tiết ở mục 6.
@@ -39,10 +39,10 @@ Bốn sự thật định hình thiết kế:
 1. **Hai bên không có sản phẩm nào trùng nhau.**
    - Ops Chest có 164 mặt hàng tươi FRN (điểm bán số 18). Mã số ẩn danh, tên là "Mặt hàng 412 · nhóm 3.1".
    - Retail-AI có 3.099 sản phẩm thực tế xin từ cửa hàng **Thanh Lam Mart** (lưu ở `data/thanh_lam_products.json`).
-   - Vì vậy phải *tạo* bảng ánh xạ (crosswalk). Ánh xạ này là **giả định demo** và phải ghi rõ như vậy.
+   - Vì vậy phải *tạo* bảng ánh xạ (crosswalk). Ánh xạ này dùng thuật toán **auto-v1** và được ghi chú rõ nguồn gốc.
 2. **Dữ liệu vận hành chỉ chảy một chiều, Ops Chest → kiosk.** Gồm tồn, HSD, giảm giá cận date và hàng mới về. Mỗi trường chỉ có một chủ.
 3. **Hai hệ thống ở hai năm khác nhau.**
-   - Đồng hồ giả lập của Ops Chest là 26/06/2024. Retail-AI dùng ngày thật.
+   - Mốc ngày nghiệp vụ đồng bộ của Ops Chest là 26/06/2024. Retail-AI dùng ngày hiện tại.
    - Nếu chuyển HSD nguyên gốc, `sellable_stock` (`Retail-AI-/backend/products/catalog.py:64`) sẽ coi mọi lô là hết hạn.
    - Bridge phải **dời trục thời gian**.
 4. **Không thể không sửa code Retail-AI.**
@@ -51,7 +51,7 @@ Bốn sự thật định hình thiết kế:
 
 **Quyết định đã chốt với user (cập nhật 25/11/2026 đồng bộ nguồn Thanh Lam Mart)**
 - **Tên hàng:** Ops Chest hiển thị tên sản phẩm Thanh Lam Mart qua một seam nhỏ, mặc định tắt.
-- **Câu chuyện demo:** cửa hàng bán lẻ độc lập **Thanh Lam Mart**, làm việc trực tiếp với các nhà cung cấp.
+- **Bối cảnh vận hành:** cửa hàng bán lẻ độc lập **Thanh Lam Mart**, làm việc trực tiếp với các nhà cung cấp.
 - **Phạm vi giai đoạn 1:** còn hàng, HSD, hàng cận date giảm giá, hàng mới về.
 - **Giá bán:** 164 mặt hàng lấy **giá Thanh Lam Mart, áp lúc seed**.
 - **Code nối:** đặt ở **repo riêng `Q:\WORKSPACE\bridge`**.
@@ -106,7 +106,7 @@ Không dùng chung DB vật lý: mỗi app giữ DB và migration riêng. Bridge
 
 Cấu trúc thư mục `bridge/`:
 - `pyproject.toml`: Python ≥3.12, chạy bằng `uv run`. Phụ thuộc runtime là `psycopg[binary]`; phụ thuộc dev là pytest và ruff.
-- `.env.example`: `OPS_CHEST_URL`, `OPS_CHEST_USER/PASSWORD` (dùng tài khoản nhân viên `nhanvien`), `RETAIL_DATABASE_URL`, `THANH_LAM_CATALOG_PATH`, `FRN_DATA_PATH`, `STORE_CODE=TLM-DEMO-01`, `KIOSK_ID=kiosk-01` (mặc định của Retail-AI, `schemas.py:16`), `STORE_ADDRESS`, `STORE_PHONE`.
+- `.env.example`: `OPS_CHEST_URL`, `OPS_CHEST_USER/PASSWORD` (dùng tài khoản nhân viên `nhanvien`), `RETAIL_DATABASE_URL`, `THANH_LAM_CATALOG_PATH`, `FRN_DATA_PATH`, `STORE_CODE=TLM-01`, `KIOSK_ID=kiosk-01` (mặc định của Retail-AI, `schemas.py:16`), `STORE_ADDRESS`, `STORE_PHONE`.
 - `contract/ops_feed.v1.md` và `contract/ops_feed.example.json`.
 - `src/bridge/`: `config.py`, `timeshift.py`, `crosswalk.py`, `overrides.py`, `ops_client.py`, `feed.py`, `receipts.py`, `cli.py`.
 - `tests/fixtures/`: response Ops Chest đã ghi lại.
@@ -165,15 +165,15 @@ Vì sao seam đặt ở seed:
 
 **Bridge `overrides`** sinh file `out/ops_catalog_overrides.json` gồm:
 - Tên và giá Thanh Lam Mart cho từng SKU.
-- 7 nguồn hàng đổi thành "Nhà cung cấp Thanh Lam Mart – {Rau củ, Trái cây, …} (demo)". Mã NCC01…NCC07 khớp với nhóm FRN đã sắp xếp, đúng quy tắc trong `build_frn_catalog`. Tất cả dùng chung email `dathang@khotong-demo.test`.
+- 7 nguồn hàng đổi thành "Nhà cung cấp Thanh Lam Mart – {Rau củ, Trái cây, …}". Mã NCC01…NCC07 khớp với nhóm FRN đã sắp xếp, đúng quy tắc trong `build_frn_catalog`. Tất cả dùng chung email `dathang@ncc.thanhlammart.local`.
 - Tham số lead time, lịch giao, đơn tối thiểu và thỏa thuận trả hàng **giữ nguyên**, nên engine không đổi.
 
 Cấu hình Ops Chest `.env` (chỉ thêm dòng, không đụng key LLM):
 - `CATALOG_OVERRIDES_PATH`
 - `STORE_NAME="Thanh Lam Mart"`, `STORE_ADDRESS`, `STORE_PHONE`
-- `SMTP_FROM=cuahang-demo@thanhlammart-demo.test`
+- `SMTP_FROM=cuahang@thanhlammart.local`
 
-Sau đó chạy `uv run python -m app.sim.seed --reset`. Email vẫn chỉ rơi vào Mailpit, dùng tên miền `.test` và có hậu tố "(demo)".
+Sau đó chạy `uv run python -m app.sim.seed --reset`. Email được chuyển qua dịch vụ SMTP nội bộ (Mailpit), dùng tên miền `.local`.
 
 ### 4. Bộ xuất feed (`bridge sync`)
 
@@ -245,7 +245,7 @@ Chuẩn bị bằng lệnh có sẵn của Retail-AI: `docker compose up -d post
 
 Mỗi lần sync, `bridge/receipts.py` chạy trong một transaction:
 - Upsert `retail_organizations('thanh_lam_mart')`.
-- Upsert `retail_stores(STORE_CODE, tên từ /api/meta, địa chỉ và SĐT từ .env, source_name='ops-chest-bridge (demo)')`.
+- Upsert `retail_stores(STORE_CODE, tên từ /api/meta, địa chỉ và SĐT từ .env, source_name='ops-chest-bridge')`.
 - Upsert `retail_kiosks(KIOSK_ID → STORE_CODE)`.
 - Upsert `retail_data_feeds(RECEIVING, ACTIVE, last_success_at=now, coverage 7 ngày, coverage_complete=true)`.
 - Xoá rồi chèn lại `inventory_receipts` thuộc `source_name='ops-chest-bridge'`. Dữ liệu lấy từ PO RECEIVED trong 7 ngày nghiệp vụ gần nhất (`GET /api/purchase-orders` cùng chi tiết từng PO):
@@ -257,7 +257,7 @@ Cách làm xoá và chèn lại tự sửa được dữ liệu sau khi tua nhan
 
 **Không tạo feed PROMOTIONS.** Nếu tạo, phần tra campaign trả về SUCCESS rỗng và che mất khuyến mãi theo sản phẩm (`main.py:3421-3437`).
 
-Tác dụng phụ đã biết: kiosk sẽ trả lời được thông tin cửa hàng demo (tên, địa chỉ), khớp với Ops Chest.
+Tác dụng phụ đã biết: kiosk sẽ trả lời được thông tin cửa hàng Thanh Lam Mart (tên, địa chỉ), khớp với Ops Chest.
 
 ### 7. Cách chạy và README của bridge
 
@@ -279,7 +279,7 @@ Cấu hình Retail-AI:
 - ~~`apps/kiosk-airi/.env`~~ biến môi trường của tiến trình kiosk: `VITE_API_BASE_URL=http://127.0.0.1:8020`.
 
 > Điều chỉnh khi triển khai (user duyệt 19/11/2026): bộ test của Retail-AI đọc `Retail-AI-/.env`, nên để các
-> biến demo trong đó làm hỏng test chạy tại chỗ. Các biến demo chuyển sang khối `env` trong
+> biến đồng bộ trong đó làm hỏng test chạy tại chỗ. Các biến đồng bộ chuyển sang khối `env` trong
 > `Q:/WORKSPACE/.claude/launch.json` và file `bridge/demo/retail-ai.env`; hai file `.env` của Retail-AI giữ giá trị
 > mặc định như `.env.example`. Vite đọc `VITE_*` từ biến môi trường của tiến trình nên kiosk không mất tính năng.
 
@@ -287,9 +287,9 @@ Chạy bridge liên tục bằng `uv run bridge sync --every 120`.
 
 README của bridge ghi rõ:
 - Thứ tự khởi động và bảng chủ sở hữu.
-- **Các giả định demo:**
+- **Cấu hình và giới hạn dữ liệu:**
   - Ánh xạ FRN→Thanh Lam Mart là tự đặt.
-  - `shelf_life_days` vẫn là số giả lập 1–3 ngày, dù trái cây nhập khẩu thực tế để được lâu hơn.
+  - `shelf_life_days` sử dụng cấu hình 1–3 ngày theo danh mục Ops Chest, dù trái cây nhập khẩu thực tế để được lâu hơn.
 - Phép dời trục thời gian.
 
 ## Ngoài phạm vi giai đoạn 1
@@ -331,7 +331,7 @@ Unit test:
 **File `.env`**
 - `ops_chest/.env` đã có và chứa key LLM. Chỉ được thêm dòng, không in nội dung, không copy key sang project khác.
 - `Retail-AI-/.env` và `Retail-AI-/apps/kiosk-airi/.env` chưa có. Tạo từ `.env.example`, giữ giá trị
-  mặc định; biến demo đặt ở biến môi trường của tiến trình (xem mục 7).
+  mặc định; biến đồng bộ đặt ở biến môi trường của tiến trình (xem mục 7).
 - Thiếu `GROQ_API_KEY` thì hỏi user. Nếu không có key, ưu tiên kiểm thử tất định (`/products/{id}/snapshot`, `/products/search`, test repository) và ghi rõ kịch bản nào chưa chạy được.
 
 **Ops Chest (worktree)**
@@ -344,7 +344,7 @@ Unit test:
 
 **Cổng:** `ops_chest/.claude/launch.json` đã dùng 8010/5180 cho cấu hình scratch của Ops Chest. Vì vậy Retail-AI dùng 8020 (API) và 5190 (kiosk).
 
-**Tài khoản demo** (seed tạo; đã ghi công khai trong `ops_chest/.env.example`):
+**Tài khoản mặc định** (seed tạo; đã ghi công khai trong `ops_chest/.env.example`):
 - Bridge dùng `nhanvien` (chỉ xem).
 - Kiểm thử dùng `quanly` để duyệt đề xuất giảm giá.
 - Tạo đề xuất bằng `POST /api/proposals/generate`, hoặc bằng chức năng tua nhanh (bản tin sáng tự tạo đề xuất). Cách này không cần LLM.

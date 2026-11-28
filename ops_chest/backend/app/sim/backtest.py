@@ -5,7 +5,7 @@
     uv run python -m app.sim.backtest --sensitivity                  # ghi lai bang do nhay cho giao dien
 
 Mac dinh so voi doi thu cong bang (A co giam gia gio vang) trong the gioi ma khach chi phan ung bang mot
-nua muc engine gia dinh. Hai chinh sach deu bat dau tu cung trang thai sau giai doan khoi dong.
+nua muc tham chieu cua engine. Hai chinh sach deu bat dau tu cung trang thai sau giai doan khoi dong.
 """
 from __future__ import annotations
 
@@ -134,11 +134,11 @@ def run_sensitivity(start: date = SENSITIVITY_START, days: int = SENSITIVITY_DAY
     """Moi kich ban chi doi MOT dieu so voi kich ban tham chieu."""
     base = warm_base(start, 7)
     rows = [
-        _row("reference", "Tham chiếu", "A có giờ vàng, khách phản ứng bằng 50% giả định của engine",
+        _row("reference", "Tham chiếu", "A có giờ vàng, khách phản ứng bằng 50% mức tham chiếu của engine",
              compare(base, start, days)),
         _row("no_floor", "B không có sàn mức phục vụ", "Cách đặt cũ: newsvendor được để thiếu hàng tới 70% số ngày",
              compare(base, start, days, ops=OpsChestPolicy(service_floors=False))),
-        _row("daypart_flat", "Giờ giảm giá cố định 18h cho mọi nhóm", "Cách cũ: giờ vàng 18h, giả định 30% khách cho mọi nhóm",
+        _row("daypart_flat", "Giờ giảm giá cố định 18h cho mọi nhóm", "Cách cũ: giờ vàng 18h, ước tính 30% khách cho mọi nhóm",
              compare(base, start, days, ops=OpsChestPolicy(dayparts=False))),
         _row("floor_a80", "Sàn nhóm A 80% (thay vì 90%)", "Đánh đổi: hết hàng nhích lên, hủy giảm",
              compare(base, start, days, ops=OpsChestPolicy(floors={"traffic": 0.95, "A": 0.80, "other": 0.50}))),
@@ -147,9 +147,9 @@ def run_sensitivity(start: date = SENSITIVITY_START, days: int = SENSITIVITY_DAY
         rows.append(_row(f"seed_{seed}", f"Nhu cầu khác (seed {seed})", "Đổi chuỗi nhu cầu ngẫu nhiên",
                          compare(warm_base(start, seed), start, days)))
     rows += [
-        _row("world_100", "Khách phản ứng đúng 100% giả định", "Trường hợp tốt nhất cho giảm giá của B",
+        _row("world_100", "Khách phản ứng đúng 100% mức tham chiếu", "Trường hợp tốt nhất cho giảm giá của B",
              compare(base, start, days, world=OPTIMISTIC_WORLD)),
-        _row("world_25", "Khách chỉ phản ứng 25% giả định", "Engine đánh giá quá cao tác dụng của giảm giá",
+        _row("world_25", "Khách chỉ phản ứng 25% mức tham chiếu", "Engine đánh giá quá cao tác dụng của giảm giá",
              compare(base, start, days, world=PESSIMISTIC_WORLD)),
         _row("order_only", "B chỉ đặt hàng", "Tắt giảm giá và trả NCC của B: đo riêng phần công của đặt hàng",
              compare(base, start, days, ops=OpsChestPolicy(dispose=False))),
@@ -163,7 +163,7 @@ def run_sensitivity(start: date = SENSITIVITY_START, days: int = SENSITIVITY_DAY
              compare(base, start, days, world=REFERENCE_WORLD.with_fefo(0.8))),
         _row("fefo_50", "50% lượt mua lấy lô mới", "Khách lấy hàng phía sau kệ; engine vẫn tin là bán FEFO",
              compare(base, start, days, world=REFERENCE_WORLD.with_fefo(0.5))),
-        _row("legacy", "Cách so sánh cũ", "A không giảm giá gì, khách phản ứng đúng giả định: thiên vị cho B",
+        _row("legacy", "Cách so sánh cũ", "A không giảm giá gì, khách phản ứng đúng mức tham chiếu: thiên vị cho B",
              compare(base, start, days, world=OPTIMISTIC_WORLD, baseline=BaselinePolicy())),
     ]
     return {"start": start.isoformat(), "days": days, "rows": rows}
@@ -206,8 +206,8 @@ FRN_SCENARIOS = {
     # key: (nhan, ghi chu, ham tao chinh sach B tu bo chon, he so phan ung cua khach).
     # Moi kich ban dung bo chon B-gate cua tap do (hoc tren nua con lai: ngoai mau).
     "reference": ("Tham chiếu", "Khách phản ứng với giảm giá bằng 50% mức engine ước lượng (giá khuyến mãi nội sinh)", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 1.0),
-    "world_50": ("Khách phản ứng bằng nửa tham chiếu", "25% mức engine giả định: giảm giá kém tác dụng hơn", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.5),
-    "world_25": ("Khách phản ứng bằng 1/4 tham chiếu", "12,5% mức engine giả định: engine đánh giá quá cao giảm giá", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.25),
+    "world_50": ("Khách phản ứng bằng nửa tham chiếu", "25% mức tham chiếu của engine: giảm giá kém tác dụng hơn", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.5),
+    "world_25": ("Khách phản ứng bằng 1/4 tham chiếu", "12,5% mức tham chiếu của engine: engine đánh giá quá cao giảm giá", lambda g: OpsChestPolicy(ml_model="bt_", gate=g), 0.25),
     "approve_80": ("Store Manager duyệt 80%", "Đơn không được duyệt thì SM tự đặt theo kinh nghiệm", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, approval_rate=0.8), 1.0),
     "approve_60": ("Store Manager duyệt 60%", "Đơn không được duyệt thì SM tự đặt theo kinh nghiệm", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, approval_rate=0.6), 1.0),
     "no_floor": ("B không có sàn mức phục vụ", "Newsvendor được để thiếu hàng", lambda g: OpsChestPolicy(ml_model="bt_", gate=g, service_floors=False), 1.0),

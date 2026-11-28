@@ -120,7 +120,6 @@ function Login() {
         <button className="primary" style={{ width: "100%", height: 38 }} disabled={busy || !u || !pw}>
           {busy ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
-        <p className="small muted" style={{ marginTop: 12 }}>Tài khoản demo nằm trong file .env.example của dự án.</p>
       </form>
     </div>
   );

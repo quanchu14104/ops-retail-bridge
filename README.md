@@ -1,4 +1,4 @@
-# Bridge Ops Chest → Retail-AI (giai đoạn 1, demo)
+# Bridge Ops Chest → Retail-AI (giai đoạn 1)
 
 **Toàn bộ dự án nằm trong repo này.** Cầu nối **một chiều** giữa hai sub-project, mỗi cái một thư mục con:
 
@@ -40,7 +40,7 @@ commit vào `ops_chest/` và `Retail-AI-/` trong repo này. `ops_chest/` giữ n
 (`git log -- ops_chest`).
 
 **Cần cài trước:** Git, [uv](https://docs.astral.sh/uv/) (`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`),
-Node.js LTS, Docker Desktop (cho Postgres của Retail-AI và Mailpit).
+Node.js LTS, Docker Desktop (cho Postgres của Retail-AI và dịch vụ SMTP nội bộ Mailpit).
 
 ```powershell
 git clone https://github.com/quanchu14104/ops-retail-bridge.git bridge
@@ -53,8 +53,8 @@ tự sửa `bridge\.env` cũ (đang trỏ `../Retail-AI-`, `../ops_chest`) sang 
 chép tay từ thư mục cũ sang `ops_chest\.env` và `Retail-AI-\.env`.
 
 `setup.ps1` chạy lại bao nhiêu lần cũng được. Nó kiểm tra thư mục con và công cụ, chạy `uv sync`/`npm ci`, tạo các file
-`.env` từ `.env.example`, kiểm tra crosswalk, sinh `out/ops_catalog_overrides.json`, seed DB demo của Ops Chest
-(tên và giá Thanh Lam Mart), bật Postgres của Retail-AI rồi nạp catalog Thanh Lam Mart (`import_thanh_lam.py`) và bật Mailpit. Thêm `-ResetDemo` để seed lại DB demo, `-SkipDocker` khi chưa có Docker, `-SkipInstall`
+`.env` từ `.env.example`, kiểm tra crosswalk, sinh `out/ops_catalog_overrides.json`, seed CSDL của Ops Chest
+(tên và giá Thanh Lam Mart), bật Postgres của Retail-AI rồi nạp catalog Thanh Lam Mart (`import_thanh_lam.py`) và bật Mailpit. Thêm `-ResetDemo` để seed lại CSDL Ops Chest, `-SkipDocker` khi chưa có Docker, `-SkipInstall`
 để bỏ qua bước cài thư viện.
 
 **Khoá API: mỗi người tự điền khoá của mình**, không gửi file `.env` cho nhau, không commit khoá:
@@ -64,10 +64,10 @@ chép tay từ thư mục cũ sang `ops_chest\.env` và `Retail-AI-\.env`.
   `Retail-AI-\.env.example`, nên `setup.ps1` không tự tạo file này (chỉ cảnh báo): tự tạo `Retail-AI-\.env` với một
   dòng `GROQ_API_KEY=...`. Các biến khác của Retail-AI có giá trị mặc định trong `backend/config.py`.
 
-Không có khoá thì demo vẫn chạy: Ops Chest không chat được, kiosk chỉ trả lời các câu cố định (giá, khuyến mãi,
+Không có khoá thì hệ thống vẫn chạy: Ops Chest không chat được, kiosk chỉ trả lời các câu cố định (giá, khuyến mãi,
 hàng mới về, thông tin cửa hàng).
 
-**Chạy demo:**
+**Khởi chạy hệ thống:**
 
 ```powershell
 .\scripts\start-demo.ps1
@@ -80,22 +80,22 @@ Script mở 5 cửa sổ PowerShell: Ops Chest API, Ops Chest UI, Retail-AI API,
 |---|---|---|
 | Ops Chest (Store Manager) | http://localhost:5173 | `quanly` / `quanly123`; nhân viên `nhanvien` / `nhanvien123` |
 | Kiosk (người mua) | http://127.0.0.1:5190 | |
-| Mailpit (email đặt hàng) | http://localhost:8025 | |
+| Dịch vụ SMTP nội bộ (Mailpit) | http://localhost:8025 | |
 
 Dùng Claude Code thì mở thư mục `bridge`: 4 dịch vụ có sẵn trong [`.claude/launch.json`](.claude/launch.json) với
 tên `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`.
 
-## ⚠️ Các giả định demo
+## ⚙️ Cấu hình ánh xạ và đồng bộ dữ liệu
 
 - **Ánh xạ FRN → Thanh Lam Mart là tự đặt.** FRN chỉ có mã số ẩn danh và hai bên không có sản phẩm nào trùng nhau.
   `data/crosswalk.csv` được sinh bằng thuật toán tất định `auto-v1`, giữ nguyên cấu trúc (nhóm → ngành hàng,
   cat1 → danh mục con, theo kích cỡ; mặt hàng theo hạng nhu cầu ↔ `item_no`). Nó **không** cho biết mặt hàng FRN
-  thật là gì. Mỗi dòng có ghi chú "giả định demo"; dòng `method=manual` là sửa tay và được giữ khi build lại.
+  thật là gì. Mỗi dòng tự động có ghi chú `crosswalk auto-v1`; dòng `method=manual` là sửa tay và được giữ khi build lại.
   
-- **Cửa hàng độc lập Thanh Lam Mart.** 7 nguồn hàng của Ops Chest đổi tên thành
-  "Nhà cung cấp Thanh Lam Mart – {ngành hàng} (demo)", email `dathang@khotong-demo.test`. Email chỉ rơi vào Mailpit.
-  Tên cửa hàng là "Thanh Lam Mart", địa chỉ và số điện thoại minh hoạ là giả định cho môi trường demo.
-- **`shelf_life_days` vẫn là số giả lập 1–3 ngày** của Ops Chest, kể cả với trái cây nhập khẩu (thực tế để được
+- **Cửa hàng độc lập Thanh Lam Mart.** 7 nguồn hàng của Ops Chest mang tên
+  "Nhà cung cấp Thanh Lam Mart – {ngành hàng}", email `dathang@ncc.thanhlammart.local`. Email được chuyển qua dịch vụ SMTP nội bộ (Mailpit).
+  Tên cửa hàng là "Thanh Lam Mart", mã cửa hàng mặc định `TLM-01`, địa chỉ `Thanh Lam Mart — Cửa hàng chính`.
+- **`shelf_life_days` sử dụng tham số 1–3 ngày** theo cấu hình danh mục Ops Chest, kể cả với trái cây nhập khẩu (thực tế để được
   lâu hơn).
 - Giá bán 164 mặt hàng là giá thực tế từ danh mục Thanh Lam Mart, nạp vào Ops Chest **lúc seed**; giá vốn tính lại theo đúng tỷ lệ giá
   vốn/giá bán cũ. Sau đó Ops Chest là chủ giá.
@@ -114,7 +114,7 @@ tên `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`.
 
 ## Dời trục thời gian
 
-Ops Chest chạy đồng hồ giả lập (sau seed: 26/06/2024), Retail-AI dùng ngày thật. Nếu chuyển HSD nguyên gốc,
+Ops Chest vận hành theo mốc ngày nghiệp vụ đồng bộ (sau seed: 26/06/2024), Retail-AI dùng ngày hiện tại. Nếu chuyển HSD nguyên gốc,
 kiosk coi mọi lô là hết hạn. Mỗi lần sync, bridge tính
 `shift = ngày thật (Asia/Ho_Chi_Minh) − ngày nghiệp vụ Ops Chest` (ghi trong `date_shift_days` của feed) và cộng
 vào mọi ngày/giờ lấy từ Ops Chest. Mốc sự kiện đã xảy ra (giờ nhận hàng) bị chặn ở thời điểm hiện tại. Tua nhanh
@@ -135,7 +135,7 @@ Ops Chest 1 ngày thì `shift` giảm 1, nên số ngày còn lại của mỗi 
 riêng Mailpit: `docker compose up -d mailpit` trong `ops_chest\` (`setup.ps1` và `start-demo.ps1` đã làm việc này).
 
 Cấu hình chạy cho cả 4 dịch vụ nằm ở [`.claude/launch.json`](.claude/launch.json)
-(tên: `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`). Biến môi trường cho demo nằm ngoài hai
+(tên: `ops-chest-api`, `ops-chest-ui`, `retail-ai-api`, `retail-kiosk`). Biến môi trường đồng bộ nằm ngoài hai
 thư mục con, không chứa secret:
 [`demo/ops-chest.env`](demo/ops-chest.env) cho Ops Chest và [`demo/retail-ai.env`](demo/retail-ai.env) cho
 Retail-AI API và kiosk.
@@ -169,7 +169,7 @@ uv run bridge crosswalk check --ops    # đối chiếu 164 SKU với /api/produ
 uv run bridge sync --every 120         # hoặc --once
 ```
 
-**Cấu hình demo của Retail-AI đặt ở biến môi trường của tiến trình, KHÔNG ghi vào `.env` của Retail-AI.** Bộ test
+**Cấu hình đồng bộ của Retail-AI đặt ở biến môi trường của tiến trình, KHÔNG ghi vào `.env` của Retail-AI.** Bộ test
 của Retail-AI đọc `Retail-AI-/.env`. Nếu để `CATALOG_REPOSITORY=snapshot` và `OPS_FEED_PATH` trong đó, chạy
 `uv run pytest -q` tại chỗ sẽ hỏng hàng chục test (nhánh trả lời cố định chạy trước LLM). Vì vậy:
 
@@ -200,7 +200,7 @@ Postgres thì cả hai câu báo không khả dụng, bật lại thì phục h�
 tra campaign trả DATA_UNAVAILABLE và kiosk chuyển sang danh sách khuyến mãi theo sản phẩm (hàng cận date của Ops
 Chest đứng đầu).
 
-Tác dụng phụ đã biết: kiosk trả lời được thông tin cửa hàng demo (tên, địa chỉ, SĐT) từ `retail_stores`.
+Tác dụng phụ đã biết: kiosk trả lời được thông tin cửa hàng Thanh Lam Mart (tên, địa chỉ, SĐT) từ `retail_stores`.
 
 **Câu trả lời "hàng mới về" dùng ngôn ngữ người mua và giờ địa phương** (user duyệt ngày 19/11/2026, sửa trong
 `_localized_retail_information_observation` của `backend/api/main.py`). Kiosk phục vụ người mua, nên không dùng
@@ -215,8 +215,8 @@ ngữ người mua (user duyệt ngày 19/11/2026, chỉ đổi chuỗi trong `_
 chưa có thông tin hàng mới về của cửa hàng nên chưa thể cho bạn biết món nào vừa về. Bạn có thể hỏi nhân viên cửa
 hàng nhé." Câu cũ dùng từ "phiếu nhận hàng", "nhập kho".
 
-**Cấu hình demo của Retail-AI chuyển khỏi `.env`** (user duyệt ngày 19/11/2026): xem mục "Thứ tự khởi động". Plan
-ban đầu ghi các biến demo vào `Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
+**Cấu hình đồng bộ của Retail-AI chuyển khỏi `.env`** (duyệt ngày 19/11/2026): xem mục "Thứ tự khởi động". Kế hoạch
+ban đầu ghi các biến đồng bộ vào `Retail-AI-/.env` và `apps/kiosk-airi/.env`; cách đó làm hỏng test Retail-AI chạy
 tại chỗ. Giờ `uv run pytest -q` trong `Retail-AI-` xanh mà không cần ép biến nào.
 
 ## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
@@ -269,7 +269,7 @@ bị loại). Test crosswalk trên dữ liệu thật đọc `Retail-AI-/data/th
 |---|---|
 | [contract/ops_feed.v1.md](contract/ops_feed.v1.md) | Hợp đồng feed Ops Chest → kiosk |
 | [docs/plan-giai-doan-1.md](docs/plan-giai-doan-1.md) | Thiết kế bridge giai đoạn 1 (viết khi còn 3 repo riêng) |
-| [ops_chest/README.md](ops_chest/README.md), [ops_chest/docs/](ops_chest/docs/) | Ops Chest: nghiệp vụ, dự báo ML, kịch bản demo, eval agent |
+| [ops_chest/README.md](ops_chest/README.md), [ops_chest/docs/](ops_chest/docs/) | Ops Chest: nghiệp vụ, dự báo ML, hướng dẫn vận hành, eval agent |
 | [Retail-AI-/README.md](Retail-AI-/README.md), [Retail-AI-/docs/](Retail-AI-/docs/) | Retail-AI: yêu cầu, kiến trúc, tool contract, ERD, voice pipeline |
 
 ## Ngoài phạm vi giai đoạn 1

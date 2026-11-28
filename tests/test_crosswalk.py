@@ -37,7 +37,7 @@ def test_structure_preserving_assignment_on_a_small_world():
     # nhóm 0 (3) → Rau củ (4); cat1=1 (2 món) → danh mục con lớn nhất "Lá"; nhu cầu cao nhất ↔ item_no nhỏ nhất
     assert got == {2: "R2", 1: "R1", 3: "R3", 4: "T1"}
     assert {r["method"] for r in rows} == {"auto-v1"}
-    assert all("giả định demo" in r["note"] for r in rows)
+    assert all("crosswalk auto-v1" in r["note"] for r in rows)
 
 
 @needs_data
@@ -64,10 +64,10 @@ def test_manual_rows_survive_rebuild_and_check_catches_errors(crosswalk_rows):
     frn = crosswalk.load_frn_items(CFG.frn_data_path, 18)
     used = {r["product_id"] for r in crosswalk_rows}
     spare = next(r for r in crosswalk.thanh_lam_pool(thanh_lam) if r["product_id"] not in used)
-    manual = [{"frn_id": 4, "product_id": spare["product_id"], "note": "đổi tay để demo"}]
+    manual = [{"frn_id": 4, "product_id": spare["product_id"], "note": "đổi tay thủ công"}]
     rows = crosswalk.build(frn, thanh_lam, manual)
     row = next(r for r in rows if r["ops_sku"] == "F0004")
-    assert (row["product_id"], row["method"], row["note"]) == (spare["product_id"], "manual", "đổi tay để demo")
+    assert (row["product_id"], row["method"], row["note"]) == (spare["product_id"], "manual", "đổi tay thủ công")
     assert crosswalk.check(rows, thanh_lam, "sha", frn=frn).ok
 
     broken = [dict(r) for r in crosswalk_rows]

@@ -108,7 +108,7 @@ def cost_report(db: Session, start: date, end: date) -> dict:
     totals.return_cost = float(db.scalar(
         select(func.coalesce(func.sum(StockMovement.qty * StockMovement.unit_cost), 0))
         .where(StockMovement.type == "RETURN", StockMovement.date.between(start, end))) or 0)
-    # Lai mat do het hang (gia lap biet lost_qty; cua hang that se uoc tinh tu du bao)
+    # Lai mat do het hang (co so lieu lost_qty doi chieu; van hanh thuc te se uoc tinh tu du bao)
     lost_margin = db.execute(
         select(func.sum(DailySales.lost_qty * (Product.unit_price - Product.unit_cost)))
         .join(Product, Product.id == DailySales.product_id).where(DailySales.date.between(start, end))

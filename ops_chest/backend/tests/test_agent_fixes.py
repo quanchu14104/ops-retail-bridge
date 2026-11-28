@@ -27,7 +27,7 @@ def _release_purchase_orders(db):
 
 
 class RateLimitError(Exception):
-    """Cung ten voi loi cua SDK openai; noi dung gia lap loi Groq that (co ma to chuc, link thanh toan)."""
+    """Cung ten voi loi cua SDK openai; noi dung tao mau loi Groq that (co ma to chuc, link thanh toan)."""
     status_code = 429
 
 

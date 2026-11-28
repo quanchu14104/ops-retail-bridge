@@ -14,11 +14,14 @@ def test_overrides_carry_thanh_lam_names_prices_and_central_warehouses(crosswalk
     sups = doc["suppliers"]
     assert list(sups) == [f"NCC{n:02d}" for n in range(1, 8)]
     # NCC{n} theo nhóm FRN tăng dần (0..6), giống build_frn_catalog của Ops Chest
-    assert sups["NCC07"]["name"] == "Nhà cung cấp Thanh Lam Mart – Rau củ (demo)"  # nhóm 6 (80 mặt hàng)
-    assert sups["NCC06"]["name"] == "Nhà cung cấp Thanh Lam Mart – Trái cây (demo)"
-    assert sups["NCC03"]["name"] == "Nhà cung cấp Thanh Lam Mart – Thịt (demo)"
+    assert sups["NCC07"]["name"] == "Nhà cung cấp Thanh Lam Mart – Rau củ"  # nhóm 6 (80 mặt hàng)
+    assert sups["NCC06"]["name"] == "Nhà cung cấp Thanh Lam Mart – Trái cây"
+    assert sups["NCC03"]["name"] == "Nhà cung cấp Thanh Lam Mart – Thịt"
     assert len({s["name"] for s in sups.values()}) == 7
-    assert all(s["email"] == "dathang@khotong-demo.test" and s["name"].endswith("(demo)") for s in sups.values())
+    assert all(
+        s["email"] == "dathang@ncc.thanhlammart.local" and not s["name"].endswith("(demo)")
+        for s in sups.values()
+    )
     # Lead time, lịch giao, đơn tối thiểu, thỏa thuận: không ghi đè
     assert all(set(s) == {"name", "email"} for s in sups.values())
     assert all(set(p) == {"name", "unit_price", "thanh_lam_product_id"} for p in doc["products"].values())

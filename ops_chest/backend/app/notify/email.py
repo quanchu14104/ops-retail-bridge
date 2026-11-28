@@ -1,4 +1,4 @@
-"""Gui email qua SMTP. Demo dung Mailpit (hop thu sandbox, khong gui ra ngoai): http://localhost:8025"""
+"""Gui email qua dich vu SMTP noi bo (vd Mailpit tai http://localhost:8025)."""
 from __future__ import annotations
 
 import smtplib

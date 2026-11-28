@@ -1,4 +1,4 @@
-"""Cầu nối một chiều Ops Chest → Retail-AI (giai đoạn 1, demo).
+"""Cầu nối một chiều Ops Chest → Retail-AI (giai đoạn 1).
 
 Bridge không import code của Ops Chest hay Retail-AI: nó đọc REST của Ops Chest, đọc file catalog Thanh Lam Mart và
 file FRN (chỉ đọc), rồi ghi file `ops_feed.json` theo hợp đồng v1 và các bảng feed có sẵn của Retail-AI.

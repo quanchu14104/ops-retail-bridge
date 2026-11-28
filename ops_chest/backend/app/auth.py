@@ -1,4 +1,4 @@
-"""Xac thuc toi gian cho demo: mat khau PBKDF2 + token ky HMAC. Vai tro: manager (duyet) / staff."""
+"""Xac thuc toi gian: mat khau PBKDF2 + token ky HMAC. Vai tro: manager (duyet) / staff."""
 from __future__ import annotations
 
 import base64

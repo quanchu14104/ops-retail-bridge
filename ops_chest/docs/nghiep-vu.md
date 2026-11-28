@@ -1,4 +1,4 @@
-# Nghiệp vụ, giả định và KPI
+# Nghiệp vụ, quy tắc và KPI
 
 ## 1. Phạm vi: cửa hàng tiện lợi độc lập
 
@@ -194,7 +194,7 @@ Chi tiết đầy đủ về dữ liệu, phương pháp và từng kịch bản
 
 - `B-gate` lãi hơn A ở **76%** số tập kiểm chứng và lãi hơn `B-EWMA` ở **76%** số tập (trung vị **+0,8%**, khoảng tứ phân vị +0,0% đến +1,5%). Tại tập điểm bán chính Thanh Lam Mart (164 mặt hàng tươi), `B-gate` lãi hơn `B-EWMA` **+0,5%**.
 - **Độ nhạy trên 20 tập kiểm chứng** (`B-gate` so với A):
-  - Tham chiếu (khách phản ứng 50% mức giả định): **+5,5%** lãi gộp, hủy 4,5% so với 5,2% của A.
+  - Tham chiếu (khách phản ứng 50% mức tham chiếu của engine): **+5,5%** lãi gộp, hủy 4,5% so với 5,2% của A.
   - Khách phản ứng yếu hơn (25% / 12,5%): lãi vẫn đạt **+4,7%** / **+4,4%**.
   - Store Manager chỉ duyệt 80% / 60% đề xuất: lãi còn **+4,8%** / **+3,8%**.
   - Tắt sàn mức phục vụ: hết hàng tăng vọt lên **22,1%** (so với 14,9% của A) và lợi ích về lãi biến mất (**−0,5%**).
@@ -202,7 +202,7 @@ Chi tiết đầy đủ về dữ liệu, phương pháp và từng kịch bản
 **Giới hạn cần nói rõ khi bảo vệ:**
 1. Chuỗi dữ liệu lịch sử 97 ngày tập trung vào hàng tươi; giá vốn chuẩn hóa, HSD và độ co giãn giá là tham số nghiệp vụ được thiết lập nhất quán chứ chưa có log chiết khấu theo từng lô trong quá khứ.
 2. Baseline A là heuristic hợp lý (đạt tỷ lệ hết hàng 14,5%, thấp hơn mức hết hàng lịch sử thực tế 19,3%), nhưng không đại diện cho hành vi của mọi quản lý cửa hàng.
-3. Kịch bản tham chiếu giả định Store Manager duyệt 100% đề xuất; nếu chỉ duyệt 60%, lợi ích giảm còn +3,8%.
+3. Kịch bản tham chiếu xét trường hợp Store Manager duyệt 100% đề xuất; nếu chỉ duyệt 60%, lợi ích giảm còn +3,8%.
 4. Trong kiểm chứng hồi cứu, nhà cung cấp luôn giao đủ và đúng hạn; một số quy tắc thực thi (giá trị đơn tối thiểu, trả hàng chờ NCC xác nhận) được áp dụng đầy đủ trong ứng dụng vận hành.
 
 ## 6. Tham khảo cách làm của các chuỗi
@@ -214,7 +214,7 @@ Chi tiết đầy đủ về dữ liệu, phương pháp và từng kịch bản
 ## 7. Ngoài phạm vi (hướng phát triển)
 
 - Bổ sung mô hình hao hụt vào kiểm chứng hồi cứu.
-- **Kênh đặt hàng.** Cửa hàng độc lập phần lớn đặt qua Zalo, điện thoại, hoặc nhân viên bán hàng của nhà phân phối ghé theo tuyến. Gửi đơn qua email kèm PDF là giả định trình diễn của hệ thống.
+- **Kênh đặt hàng.** Cửa hàng độc lập phần lớn đặt qua Zalo, điện thoại, hoặc nhân viên bán hàng của nhà phân phối ghé theo tuyến. Hệ thống chuẩn hóa việc gửi đơn qua email nội bộ kèm PDF để lưu vết tập trung.
 - **Công nợ và ngân sách nhập hàng.** Cửa hàng nhỏ bị giới hạn bởi tiền mặt nhiều hơn bởi dự báo; engine chưa có ràng buộc ngân sách.
 - **Nhiều NCC cho một SKU**, giá vốn thay đổi theo thời gian, VAT.
 - **Hàng ký gửi**: NCC chịu rủi ro hủy, cách đặt hàng khác hẳn.

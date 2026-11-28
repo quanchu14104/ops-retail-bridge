@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 from bridge.timeshift import TimeShift
 
 SOURCE_NAME = "ops-chest-bridge"
-STORE_SOURCE_NAME = "ops-chest-bridge (demo)"
+STORE_SOURCE_NAME = "ops-chest-bridge"
 ORG_CODE = "thanh_lam_mart"
 WINDOW_DAYS = 7
 

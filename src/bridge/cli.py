@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     ap = argparse.ArgumentParser(prog="bridge", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    cw = sub.add_parser("crosswalk", help="Ánh xạ FRN → Thanh Lam Mart (giả định demo)")
+    cw = sub.add_parser("crosswalk", help="Ánh xạ FRN → Thanh Lam Mart")
     cw_sub = cw.add_subparsers(dest="action", required=True)
     b = cw_sub.add_parser("build", help="Sinh data/crosswalk.csv (giữ dòng method=manual)")
     b.add_argument("--reset-manual", action="store_true", help="Bỏ cả dòng sửa tay")

@@ -25,7 +25,7 @@
     {"store_id": 25, "products": 45, "start": "2024-05-27", "days": 37, "gp_a": 21100000, "gp_b_ewma": 20660000, "gp_b_ml": 20380000, "gain_ewma": -0.021, "gain_ml": -0.034, "ml_vs_ewma": -0.014, "waste_a": 0.051, "waste_b_ewma": 0.029, "waste_b_ml": 0.027, "oos_a": 0.081, "oos_b_ewma": 0.090, "oos_b_ml": 0.087, "oos_traffic_a": 0.052, "oos_traffic_b_ewma": 0.050, "oos_traffic_b_ml": 0.048}
   ],
   "scenarios": [
-    {"key": "reference", "label": "Tham chiếu", "note": "Giả định mặc định", "stores": 3, "gain": 0.039, "waste_a": 0.081, "waste_b": 0.044, "oos_a": 0.052, "oos_b": 0.055},
+    {"key": "reference", "label": "Tham chiếu", "note": "Tham số tham chiếu mặc định", "stores": 3, "gain": 0.039, "waste_a": 0.081, "waste_b": 0.044, "oos_a": 0.052, "oos_b": 0.055},
     {"key": "low_elasticity", "label": "Khách ít phản ứng với giảm giá", "note": "Độ co giãn bằng một nửa", "stores": 3, "gain": 0.021, "waste_a": 0.081, "waste_b": 0.051, "oos_a": 0.052, "oos_b": 0.055},
     {"key": "short_shelf_life", "label": "HSD ngắn hơn 1 ngày", "note": "Chưa chạy xong", "stores": 3, "gain": -0.008, "waste_a": null, "waste_b": null, "oos_a": null, "oos_b": null}
   ]

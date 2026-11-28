@@ -13,7 +13,7 @@
   "unit_cost": 106430,
   "unit_price": 168900,
   "pack_size": 1,
-  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt (demo)",
+  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt",
   "is_traffic_driver": false,
   "abc_xyz": "AX",
   "on_hand": 6
@@ -32,7 +32,7 @@
   "unit_cost": 79296,
   "unit_price": 123900,
   "pack_size": 1,
-  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt (demo)",
+  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt",
   "is_traffic_driver": false,
   "abc_xyz": "AX",
   "on_hand": 0
@@ -51,7 +51,7 @@
   "unit_cost": 23333,
   "unit_price": 32000,
   "pack_size": 1,
-  "supplier": "Nhà cung cấp Thanh Lam Mart – Rau củ (demo)",
+  "supplier": "Nhà cung cấp Thanh Lam Mart – Rau củ",
   "is_traffic_driver": false,
   "abc_xyz": "BX",
   "on_hand": 5
@@ -70,7 +70,7 @@
   "unit_cost": 192079,
   "unit_price": 299900,
   "pack_size": 1,
-  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt (demo)",
+  "supplier": "Nhà cung cấp Thanh Lam Mart – Thịt",
   "is_traffic_driver": false,
   "abc_xyz": "AX",
   "on_hand": 13
@@ -89,7 +89,7 @@
   "unit_cost": 94209,
   "unit_price": 129000,
   "pack_size": 1,
-  "supplier": "Nhà cung cấp Thanh Lam Mart – Thủy hải sản (demo)",
+  "supplier": "Nhà cung cấp Thanh Lam Mart – Thủy hải sản",
   "is_traffic_driver": false,
   "abc_xyz": "AX",
   "on_hand": 5

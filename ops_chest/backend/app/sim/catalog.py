@@ -1,4 +1,4 @@
-"""Danh muc hang & nha cung cap GIA LAP (ten thuong hieu hu cau)."""
+"""Danh muc hang & nha cung cap cua cua hang."""
 from __future__ import annotations
 
 import random
@@ -97,7 +97,7 @@ ENGINE_DAYPARTS = {
 
 
 def category_policy(category: str) -> dict:
-    """Cau hinh nhom hang cho demo/backtest: duoc giam gia, tran 50% (can doi chieu quy dinh), gio giam gia."""
+    """Cau hinh nhom hang cho he thong/backtest: duoc giam gia, tran 50% (can doi chieu quy dinh), gio giam gia."""
     from app.engines.disposition import DEFAULT_DAYPART_SHARES, peak_end_hour, share_after
 
     shares = ENGINE_DAYPARTS.get(category, DEFAULT_DAYPART_SHARES)

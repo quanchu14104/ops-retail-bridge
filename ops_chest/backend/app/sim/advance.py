@@ -1,8 +1,8 @@
-"""Tua nhanh ngay cho demo: mo phong hang ve + ban hang len DB that de thay hau qua cua quyet dinh.
+"""Chuyen ngay nghiep vu: cap nhat hang ve + ban hang len DB de kiem tra he qua cua quyet dinh.
 
 Cac buoc thuoc ve Store Manager van KHONG tu xay ra: khong duyet de xuat, khong dat hang, khong ghi huy.
 Bo qua duyet thi ke se trong dan va lo da rut ke nam cho ghi huy: do chinh la dieu can cho thay. Viec cua
-nhan vien (nhan hang voi HSD chuan, rut ke cuoi ngay dung so tren so) duoc gia lap voi actor `sim`.
+nhan vien (nhan hang voi HSD chuan, rut ke cuoi ngay dung so tren so) duoc cap nhat boi actor `sim`.
 """
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ def simulate_day(db: Session, d: date, specs: dict, realize_hypotheses: bool, so
         day["lost"] += lost
         day["stockout_skus"] += lost > 0
     day["revenue"] = int(round(day["revenue"]))
-    # Cuoi ngay nhan vien rut ke cac lo het ngay ban (gia lap: tim thay dung so tren so)
+    # Cuoi ngay nhan vien rut ke cac lo het ngay ban (theo dung so lieu ton lo tren he thong)
     due = pull_list(db, d)
     if due:
         by_id = {l.id: l for ls in lots_by_pid.values() for l in ls}

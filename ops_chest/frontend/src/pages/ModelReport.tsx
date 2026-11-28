@@ -41,7 +41,7 @@ export default function ModelReport() {
           )}
           <p className="small secondary">
             Chạy lại cùng cửa hàng với <b>cùng chuỗi nhu cầu lịch sử</b> bằng 2 chính sách đặt hàng. A: mức tồn theo trung bình 4 tuần, cuối ngày giảm 30% hàng hết hạn hôm nay.
-            B: dự báo + newsvendor/order-up-to có sàn mức phục vụ (kéo khách 95%, nhóm A 90%) + trần HSD và sức chứa + giảm giá giờ vàng theo khung bán của nhóm hàng/trả NCC (coi như SM duyệt hết). Trong kiểm chứng, khách phản ứng với giảm giá bằng một nửa mức engine giả định. Mất khoảng 10-30 giây.
+            B: dự báo + newsvendor/order-up-to có sàn mức phục vụ (kéo khách 95%, nhóm A 90%) + trần HSD và sức chứa + giảm giá giờ vàng theo khung bán của nhóm hàng/trả NCC (coi như SM duyệt hết). Trong kiểm chứng, khách phản ứng với giảm giá bằng 50% mức tham chiếu của engine. Mất khoảng 10-30 giây.
           </p>
           <div className="row">
             {[30, 60, 90].map((d) => <button key={d} disabled={bt.isPending} onClick={() => bt.mutate(d)}>Chạy {d} ngày</button>)}
@@ -63,7 +63,7 @@ function Sensitivity({ d }: { d: Sens }) {
   const ref = d.rows.find((r) => r.key === "reference");
   return (
     <div className="table-wrap" style={{ marginTop: 16 }}>
-      <h2>Kết quả phụ thuộc vào giả định đến đâu</h2>
+      <h2>Phân tích độ nhạy theo tham số co giãn</h2>
       <p className="small secondary">
         Tính sẵn từ {dateVi(d.start)}, {d.days} ngày. Mỗi dòng chỉ đổi một điều so với dòng tham chiếu. Lợi nhuận gộp của B so với A ở kịch bản tham chiếu và các chuỗi nhu cầu khác: <b>{signed(Math.min(...core))} đến {signed(Math.max(...core))}</b>.
       </p>

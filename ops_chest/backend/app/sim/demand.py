@@ -1,4 +1,4 @@
-"""Mo hinh nhu cau gia lap. Tat dinh theo (seed, sku, ngay) de backtest A/B gap CUNG nhu cau."""
+"""Nguon nhu cau cho kiem chung. Tat dinh theo (seed, sku, ngay) de backtest A/B gap CUNG nhu cau."""
 from __future__ import annotations
 
 import math
@@ -99,7 +99,7 @@ def sample_demand(seed: int, p: ProductSpec, d: date) -> int:
 
 
 class DemandSource:
-    """Nguon nhu cau cua 'the gioi' mo phong: `need` = so khach muon mua (nguyen), `expected` = muc ky vong (de
+    """Nguon nhu cau cua moi truong kiem chung: `need` = so khach muon mua (nguyen), `expected` = muc ky vong (de
     tinh luong khach tang them khi giam gia)."""
 
     name = "synthetic"
@@ -112,7 +112,7 @@ class DemandSource:
 
 
 class SyntheticDemand(DemandSource):
-    """Mo hinh gia lap cu (chi con dung cho bo test quy tac nghiep vu: Tet, hang dai ngay, lich nghi NCC)."""
+    """Bo nhu cau tong hop (chi con dung cho bo test quy tac nghiep vu: Tet, hang dai ngay, lich nghi NCC)."""
 
     name = "synthetic"
 

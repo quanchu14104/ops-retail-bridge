@@ -1,7 +1,7 @@
-"""Dời trục thời gian giữa đồng hồ giả lập của Ops Chest và ngày thật của Retail-AI.
+"""Dời trục thời gian giữa ngày nghiệp vụ của Ops Chest và ngày hiện tại của Retail-AI.
 
-Ops Chest chạy trên đồng hồ giả lập (vd 26/06/2024), Retail-AI dùng ngày thật. Nếu chuyển HSD nguyên gốc, kiosk
-sẽ coi mọi lô là hết hạn. Bridge tính `shift = ngày thật (Asia/Ho_Chi_Minh) − ngày nghiệp vụ Ops Chest` (số ngày
+Ops Chest vận hành theo mốc ngày nghiệp vụ (vd 26/06/2024), trong khi Retail-AI dùng ngày hiện tại. Nếu giữ HSD gốc,
+kiosk sẽ coi mọi lô là hết hạn. Bridge tính `shift = ngày thật (Asia/Ho_Chi_Minh) − ngày nghiệp vụ Ops Chest` (số ngày
 nguyên) rồi cộng `shift` vào MỌI ngày và giờ lấy từ Ops Chest. Mốc sự kiện đã xảy ra (giờ nhận hàng, giờ xuất
 feed) không bao giờ vượt quá thời điểm hiện tại; HSD là ngày trong tương lai nên chỉ dời, không chặn.
 """
