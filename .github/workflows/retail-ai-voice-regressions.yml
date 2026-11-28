@@ -1,9 +1,20 @@
-name: Voice regression checks
+name: Retail-AI voice regression checks
 
+# Trước đây chỉ chạy trên nhánh codex/voice-silence-gate-streaming-20261020 của repo Retail-AI riêng (không có ở
+# repo bridge). Nay chạy khi kiosk hoặc backend Retail-AI đổi.
 on:
   push:
-    branches:
-      - codex/voice-silence-gate-streaming-20261020
+    branches: [main]
+    paths:
+      - Retail-AI-/apps/kiosk-airi/**
+      - Retail-AI-/backend/**
+      - .github/workflows/retail-ai-voice-regressions.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - Retail-AI-/apps/kiosk-airi/**
+      - Retail-AI-/backend/**
+      - .github/workflows/retail-ai-voice-regressions.yml
   workflow_dispatch:
 
 permissions:
@@ -15,14 +26,14 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: apps/kiosk-airi
+        working-directory: Retail-AI-/apps/kiosk-airi
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: apps/kiosk-airi/package-lock.json
+          cache-dependency-path: Retail-AI-/apps/kiosk-airi/package-lock.json
       - run: npm ci
       - run: npm run test:run
       - run: npm run build
@@ -30,11 +41,16 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Retail-AI-
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.13'
+          working-directory: Retail-AI-
+          cache-dependency-glob: Retail-AI-/uv.lock
       - run: uv sync --frozen
       - name: Pytest without real provider calls
         env:

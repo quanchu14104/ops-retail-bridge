@@ -223,14 +223,13 @@ tại chỗ. Giờ `uv run pytest -q` trong `Retail-AI-` xanh mà không cần �
 
 - Chưa có `Retail-AI-/.env.example` và `Retail-AI-/apps/kiosk-airi/.env.example` (`.gitignore` của Retail-AI từng
   chặn `.env*`; nay đã mở cho `.env.example`). Cần người nắm cấu hình Retail-AI commit hai file mẫu.
-- Ba workflow CI của Retail-AI nằm ở `Retail-AI-/.github/workflows/`. GitHub chỉ chạy workflow ở `.github/workflows/`
-  tại gốc repo, nên hiện **không có CI nào chạy** cho repo này.
 - Một số link trong `Retail-AI-/docs/reports/` và `Retail-AI-/docs/voice-pipeline.md` trỏ tới báo cáo phụ và thư mục
   `artifacts/` không được đưa vào repo này.
 
-- Test kiosk (vitest) hỏng 41/66 trên Node v26 vì `localStorage` thử nghiệm của Node che mất `localStorage` của
+- Test kiosk (vitest) hỏng 28/179 trên Node v26 vì `localStorage` thử nghiệm của Node che mất `localStorage` của
   jsdom ("localStorage is not available because --localstorage-file was not provided"). Không liên quan tới bridge
-  hay `.env`: chạy `NODE_OPTIONS=--no-experimental-webstorage npx vitest run` thì 66/66 xanh.
+  hay `.env`: chạy `NODE_OPTIONS=--no-experimental-webstorage npx vitest run` thì 179/179 xanh (đo 28/11/2026). CI
+  dùng Node 24 nên không bị.
 
 - Câu "có món nào đang giảm giá không?" được bộ nhận diện ý định của Retail-AI chuyển sang gợi ý sản phẩm (khớp
   chữ "giảm" với tên sản phẩm), kể cả khi tắt overlay. "có khuyến mãi gì không?" hay "hôm nay có giảm giá gì
@@ -250,7 +249,16 @@ Exit code của `sync`: `0` thành công; `2` Ops Chest không phản hồi ho�
 
 ## Kiểm thử
 
-Mỗi phần có bộ test riêng, chạy trong thư mục của nó (chưa có CI, xem mục "Hạn chế đã biết"):
+Mỗi phần có bộ test riêng, chạy trong thư mục của nó. CI trên GitHub hiện chỉ có cho Retail-AI
+([`.github/workflows/`](.github/workflows/)); bridge và Ops Chest chưa có CI, chạy tay các lệnh dưới đây:
+
+| Workflow | Chạy khi push/PR vào `main` đổi | Việc làm |
+|---|---|---|
+| `retail-ai-backend-quality.yml` | `Retail-AI-/**` | ruff, toàn bộ pytest offline, compileall |
+| `retail-ai-voice-regressions.yml` | `Retail-AI-/apps/kiosk-airi/**`, `Retail-AI-/backend/**` | vitest + build kiosk (Node 24), pytest backend |
+| `retail-ai-neural-browser-smoke.yml` | file VAD neural của kiosk | nạp VAD ONNX thật trong Chromium với mic giả |
+
+Cả ba chạy tay được bằng nút "Run workflow" (workflow_dispatch).
 
 ```powershell
 uv run pytest -q; uv run ruff check .                                     # bridge (thư mục gốc)
