@@ -18,7 +18,7 @@ Hệ thống vận hành cho cửa hàng **Thanh Lam Mart** với **164 mặt h�
    docker compose exec backend python -m app.sim.seed --reset
    ```
 
-5. Nếu cấu hình `CATALOG_OVERRIDES_PATH` (khi chạy đồng bộ cùng kiosk Retail-AI qua `bridge/`), tên hàng và giá bán lấy đầy đủ từ bảng ánh xạ danh mục **Thanh Lam Mart**, tên nhà cung cấp hiển thị theo dạng `"Nhà cung cấp Thanh Lam Mart – …"`.
+5. Trình diễn **cùng kiosk Retail-AI**: thay cho bước 1, chạy `.\scripts\setup.ps1` rồi `.\scripts\start-demo.ps1` ở gốc repo (xem [README gốc](../../README.md)). Khi đó Ops Chest được seed với `CATALOG_OVERRIDES_PATH`, nên tên hàng và giá bán lấy đầy đủ từ bảng ánh xạ danh mục **Thanh Lam Mart**, tên nhà cung cấp hiển thị theo dạng `"Nhà cung cấp Thanh Lam Mart – …"`. Không chạy `docker compose up` đầy đủ của Ops Chest cùng lúc: Postgres của nó giành cổng 5432 với Retail-AI.
 
 ## 1. Buổi sáng của Store Manager (2 phút)
 

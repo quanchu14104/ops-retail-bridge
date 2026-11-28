@@ -6,7 +6,7 @@
 - **Mốc của báo cáo đánh giá trước:** `1757bbd988de141ae23a6cf3f475a9c496d0340f`
 - **Baseline:** 2f8b0368cf006286f3188d0f2188ee728fac954d
 - **Môi trường giao dịch:** catalog demo và checkout sandbox; không có giao dịch tiền thật
-- **Báo cáo chăm sóc khách hàng cũ:** được giữ tại [archive/retail-ai-optimization-report-customer-care-2026-10-19.md](archive/retail-ai-optimization-report-customer-care-2026-10-19.md)
+- **Báo cáo chăm sóc khách hàng cũ:** được giữ tại [archive/retail-ai-optimization-report-customer-care-2026-10-19.md](https://github.com/chinhdz102/Retail-AI-/blob/main/docs/reports/archive/retail-ai-optimization-report-customer-care-2026-10-19.md) (trong repo Retail-AI riêng trước đây)
 
 ## 1. Executive Summary
 

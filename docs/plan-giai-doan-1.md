@@ -1,5 +1,12 @@
 # Nối Ops Chest ↔ Retail-AI qua nền dữ liệu sản phẩm dùng chung (giai đoạn 1)
 
+> **Cập nhật 28/11/2026: dự án đã gộp về một repo.** Plan này viết khi Ops Chest, Retail-AI và bridge là ba repo
+> nằm cạnh nhau trong `Q:\WORKSPACE`. Nay cả ba nằm trong repo bridge: Ops Chest ở `ops_chest/`, Retail-AI ở
+> `Retail-AI-/`. Các đường dẫn kiểu `Q:\WORKSPACE\...`, `../ops_chest`, `../bridge/out`, `WORKSPACE\.claude\launch.json`
+> và bước tạo nhánh/worktree trong từng repo con dưới đây là **lịch sử**, không còn đúng. Cách dựng và chạy hiện
+> tại nằm ở [README gốc](../README.md); thiết kế dữ liệu, hợp đồng feed và các quyết định nghiệp vụ trong file này
+> vẫn giữ nguyên giá trị.
+
 > User duyệt ngày 19/11/2026. File này là bản chuẩn để triển khai.
 > So với bản duyệt có bảy điều chỉnh:
 > 1. Đổi cổng của Retail-AI sang 8020/5190. Lý do nằm ở mục "Ghi chú triển khai" cuối file.

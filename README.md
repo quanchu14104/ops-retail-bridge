@@ -61,7 +61,9 @@ tên lịch sử) và bật Mailpit. Thêm `-ResetDemo` để seed lại DB demo
 **Khoá API: mỗi người tự điền khoá của mình**, không gửi file `.env` cho nhau, không commit khoá:
 - `ops_chest\.env`: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` cho trợ lý chat của Ops Chest (ví dụ Groq:
   `https://api.groq.com/openai/v1`, model `openai/gpt-oss-20b`).
-- `Retail-AI-\.env`: `GROQ_API_KEY` cho phần trò chuyện tự do trên kiosk.
+- `Retail-AI-\.env`: `GROQ_API_KEY` cho phần trò chuyện tự do trên kiosk. Repo hiện **chưa có**
+  `Retail-AI-\.env.example`, nên `setup.ps1` không tự tạo file này (chỉ cảnh báo): tự tạo `Retail-AI-\.env` với một
+  dòng `GROQ_API_KEY=...`. Các biến khác của Retail-AI có giá trị mặc định trong `backend/config.py`.
 
 Không có khoá thì demo vẫn chạy: Ops Chest không chat được, kiosk chỉ trả lời các câu cố định (giá, khuyến mãi,
 hàng mới về, thông tin cửa hàng).
@@ -220,6 +222,13 @@ tại chỗ. Giờ `uv run pytest -q` trong `Retail-AI-` xanh mà không cần �
 
 ## Hạn chế đã biết (thuộc Retail-AI, ngoài phạm vi bridge)
 
+- Chưa có `Retail-AI-/.env.example` và `Retail-AI-/apps/kiosk-airi/.env.example` (`.gitignore` của Retail-AI từng
+  chặn `.env*`; nay đã mở cho `.env.example`). Cần người nắm cấu hình Retail-AI commit hai file mẫu.
+- Ba workflow CI của Retail-AI nằm ở `Retail-AI-/.github/workflows/`. GitHub chỉ chạy workflow ở `.github/workflows/`
+  tại gốc repo, nên hiện **không có CI nào chạy** cho repo này.
+- Một số link trong `Retail-AI-/docs/reports/` và `Retail-AI-/docs/voice-pipeline.md` trỏ tới báo cáo phụ và thư mục
+  `artifacts/` không được đưa vào repo này.
+
 - Test kiosk (vitest) hỏng 41/66 trên Node v26 vì `localStorage` thử nghiệm của Node che mất `localStorage` của
   jsdom ("localStorage is not available because --localstorage-file was not provided"). Không liên quan tới bridge
   hay `.env`: chạy `NODE_OPTIONS=--no-experimental-webstorage npx vitest run` thì 66/66 xanh.
@@ -242,13 +251,27 @@ Exit code của `sync`: `0` thành công; `2` Ops Chest không phản hồi ho�
 
 ## Kiểm thử
 
+Mỗi phần có bộ test riêng, chạy trong thư mục của nó (chưa có CI, xem mục "Hạn chế đã biết"):
+
 ```powershell
-uv run pytest -q
-uv run ruff check .
+uv run pytest -q; uv run ruff check .                                     # bridge (thư mục gốc)
+cd ops_chest\backend; uv run pytest -q; cd ..\..                          # Ops Chest backend
+cd Retail-AI-; uv run pytest -q; cd ..                                    # Retail-AI backend
+cd Retail-AI-\apps\kiosk-airi; $env:NODE_OPTIONS='--no-experimental-webstorage'; npx vitest run; cd ..\..\..
 ```
 
-Test dùng response Ops Chest đã ghi lại trong `tests/fixtures/` (giữ cả trường nội bộ để chứng minh chúng bị
-loại). Test crosswalk trên dữ liệu thật tự bỏ qua nếu không có file catalog Thanh Lam Mart (`winmart_products.json`) hoặc FRN.
+Test của bridge dùng response Ops Chest đã ghi lại trong `tests/fixtures/` (giữ cả trường nội bộ để chứng minh chúng
+bị loại). Test crosswalk trên dữ liệu thật đọc `Retail-AI-/data/winmart_products.json` và
+`ops_chest/backend/app/sim/data/frn/stores_daily.csv.gz` ngay trong repo; thiếu file thì tự bỏ qua.
+
+## Tài liệu
+
+| Tài liệu | Nội dung |
+|---|---|
+| [contract/ops_feed.v1.md](contract/ops_feed.v1.md) | Hợp đồng feed Ops Chest → kiosk |
+| [docs/plan-giai-doan-1.md](docs/plan-giai-doan-1.md) | Thiết kế bridge giai đoạn 1 (viết khi còn 3 repo riêng) |
+| [ops_chest/README.md](ops_chest/README.md), [ops_chest/docs/](ops_chest/docs/) | Ops Chest: nghiệp vụ, dự báo ML, kịch bản demo, eval agent |
+| [Retail-AI-/README.md](Retail-AI-/README.md), [Retail-AI-/docs/](Retail-AI-/docs/) | Retail-AI: yêu cầu, kiến trúc, tool contract, ERD, voice pipeline |
 
 ## Ngoài phạm vi giai đoạn 1
 

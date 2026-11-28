@@ -11,6 +11,12 @@ Agent dạng chatbot (chat là giao diện chính, dashboard chỉ để tham kh
 
 **Mọi quyết định cuối cùng thuộc về Store Manager (Human-in-the-loop).** Ops Chest chỉ *đề xuất*. Đặt hàng, gửi email, đổi giá, ghi hủy và ngừng nhập chỉ xảy ra khi Store Manager bấm duyệt.
 
+> **Vị trí trong dự án:** Ops Chest nằm ở thư mục `ops_chest/` của repo [ops-retail-bridge](../README.md), cùng kiosk
+> Retail-AI (`Retail-AI-/`) và code cầu nối. Repo riêng cũ `quanchu14104/ops_chest` không còn là nơi phát triển; lịch
+> sử commit cũ vẫn xem được bằng `git log -- ops_chest`. Muốn chạy Ops Chest **cùng kiosk**, dùng `scripts\setup.ps1`
+> và `scripts\start-demo.ps1` ở gốc repo (xem [README gốc](../README.md)). Các lệnh dưới đây chạy Ops Chest một mình,
+> trong thư mục `ops_chest/`.
+
 > **Dữ liệu và phạm vi trình diễn (Thanh Lam Mart):**
 > - Hệ thống sử dụng **bộ dữ liệu thực tế của Thanh Lam Mart** gồm danh mục sản phẩm, giá bán và chuỗi lịch sử bán hàng tươi 90 ngày (164 mặt hàng tươi chủ lực, từ 28/03 đến 25/06/2024; tập đánh giá 7 ngày tiếp theo đến 02/07/2024). Một số thông số vận hành chưa có sổ lô lịch sử (giá vốn chuẩn hóa, HSD từng lô, lịch giao của 7 nhà cung cấp) được thiết lập theo quy chuẩn nghiệp vụ của cửa hàng và ghi chú rõ trong [docs/nghiep-vu.md](docs/nghiep-vu.md).
 > - Dự báo cho hàng tươi dùng mô hình **LightGBM** kết hợp engine **EWMA**. Mặt hàng nào dùng LightGBM, mặt hàng nào giữ EWMA được chọn **theo lãi gộp trong kiểm chứng hồi cứu (backtest)**, không chỉ theo sai số dự báo. Ngoài mẫu, dùng dự báo điểm của LightGBM với độ bất định của EWMA lãi hơn engine EWMA **+0,8%** (trung vị) và thắng ở **76%** số tập kiểm chứng. Xem [docs/du-bao-ml.md](docs/du-bao-ml.md), mục 5.6–5.7.
@@ -37,7 +43,7 @@ docker compose up -d --build
   docker compose exec backend python -m app.sim.seed --reset
   ```
 
-- **Ánh xạ đầy đủ danh mục Thanh Lam Mart (`CATALOG_OVERRIDES_PATH`, tùy chọn):** đặt `CATALOG_OVERRIDES_PATH` trỏ tới file JSON `{"products": {sku: {name, unit_price}}, "suppliers": {code: {name, email}}}` để áp dụng tên hàng, giá bán thực tế đầy đủ của **Thanh Lam Mart** (giá vốn tính lại theo đúng tỷ lệ giá vốn/giá bán) và thông tin NCC trước khi nạp 90 ngày lịch sử. Không đổi nhóm hàng, lead time, lịch giao, đơn tối thiểu hay thỏa thuận trả hàng. Dùng khi chạy đồng bộ Ops Chest với kiosk Retail-AI (thư mục `bridge/` ở cấp workspace).
+- **Ánh xạ đầy đủ danh mục Thanh Lam Mart (`CATALOG_OVERRIDES_PATH`, tùy chọn):** đặt `CATALOG_OVERRIDES_PATH` trỏ tới file JSON `{"products": {sku: {name, unit_price}}, "suppliers": {code: {name, email}}}` để áp dụng tên hàng, giá bán thực tế đầy đủ của **Thanh Lam Mart** (giá vốn tính lại theo đúng tỷ lệ giá vốn/giá bán) và thông tin NCC trước khi nạp 90 ngày lịch sử. Không đổi nhóm hàng, lead time, lịch giao, đơn tối thiểu hay thỏa thuận trả hàng. Dùng khi chạy đồng bộ Ops Chest với kiosk Retail-AI: `bridge overrides` ở gốc repo sinh file này tại `out/ops_catalog_overrides.json`, và [`demo/ops-chest.env`](../demo/ops-chest.env) đặt `CATALOG_OVERRIDES_PATH=../../out/ops_catalog_overrides.json` (tính từ `ops_chest/backend`).
 
 ## Chạy không cần Docker (backend)
 
@@ -46,7 +52,7 @@ cd backend
 uv sync
 uv run python -m app.sim.seed --reset      # SQLite ./ops_chest.db, dữ liệu Thanh Lam Mart
 uv run uvicorn app.api.main:app --reload
-uv run pytest -q                            # 279 test: engine, HITL, quy tắc nghiệp vụ, API, widget, lệnh chat, bản tin, kiểm chứng A/B
+uv run pytest -q                            # 284 test: engine, HITL, quy tắc nghiệp vụ, API, widget, lệnh chat, bản tin, kiểm chứng A/B
 ```
 
 Frontend chạy bằng `cd frontend && npm install && npm run dev` (Node 20+). Email cần một SMTP ở `localhost:1025`, ví dụ chạy riêng Mailpit:
