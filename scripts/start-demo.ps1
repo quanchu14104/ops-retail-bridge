@@ -36,7 +36,7 @@ function Start-ServiceWindow([string]$Title, [string]$Dir, [hashtable]$Environme
 function ConvertTo-Hashtable($Ordered) { $h = @{}; foreach ($k in $Ordered.Keys) { $h[$k] = $Ordered[$k] }; return $h }
 
 if (-not (Test-Path (Join-Path $OpsChest 'backend\ops_chest.db'))) {
-    Write-Warn 'Chua co DB demo cua Ops Chest. Chay .\bridge\scripts\setup.ps1 truoc.'
+    Write-Warn 'Chua co DB demo cua Ops Chest. Chay .\scripts\setup.ps1 truoc.'
     exit 1
 }
 
@@ -52,9 +52,6 @@ Write-Step 'Mo cac cua so dich vu'
 $script:Started = @()
 $opsEnv = ConvertTo-Hashtable (Read-EnvFile (Join-Path $Bridge 'demo\ops-chest.env'))
 $retailEnv = ConvertTo-Hashtable (Read-EnvFile (Join-Path $Bridge 'demo\retail-ai.env'))
-if ($RetailAI -eq $EmbeddedRetailAI) {
-    $retailEnv['OPS_FEED_PATH'] = Join-Path $Bridge 'out\ops_feed.json'
-}
 $retailEnv['PYTHONIOENCODING'] = 'utf-8'
 Start-ServiceWindow 'Ops Chest API :8000' (Join-Path $OpsChest 'backend') $opsEnv `
     'uv run uvicorn app.api.main:app --host 127.0.0.1 --port 8000'
@@ -78,4 +75,4 @@ Write-Host ''
 Write-Host 'Ops Chest (Store Manager): http://localhost:5173   tai khoan quanly / quanly123'
 Write-Host 'Kiosk (nguoi mua):         http://127.0.0.1:5190'
 Write-Host 'Mailpit (email dat hang):  http://localhost:8025'
-Write-Host 'Dung demo: .\bridge\scripts\stop-demo.ps1 (hoac dong cac cua so vua mo).'
+Write-Host 'Dung demo: .\scripts\stop-demo.ps1 (hoac dong cac cua so vua mo).'

@@ -1,14 +1,9 @@
 # Ham dung chung cho setup.ps1 va start-demo.ps1. Viet cho Windows PowerShell 5.1 (khong dung && hay ?:).
 
+# Mot repo duy nhat (bridge): Ops Chest o bridge\ops_chest, Retail-AI o bridge\Retail-AI-
 $Bridge = Split-Path -Parent $PSScriptRoot
-$Workspace = Split-Path -Parent $Bridge
-$OpsChest = Join-Path $Workspace 'ops_chest'
-$EmbeddedRetailAI = Join-Path $Bridge 'Retail-AI-'
-if (Test-Path (Join-Path $EmbeddedRetailAI 'pyproject.toml')) {
-    $RetailAI = $EmbeddedRetailAI
-} else {
-    $RetailAI = Join-Path $Workspace 'Retail-AI-'
-}
+$OpsChest = Join-Path $Bridge 'ops_chest'
+$RetailAI = Join-Path $Bridge 'Retail-AI-'
 $Kiosk = Join-Path $RetailAI 'apps\kiosk-airi'
 
 function Write-Step([string]$Message) { Write-Host "`n==> $Message" -ForegroundColor Cyan }

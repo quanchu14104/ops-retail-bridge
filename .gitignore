@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 out/
+.claude/settings.local.json
 Retail-AI-/.env
 Retail-AI-/.env.local
 Retail-AI-/.venv/
